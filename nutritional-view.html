@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nutritional Analysis - Pricelio</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .nutrition-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: var(--space-5);
+    }
+    
+    .health-score-card {
+      background: linear-gradient(135deg, var(--bg-tertiary) 0%, white 100%);
+      border-radius: var(--radius-lg);
+      padding: var(--space-6);
+      margin-bottom: var(--space-5);
+      text-align: center;
+      border: 2px solid var(--border-light);
+    }
+    
+    .score-value {
+      font-size: 5rem;
+      font-weight: 800;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      line-height: 1;
+      margin: var(--space-4) 0;
+    }
+    
+    .score-excellent { color: var(--success); }
+    .score-good { color: #FFD93D; }
+    .score-poor { color: var(--danger); }
+    
+    .nutrition-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: var(--space-3);
+      margin-bottom: var(--space-5);
+    }
+    
+    .nutrition-card {
+      background: white;
+      border: 2px solid var(--border-light);
+      border-radius: var(--radius-md);
+      padding: var(--space-4);
+      text-align: center;
+    }
+    
+    .nutrition-label {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+      margin-bottom: var(--space-2);
+    }
+    
+    .nutrition-value {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--primary);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    
+    .nutrition-unit {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin-left: var(--space-1);
+    }
+    
+    .warning-section {
+      background: white;
+      border: 2px solid var(--danger);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+      margin-bottom: var(--space-5);
+    }
+    
+    .warning-title {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: var(--danger);
+      margin-bottom: var(--space-4);
+    }
+    
+    .e-additive-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+    
+    .e-additive-item {
+      background: rgba(239, 68, 68, 0.05);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      border-radius: var(--radius-md);
+      padding: var(--space-4);
+    }
+    
+    .e-code {
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--danger);
+      margin-bottom: var(--space-1);
+    }
+    
+    .e-name {
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      margin-bottom: var(--space-2);
+    }
+    
+    .e-effects {
+      font-size: 0.9rem;
+      color: var(--text-primary);
+    }
+    
+    .found-in {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-top: var(--space-2);
+      font-style: italic;
+    }
+    
+    .notes-section {
+      background: white;
+      border: 2px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+    }
+    
+    .note-item {
+      padding: var(--space-3);
+      margin-bottom: var(--space-2);
+      border-radius: var(--radius-sm);
+      background: var(--bg-secondary);
+    }
+  </style>
+</head>
+<body>
+  <div class="nutrition-container">
+    <h1 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 2rem; margin-bottom: var(--space-2);">
+      🍏 Nutritional Analysis
+    </h1>
+    <p style="color: var(--text-secondary); margin-bottom: var(--space-6);">
+      Complete breakdown of your purchased products
+    </p>
+    
+    <!-- Health Score -->
+    <div class="health-score-card">
+      <div style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-secondary);">
+        Health Score
+      </div>
+      <div class="score-value" id="healthScore">--</div>
+      <div style="font-size: 1.1rem; color: var(--text-secondary);" id="scoreLabel">
+        Loading...
+      </div>
+    </div>
+    
+    <!-- Nutritional Totals -->
+    <div class="nutrition-grid" id="nutritionGrid">
+      <div class="nutrition-card">
+        <div class="nutrition-label">Calories</div>
+        <div class="nutrition-value" id="calories">--</div>
+        <div class="nutrition-unit">kcal</div>
+      </div>
+      <div class="nutrition-card">
+        <div class="nutrition-label">Protein</div>
+        <div class="nutrition-value" id="protein">--</div>
+        <div class="nutrition-unit">g</div>
+      </div>
+      <div class="nutrition-card">
+        <div class="nutrition-label">Carbs</div>
+        <div class="nutrition-value" id="carbs">--</div>
+        <div class="nutrition-unit">g</div>
+      </div>
+      <div class="nutrition-card">
+        <div class="nutrition-label">Sugar</div>
+        <div class="nutrition-value" id="sugar">--</div>
+        <div class="nutrition-unit">g</div>
+      </div>
+      <div class="nutrition-card">
+        <div class="nutrition-label">Fat</div>
+        <div class="nutrition-value" id="fat">--</div>
+        <div class="nutrition-unit">g</div>
+      </div>
+      <div class="nutrition-card">
+        <div class="nutrition-label">Salt</div>
+        <div class="nutrition-value" id="salt">--</div>
+        <div class="nutrition-unit">g</div>
+      </div>
+      <div class="nutrition-card">
+        <div class="nutrition-label">Fiber</div>
+        <div class="nutrition-value" id="fiber">--</div>
+        <div class="nutrition-unit">g</div>
+      </div>
+    </div>
+    
+    <!-- Harmful E-Additives Warning -->
+    <div class="warning-section" id="eAdditivesSection" style="display: none;">
+      <div class="warning-title">
+        <span>⚠️</span>
+        <span>Harmful E-Additives Found</span>
+      </div>
+      <div class="e-additive-list" id="eAdditivesList">
+        <!-- Dynamic content -->
+      </div>
+    </div>
+    
+    <!-- Analysis Notes -->
+    <div class="notes-section">
+      <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: var(--space-4);">
+        Analysis Summary
+      </h3>
+      <div id="notesList">
+        <!-- Dynamic content -->
+      </div>
+    </div>
+    
+    <div style="margin-top: var(--space-6); text-align: center;">
+      <a href="index.html" class="primary-btn">Back to Home</a>
+    </div>
+  </div>
+  
+  <script>
+    const API_BASE = 'http://localhost:3000';
+    
+    // Get receipt ID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const receiptId = urlParams.get('receipt_id');
+    
+    if (!receiptId) {
+      alert('No receipt ID provided');
+      window.location.href = 'index.html';
+    }
+    
+    async function loadNutritionalAnalysis() {
+      try {
+        const response = await fetch(`${API_BASE}/receipts/${receiptId}/nutrition`);
+        
+        if (!response.ok) {
+          throw new Error('Analysis not found');
+        }
+        
+        const data = await response.json();
+        displayAnalysis(data);
+        
+      } catch (error) {
+        console.error('Failed to load analysis:', error);
+        alert('Nutritional analysis not available for this receipt');
+        window.location.href = 'index.html';
+      }
+    }
+    
+    function displayAnalysis(data) {
+      // Health Score
+      const score = data.health_score;
+      const scoreElement = document.getElementById('healthScore');
+      const labelElement = document.getElementById('scoreLabel');
+      
+      scoreElement.textContent = score;
+      
+      if (score >= 80) {
+        scoreElement.className = 'score-value score-excellent';
+        labelElement.textContent = 'Excellent nutritional profile!';
+      } else if (score >= 60) {
+        scoreElement.className = 'score-value score-good';
+        labelElement.textContent = 'Moderate nutritional profile';
+      } else {
+        scoreElement.className = 'score-value score-poor';
+        labelElement.textContent = 'Poor nutritional profile';
+      }
+      
+      // Nutritional Totals
+      document.getElementById('calories').textContent = data.totals.calories;
+      document.getElementById('protein').textContent = data.totals.protein;
+      document.getElementById('carbs').textContent = data.totals.carbs;
+      document.getElementById('sugar').textContent = data.totals.sugar;
+      document.getElementById('fat').textContent = data.totals.fat;
+      document.getElementById('salt').textContent = data.totals.salt;
+      document.getElementById('fiber').textContent = data.totals.fiber;
+      
+      // E-Additives
+      if (data.harmful_e_additives && data.harmful_e_additives.length > 0) {
+        const section = document.getElementById('eAdditivesSection');
+        const list = document.getElementById('eAdditivesList');
+        
+        section.style.display = 'block';
+        
+        list.innerHTML = data.harmful_e_additives.map(additive => `
+          <div class="e-additive-item">
+            <div class="e-code">${additive.code}</div>
+            <div class="e-name">${additive.name}</div>
+            <div class="e-effects">⚠️ ${additive.effects}</div>
+            ${additive.found_in && additive.found_in.length > 0 ? `
+              <div class="found-in">
+                Found in: ${additive.found_in.map(p => p.product_name).join(', ')}
+              </div>
+            ` : ''}
+          </div>
+        `).join('');
+      }
+      
+      // Notes
+      const notesList = document.getElementById('notesList');
+      if (data.notes && data.notes.length > 0) {
+        notesList.innerHTML = data.notes.map(note => `
+          <div class="note-item">${note}</div>
+        `).join('');
+      } else {
+        notesList.innerHTML = '<p style="color: var(--text-secondary);">No additional notes</p>';
+      }
+    }
+    
+    // Load analysis on page load
+    loadNutritionalAnalysis();
+  </script>
+</body>
+</html>

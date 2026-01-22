@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ReceiptRadar Admin</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; }
+    .login-container { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .login-box { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+    .login-box h1 { margin-bottom: 1.5rem; color: #333; }
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { display: block; margin-bottom: 0.5rem; color: #666; font-size: 0.9rem; }
+    .form-group input { width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; }
+    .btn { width: 100%; padding: 0.75rem; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; }
+    .btn:hover { background: #0056b3; }
+    .error { color: #dc3545; font-size: 0.9rem; margin-top: 0.5rem; }
+    
+    .dashboard { display: none; }
+    .dashboard.active { display: block; }
+    .header { background: white; padding: 1rem 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
+    .header h1 { font-size: 1.5rem; color: #333; }
+    .logout-btn { padding: 0.5rem 1rem; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    .content { padding: 2rem; max-width: 1400px; margin: 0 auto; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+    .stat-card { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .stat-card h3 { font-size: 0.9rem; color: #666; margin-bottom: 0.5rem; text-transform: uppercase; }
+    .stat-card .value { font-size: 2rem; font-weight: bold; color: #333; }
+    .section { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 1.5rem; }
+    .section h2 { margin-bottom: 1rem; color: #333; }
+    .table { width: 100%; border-collapse: collapse; }
+    .table th { text-align: left; padding: 0.75rem; border-bottom: 2px solid #eee; color: #666; font-size: 0.9rem; }
+    .table td { padding: 0.75rem; border-bottom: 1px solid #eee; }
+    .badge { display: inline-block; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; }
+    .badge-warning { background: #ffc107; color: #000; }
+    .badge-success { background: #28a745; color: white; }
+    .badge-danger { background: #dc3545; color: white; }
+    .btn-sm { padding: 0.25rem 0.75rem; font-size: 0.85rem; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    .btn-sm:hover { background: #0056b3; }
+    .tabs { display: flex; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 2px solid #eee; }
+    .tab { padding: 0.75rem 1rem; cursor: pointer; border: none; background: none; color: #666; }
+    .tab.active { color: #007bff; border-bottom: 2px solid #007bff; margin-bottom: -2px; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+  </style>
+</head>
+<body>
+  <div id="loginView" class="login-container">
+    <div class="login-box">
+      <h1>ReceiptRadar Admin</h1>
+      <form id="loginForm">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="email" value="admin@receiptradar.app" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="password" value="admin123" required>
+        </div>
+        <button type="submit" class="btn">Login</button>
+        <div id="loginError" class="error"></div>
+      </form>
+    </div>
+  </div>
+
+  <div id="dashboardView" class="dashboard">
+    <div class="header">
+      <h1>ReceiptRadar Admin</h1>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+    
+    <div class="content">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3>Receipts Today</h3>
+          <div class="value" id="statReceiptsToday">-</div>
+        </div>
+        <div class="stat-card">
+          <h3>Needs Confirmation</h3>
+          <div class="value" id="statNeedsConfirmation">-</div>
+        </div>
+        <div class="stat-card">
+          <h3>Active Offers</h3>
+          <div class="value" id="statActiveOffers">-</div>
+        </div>
+        <div class="stat-card">
+          <h3>Unmatched Items</h3>
+          <div class="value" id="statUnmatchedItems">-</div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" onclick="showTab('receipts')">Low Confidence Receipts</button>
+        <button class="tab" onclick="showTab('unmatched')">Unmatched Products</button>
+        <button class="tab" onclick="showTab('connectors')">Connector Health</button>
+      </div>
+
+      <div id="receiptsTab" class="tab-content active">
+        <div class="section">
+          <h2>Low Confidence Receipts</h2>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Store</th>
+                <th>Date</th>
+                <th>Total</th>
+                <th>Confidence</th>
+                <th>Items</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="receiptsTableBody">
+              <tr><td colspan="8" style="text-align: center;">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="unmatchedTab" class="tab-content">
+        <div class="section">
+          <h2>Unmatched Products</h2>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Raw Name</th>
+                <th>Occurrences</th>
+                <th>Avg Confidence</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="unmatchedTableBody">
+              <tr><td colspan="4" style="text-align: center;">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="connectorsTab" class="tab-content">
+        <div class="section">
+          <h2>Connector Health</h2>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Connector</th>
+                <th>Status</th>
+                <th>Last Run</th>
+                <th>Offers Count</th>
+              </tr>
+            </thead>
+            <tbody id="connectorsTableBody">
+              <tr><td colspan="4" style="text-align: center;">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = window.location.origin + '/api';
+    let authToken = localStorage.getItem('admin_token');
+
+    function showView(view) {
+      document.getElementById('loginView').style.display = view === 'login' ? 'flex' : 'none';
+      document.getElementById('dashboardView').classList.toggle('active', view === 'dashboard');
+    }
+
+    function showTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById(tab + 'Tab').classList.add('active');
+    }
+
+    async function apiCall(endpoint, options = {}) {
+      const response = await fetch(API_BASE + endpoint, {
+        ...options,
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+          ...options.headers
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+      
+      return response.json();
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const errorEl = document.getElementById('loginError');
+
+      try {
+        const response = await fetch(API_BASE + '/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        if (!response.ok) {
+          throw new Error('Invalid credentials');
+        }
+
+        const data = await response.json();
+        authToken = data.token;
+        localStorage.setItem('admin_token', authToken);
+        showView('dashboard');
+        loadDashboard();
+      } catch (error) {
+        errorEl.textContent = error.message;
+      }
+    });
+
+    function logout() {
+      localStorage.removeItem('admin_token');
+      authToken = null;
+      showView('login');
+    }
+
+    async function loadDashboard() {
+      try {
+        const stats = await apiCall('/dashboard/stats');
+        document.getElementById('statReceiptsToday').textContent = stats.receipts_today;
+        document.getElementById('statNeedsConfirmation').textContent = stats.needs_confirmation;
+        document.getElementById('statActiveOffers').textContent = stats.active_offers;
+        document.getElementById('statUnmatchedItems').textContent = stats.unmatched_items;
+
+        await loadLowConfidenceReceipts();
+        await loadUnmatchedProducts();
+        await loadConnectorHealth();
+      } catch (error) {
+        console.error('Failed to load dashboard:', error);
+        if (error.message.includes('401')) {
+          logout();
+        }
+      }
+    }
+
+    async function loadLowConfidenceReceipts() {
+      try {
+        const receipts = await apiCall('/receipts/low-confidence');
+        const tbody = document.getElementById('receiptsTableBody');
+        
+        if (receipts.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No low confidence receipts</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = receipts.map(r => `
+          <tr>
+            <td>${r.id.substring(0, 8)}...</td>
+            <td>${r.store_chain || 'Unknown'}</td>
+            <td>${r.receipt_date ? new Date(r.receipt_date).toLocaleDateString() : '-'}</td>
+            <td>€${r.total ? r.total.toFixed(2) : '-'}</td>
+            <td>${r.confidence ? (r.confidence * 100).toFixed(0) + '%' : '-'}</td>
+            <td>${r.item_count}</td>
+            <td><span class="badge badge-warning">${r.status}</span></td>
+            <td><button class="btn-sm" onclick="viewReceipt('${r.id}')">Review</button></td>
+          </tr>
+        `).join('');
+      } catch (error) {
+        console.error('Failed to load receipts:', error);
+      }
+    }
+
+    async function loadUnmatchedProducts() {
+      try {
+        const products = await apiCall('/products/unmatched');
+        const tbody = document.getElementById('unmatchedTableBody');
+        
+        if (products.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No unmatched products</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = products.map(p => `
+          <tr>
+            <td>${p.raw_name}</td>
+            <td>${p.occurrence_count}</td>
+            <td>${p.avg_confidence ? (p.avg_confidence * 100).toFixed(0) + '%' : '-'}</td>
+            <td><button class="btn-sm" onclick="createMapping('${p.raw_name}')">Map</button></td>
+          </tr>
+        `).join('');
+      } catch (error) {
+        console.error('Failed to load unmatched products:', error);
+      }
+    }
+
+    async function loadConnectorHealth() {
+      try {
+        const connectors = await apiCall('/connectors/health');
+        const tbody = document.getElementById('connectorsTableBody');
+        
+        tbody.innerHTML = connectors.map(c => `
+          <tr>
+            <td>${c.name}</td>
+            <td><span class="badge badge-${c.status === 'healthy' ? 'success' : 'warning'}">${c.status}</span></td>
+            <td>${new Date(c.last_run).toLocaleString()}</td>
+            <td>${c.offers_count}</td>
+          </tr>
+        `).join('');
+      } catch (error) {
+        console.error('Failed to load connector health:', error);
+      }
+    }
+
+    function viewReceipt(id) {
+      alert('Receipt review UI coming soon. ID: ' + id);
+    }
+
+    function createMapping(rawName) {
+      const productId = prompt('Enter product ID to map to "' + rawName + '":');
+      if (productId) {
+        apiCall('/products/create-mapping', {
+          method: 'POST',
+          body: JSON.stringify({ raw_name: rawName, product_id: productId })
+        }).then(() => {
+          alert('Mapping created!');
+          loadUnmatchedProducts();
+        }).catch(error => {
+          alert('Failed to create mapping: ' + error.message);
+        });
+      }
+    }
+
+    // Initialize
+    if (authToken) {
+      showView('dashboard');
+      loadDashboard();
+    } else {
+      showView('login');
+    }
+  </script>
+</body>
+</html>

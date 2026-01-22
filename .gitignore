@@ -1,0 +1,22 @@
+# Dependencies / build
+node_modules/
+dist/
+build/
+.next/
+coverage/
+
+# Env files (never commit)
+**/.env
+**/.env.*
+.env
+.env.*
+
+# Logs
+*.log
+
+# Local data / artifacts
+_audit/
+_backup/
+infra_minio_data/
+infra_postgres_data/
+services/api/uploads/

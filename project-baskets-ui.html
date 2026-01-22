@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projektų Krepšeliai - ReceiptRadar</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .templates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .template-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .template-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(255,107,53,0.3);
+        }
+        
+        .template-icon {
+            font-size: 3rem;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        
+        .template-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .template-description {
+            font-size: 0.9rem;
+            color: #666;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        
+        .template-items {
+            font-size: 0.85rem;
+            color: #999;
+            text-align: center;
+        }
+        
+        .category-filter {
+            display: flex;
+            gap: 10px;
+            padding: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid #ff6b35;
+            background: white;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .filter-btn.active {
+            background: #ff6b35;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div style="max-width: 1200px; margin: 0 auto;">
+        <h1 style="text-align: center; margin: 30px 0;">🛒 Projektų Krepšeliai</h1>
+        <p style="text-align: center; color: #666; margin-bottom: 30px;">
+            Pasirinkite paruoštą krepšelį ir raskite geriausias kainas visiems produktams!
+        </p>
+        
+        <div class="category-filter">
+            <button class="filter-btn active" data-category="all">Visi</button>
+            <button class="filter-btn" data-category="baby">👶 Kūdikiai</button>
+            <button class="filter-btn" data-category="pets">🐾 Gyvūnai</button>
+            <button class="filter-btn" data-category="diy">🔨 DIY</button>
+            <button class="filter-btn" data-category="grocery">🛒 Maistas</button>
+        </div>
+        
+        <div class="templates-grid" id="templatesGrid"></div>
+    </div>
+    
+    <script>
+        const TEMPLATES = {
+            baby: {
+                name: 'Naujagimio Komplektas',
+                icon: '👶',
+                description: 'Visi būtini dalykai naujagimui',
+                items: 13,
+                category: 'baby'
+            },
+            pet_dog: {
+                name: 'Šunims - Mėnesio Atsargos',
+                icon: '🐕',
+                description: 'Mėnesio maistas ir priežiūra šuniui',
+                items: 8,
+                category: 'pets'
+            },
+            pet_cat: {
+                name: 'Katėms - Mėnesio Atsargos',
+                icon: '🐱',
+                description: 'Mėnesio maistas ir priežiūra katei',
+                items: 9,
+                category: 'pets'
+            },
+            diy_paint: {
+                name: 'Dažymo Projektas',
+                icon: '🎨',
+                description: 'Kambario nudažymui (20m²)',
+                items: 10,
+                category: 'diy'
+            },
+            diy_garden: {
+                name: 'Sodo Įrankiai',
+                icon: '🌱',
+                description: 'Pagrindinis sodo priežiūros rinkinys',
+                items: 11,
+                category: 'diy'
+            },
+            weekly_grocery: {
+                name: 'Savaitinis Maistas (4 žmonėms)',
+                icon: '🛒',
+                description: 'Pagrindiniai produktai savaitei',
+                items: 15,
+                category: 'grocery'
+            },
+            party_10people: {
+                name: 'Vakarėlis (10 žmonių)',
+                icon: '🎉',
+                description: 'Užkandžiai ir gėrimai',
+                items: 12,
+                category: 'grocery'
+            }
+        };
+        
+        function renderTemplates(filter = 'all') {
+            const grid = document.getElementById('templatesGrid');
+            grid.innerHTML = '';
+            
+            Object.entries(TEMPLATES).forEach(([id, template]) => {
+                if (filter !== 'all' && template.category !== filter) {
+                    return;
+                }
+                
+                const card = document.createElement('div');
+                card.className = 'template-card';
+                card.innerHTML = `
+                    <div class="template-icon">${template.icon}</div>
+                    <div class="template-name">${template.name}</div>
+                    <div class="template-description">${template.description}</div>
+                    <div class="template-items">${template.items} produktai</div>
+                `;
+                
+                card.addEventListener('click', () => createBasket(id, template));
+                grid.appendChild(card);
+            });
+        }
+        
+        async function createBasket(templateId, template) {
+            if (confirm(`Sukurti krepšelį "${template.name}"?`)) {
+                try {
+                    const response = await fetch(`/api/project-baskets/create/${templateId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const basket = await response.json();
+                        alert(`✅ Krepšelis "${template.name}" sukurtas!\n\nDabar ieškome geriausių kainų...`);
+                        window.location.href = `/basket.html?id=${basket.id}`;
+                    } else {
+                        alert('Klaida kuriant krepšelį. Bandykite dar kartą.');
+                    }
+                } catch (error) {
+                    console.error('Create basket error:', error);
+                    alert('Klaida kuriant krepšelį. Patikrinkite interneto ryšį.');
+                }
+            }
+        }
+        
+        // Filter buttons
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                renderTemplates(btn.dataset.category);
+            });
+        });
+        
+        // Initial render
+        renderTemplates();
+    </script>
+</body>
+</html>

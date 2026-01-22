@@ -1,0 +1,16 @@
+{
+  "name": "ReceiptRadar MVP",
+  "short_name": "ReceiptRadar",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f8f1e2",
+  "theme_color": "#f7d84b",
+  "icons": [
+    {
+      "src": "assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barcode Scanner - ReceiptRadar</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .scanner-container {
+            max-width: 600px;
+            margin: var(--space-5) auto;
+            padding: var(--space-5);
+        }
+        
+        .camera-preview {
+            width: 100%;
+            max-width: 500px;
+            height: 400px;
+            background: #000;
+            border-radius: var(--radius-md);
+            margin: var(--space-5) auto;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .camera-preview video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .scan-line {
+            position: absolute;
+            top: 50%;
+            left: 10%;
+            right: 10%;
+            height: 2px;
+            background: var(--primary);
+            box-shadow: 0 0 10px var(--primary);
+            animation: scan 2s ease-in-out infinite;
+        }
+        
+        @keyframes scan {
+            0%, 100% { transform: translateY(-50px); }
+            50% { transform: translateY(50px); }
+        }
+        
+        .scan-result {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .price-comparison {
+            display: grid;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .price-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-4);
+            background: var(--bg-secondary);
+            border-radius: var(--radius-sm);
+            border-left: 4px solid var(--primary);
+            transition: var(--transition-base);
+        }
+        
+        .price-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .price-card.better {
+            border-left-color: #4caf50;
+            background: #e8f5e9;
+        }
+        
+        .price-card.worse {
+            border-left-color: #f44336;
+            background: #ffebee;
+        }
+        
+        .store-info {
+            flex: 1;
+        }
+        
+        .store-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .store-distance {
+            font-size: 0.85rem;
+            color: #666;
+        }
+        
+        .price-info {
+            text-align: right;
+        }
+        
+        .price-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .price-card.better .price-value {
+            color: #4caf50;
+        }
+        
+        .price-diff {
+            font-size: 0.85rem;
+            color: #666;
+        }
+        
+        .scan-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .scan-controls button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-start {
+            background: var(--primary-gradient);
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .btn-start:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .btn-stop {
+            background: #666;
+            color: white;
+        }
+        
+        .btn-manual {
+            background: white;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+        
+        .btn-manual:hover {
+            background: var(--bg-tertiary);
+        }
+    </style>
+</head>
+<body>
+    <div class="scanner-container">
+        <h1>🔍 Brūkšninio Kodo Skenavimas</h1>
+        <p>Padarykite produkto barcode nuotrauką parduotuvėje ir sužinokite, ar tai gera kaina!</p>
+        
+        <div class="camera-preview" id="cameraPreview">
+            <video id="video" autoplay playsinline></video>
+            <div class="scan-line"></div>
+            <canvas id="canvas" style="display: none;"></canvas>
+        </div>
+        
+        <div class="scan-controls">
+            <button class="btn-start" id="startBtn">📷 Pradėti Skenavimą</button>
+            <button class="btn-stop" id="stopBtn" style="display: none;">⏹️ Sustabdyti</button>
+            <button class="btn-manual" id="manualBtn">⌨️ Įvesti Rankiniu Būdu</button>
+        </div>
+        
+        <div id="results" style="display: none;">
+            <div class="scan-result">
+                <h3>✅ Produktas Rastas!</h3>
+                <div id="productInfo"></div>
+                
+                <h4 style="margin-top: 20px;">💰 Kainų Palyginimas:</h4>
+                <div class="price-comparison" id="priceComparison"></div>
+                
+                <div style="margin-top: 20px; padding: 15px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
+                    <strong>💡 Patarimas:</strong>
+                    <p id="recommendation"></p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="manualInput" style="display: none; margin-top: 20px;">
+            <input type="text" id="barcodeInput" placeholder="Įveskite brūkšninį kodą..." 
+                   style="width: 100%; padding: 12px; border: 2px solid #ff6b35; border-radius: 8px; font-size: 1rem;">
+            <button onclick="searchBarcode()" 
+                    style="width: 100%; margin-top: 10px; padding: 12px; background: #ff6b35; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                🔍 Ieškoti
+            </button>
+        </div>
+    </div>
+    
+    <script src="https://unpkg.com/@zxing/library@latest"></script>
+    <script>
+        let codeReader = null;
+        let stream = null;
+        
+        document.getElementById('startBtn').addEventListener('click', async () => {
+            try {
+                const video = document.getElementById('video');
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'environment' } 
+                });
+                video.srcObject = stream;
+                
+                document.getElementById('startBtn').style.display = 'none';
+                document.getElementById('stopBtn').style.display = 'block';
+                
+                // Start barcode scanning
+                codeReader = new ZXing.BrowserMultiFormatReader();
+                codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
+                    if (result) {
+                        console.log('Barcode detected:', result.text);
+                        searchBarcode(result.text);
+                        stopScanning();
+                    }
+                });
+            } catch (error) {
+                console.error('Camera error:', error);
+                alert('Nepavyko įjungti kameros. Prašome patikrinti leidimus.');
+            }
+        });
+        
+        document.getElementById('stopBtn').addEventListener('click', stopScanning);
+        
+        document.getElementById('manualBtn').addEventListener('click', () => {
+            const manualInput = document.getElementById('manualInput');
+            manualInput.style.display = manualInput.style.display === 'none' ? 'block' : 'none';
+        });
+        
+        function stopScanning() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            if (codeReader) {
+                codeReader.reset();
+            }
+            document.getElementById('startBtn').style.display = 'block';
+            document.getElementById('stopBtn').style.display = 'none';
+        }
+        
+        async function searchBarcode(barcode) {
+            if (!barcode) {
+                barcode = document.getElementById('barcodeInput').value;
+            }
+            
+            if (!barcode) {
+                alert('Įveskite brūkšninį kodą!');
+                return;
+            }
+            
+            try {
+                // API call to search by barcode
+                const response = await fetch(`/api/products/barcode/${barcode}`);
+                const product = await response.json();
+                
+                if (product.error) {
+                    alert('Produktas nerastas! Bandykite kitą brūkšninį kodą.');
+                    return;
+                }
+                
+                // Display product info
+                document.getElementById('productInfo').innerHTML = `
+                    <h4>${product.name}</h4>
+                    <p>${product.brand || ''} ${product.variant || ''}</p>
+                    <p><strong>EAN:</strong> ${barcode}</p>
+                `;
+                
+                // Get price comparison
+                const pricesResponse = await fetch(`/api/products/${product.id}/prices`);
+                const prices = await pricesResponse.json();
+                
+                displayPriceComparison(prices, product);
+                
+                document.getElementById('results').style.display = 'block';
+            } catch (error) {
+                console.error('Search error:', error);
+                alert('Klaida ieškant produkto. Bandykite dar kartą.');
+            }
+        }
+        
+        function displayPriceComparison(prices, product) {
+            const container = document.getElementById('priceComparison');
+            container.innerHTML = '';
+            
+            if (!prices || prices.length === 0) {
+                container.innerHTML = '<p>Kainų duomenys nerasti.</p>';
+                return;
+            }
+            
+            // Sort by price
+            prices.sort((a, b) => a.price - b.price);
+            
+            const cheapest = prices[0].price;
+            const current = prices.find(p => p.store === 'CURRENT') || prices[0];
+            
+            prices.forEach((priceInfo, index) => {
+                const diff = priceInfo.price - cheapest;
+                const diffPercent = ((diff / cheapest) * 100).toFixed(0);
+                
+                let cardClass = 'price-card';
+                if (index === 0) cardClass += ' better';
+                else if (diff > cheapest * 0.1) cardClass += ' worse';
+                
+                const card = document.createElement('div');
+                card.className = cardClass;
+                card.innerHTML = `
+                    <div class="store-info">
+                        <div class="store-name">${priceInfo.store_name}</div>
+                        <div class="store-distance">${priceInfo.distance || '?'} km nuo jūsų</div>
+                    </div>
+                    <div class="price-info">
+                        <div class="price-value">€${priceInfo.price.toFixed(2)}</div>
+                        ${diff > 0 ? `<div class="price-diff">+€${diff.toFixed(2)} (+${diffPercent}%)</div>` : '<div class="price-diff">✨ Pigiausia!</div>'}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            
+            // Recommendation
+            if (current.price === cheapest) {
+                document.getElementById('recommendation').textContent = 
+                    '✅ Puiki kaina! Tai pigiausia pasirinkimas tarp visų parduotuvių.';
+            } else {
+                const savings = (current.price - cheapest).toFixed(2);
+                document.getElementById('recommendation').textContent = 
+                    `⚠️ Galite sutaupyti €${savings} perkant ${prices[0].store_name}. Apsvarstykite alternatyvas!`;
+            }
+        }
+    </script>
+</body>
+</html>

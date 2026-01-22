@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShelfSnap - ReceiptRadar</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .shelfsnap-container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        
+        .upload-zone {
+            border: 3px dashed #ff6b35;
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            background: #fff;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .upload-zone:hover {
+            background: #fff3e0;
+            border-color: #f4511e;
+        }
+        
+        .upload-zone.dragover {
+            background: #ffe0b2;
+            border-color: #e64a19;
+        }
+        
+        .upload-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+        
+        .preview-image {
+            max-width: 100%;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        .price-extraction {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .extracted-price {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #ff6b35;
+            margin: 20px 0;
+        }
+        
+        .confidence-bar {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4caf50, #8bc34a);
+            transition: width 0.5s;
+        }
+        
+        .verification-status {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            margin-top: 15px;
+        }
+        
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-verified {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-rejected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            background: #ff6b35;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+        
+        .submit-btn:hover {
+            background: #f4511e;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255,107,53,0.3);
+        }
+        
+        .submit-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .guidelines {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+        
+        .guidelines h4 {
+            margin-top: 0;
+            color: #1976d2;
+        }
+        
+        .guidelines ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="shelfsnap-container">
+        <h1>📸 ShelfSnap - Lentynos Etiketė</h1>
+        <p>Nufotografuokite prekės kainų etiketę lentynoje ir patvirtinkite kainą realiuoju laiku!</p>
+        
+        <div class="guidelines">
+            <h4>📋 Kaip tai veikia:</h4>
+            <ul>
+                <li>✅ Nufotografuokite aiškią prekės etiketę su kaina</li>
+                <li>✅ Sistema automatiškai atpažins prekę ir kainą</li>
+                <li>✅ Jūsų įnašas padės kitiems taupyti!</li>
+                <li>⚠️ Neteisingos informacijos teikimas bus pažymėtas</li>
+            </ul>
+        </div>
+        
+        <div class="upload-zone" id="uploadZone">
+            <div class="upload-icon">📷</div>
+            <h3>Spustelėkite arba vilkite nuotrauką čia</h3>
+            <p>Palaikomi formatai: JPG, PNG</p>
+            <input type="file" id="fileInput" accept="image/*" capture="environment" style="display: none;">
+        </div>
+        
+        <div id="preview" style="display: none;">
+            <img id="previewImg" class="preview-image" alt="Preview">
+            
+            <div class="price-extraction">
+                <h3>🔍 Atpažinta Informacija:</h3>
+                
+                <div id="extractedInfo">
+                    <p><strong>Produktas:</strong> <span id="productName">Analizuojama...</span></p>
+                    <p><strong>Kaina:</strong> <span id="extractedPrice" class="extracted-price">...</span></p>
+                    <p><strong>Parduotuvė:</strong> <span id="storeName">...</span></p>
+                    <p><strong>Data:</strong> <span id="snapDate">...</span></p>
+                </div>
+                
+                <div>
+                    <strong>Patikimumo lygis:</strong>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" id="confidenceBar" style="width: 0%"></div>
+                    </div>
+                    <p id="confidenceText" style="text-align: right; font-size: 0.9rem; margin-top: 5px;">0%</p>
+                </div>
+                
+                <div id="verificationStatus" style="display: none;">
+                    <div class="verification-status status-pending">
+                        ⏳ Laukiama patvirtinimo
+                    </div>
+                </div>
+                
+                <button class="submit-btn" id="submitBtn" disabled>
+                    📤 Pateikti ShelfSnap
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const preview = document.getElementById('preview');
+        const previewImg = document.getElementById('previewImg');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        let currentFile = null;
+        
+        uploadZone.addEventListener('click', () => fileInput.click());
+        
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+        
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+        
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                handleFile(file);
+            }
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        });
+        
+        async function handleFile(file) {
+            currentFile = file;
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImg.src = e.target.result;
+                preview.style.display = 'block';
+                uploadZone.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+            
+            // Extract info
+            await extractShelfInfo(file);
+        }
+        
+        async function extractShelfInfo(file) {
+            // Simulate AI extraction
+            setTimeout(() => {
+                // Mock data
+                document.getElementById('productName').textContent = 'Pieno Gėrimas 2.5% 1L';
+                document.getElementById('extractedPrice').textContent = '€1.29';
+                document.getElementById('storeName').textContent = 'Maxima XX (Ozo g. 25)';
+                document.getElementById('snapDate').textContent = new Date().toLocaleDateString('lt-LT');
+                
+                // Animate confidence
+                let confidence = 0;
+                const targetConfidence = 87;
+                const interval = setInterval(() => {
+                    confidence += 2;
+                    if (confidence >= targetConfidence) {
+                        confidence = targetConfidence;
+                        clearInterval(interval);
+                        submitBtn.disabled = false;
+                    }
+                    document.getElementById('confidenceBar').style.width = confidence + '%';
+                    document.getElementById('confidenceText').textContent = confidence + '%';
+                }, 30);
+            }, 1500);
+        }
+        
+        submitBtn.addEventListener('click', async () => {
+            if (!currentFile) return;
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = '⏳ Siunčiama...';
+            
+            try {
+                const formData = new FormData();
+                formData.append('image', currentFile);
+                formData.append('product_name', document.getElementById('productName').textContent);
+                formData.append('price', document.getElementById('extractedPrice').textContent.replace('€', ''));
+                formData.append('store', document.getElementById('storeName').textContent);
+                
+                const response = await fetch('/api/shelfsnap/submit', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    document.getElementById('verificationStatus').style.display = 'block';
+                    document.getElementById('verificationStatus').innerHTML = `
+                        <div class="verification-status status-pending">
+                            ✅ Ačiū! Jūsų ShelfSnap pateiktas patikrinimui.
+                        </div>
+                        <p style="margin-top: 10px; font-size: 0.9rem; color: #666;">
+                            Jūsų įnašas bus patikrintas ir patvirtintas per 24 valandas. 
+                            Už patikimą informaciją gausite reputacijos taškų! 🌟
+                        </p>
+                    `;
+                    submitBtn.style.display = 'none';
+                } else {
+                    alert('Klaida pateikiant ShelfSnap. Bandykite dar kartą.');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = '📤 Pateikti ShelfSnap';
+                }
+            } catch (error) {
+                console.error('Submit error:', error);
+                alert('Klaida pateikiant ShelfSnap. Patikrinkite interneto ryšį.');
+                submitBtn.disabled = false;
+                submitBtn.textContent = '📤 Pateikti ShelfSnap';
+            }
+        });
+    </script>
+</body>
+</html>

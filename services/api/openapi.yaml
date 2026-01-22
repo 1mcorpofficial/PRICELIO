@@ -1,0 +1,524 @@
+openapi: 3.0.3
+info:
+  title: ReceiptRadar API
+  version: 0.1.0
+servers:
+  - url: http://localhost:3000
+paths:
+  /auth/guest:
+    post:
+      summary: Create guest session
+      responses:
+        '200':
+          description: Guest session created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GuestSessionResponse'
+  /auth/register:
+    post:
+      summary: Register user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '200':
+          description: Registration success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+  /auth/login:
+    post:
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+  /auth/logout:
+    post:
+      summary: Logout
+      responses:
+        '204':
+          description: Logged out
+  /me:
+    get:
+      summary: Current user profile
+      responses:
+        '200':
+          description: Profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+  /map/stores:
+    get:
+      summary: Store pins with top deals
+      parameters:
+        - in: query
+          name: city
+          schema:
+            type: string
+        - in: query
+          name: filters
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Store pins
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StorePin'
+  /stores/{id}:
+    get:
+      summary: Store detail card
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Store detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoreDetail'
+  /city/{city}/feed:
+    get:
+      summary: City feed
+      parameters:
+        - in: path
+          name: city
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: City feed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CityFeed'
+  /search:
+    get:
+      summary: Search products
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: city
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SearchResult'
+  /products/{id}:
+    get:
+      summary: Product detail
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Product detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetail'
+  /baskets:
+    post:
+      summary: Create basket
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BasketCreateRequest'
+      responses:
+        '200':
+          description: Basket created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Basket'
+  /baskets/{id}/items:
+    post:
+      summary: Add items to basket
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BasketItemsRequest'
+      responses:
+        '200':
+          description: Basket updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Basket'
+  /baskets/{id}/optimize:
+    post:
+      summary: Optimize basket
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BasketOptimizeRequest'
+      responses:
+        '200':
+          description: Optimization plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasketPlan'
+  /receipts/upload:
+    post:
+      summary: Upload receipt image
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReceiptUploadRequest'
+      responses:
+        '200':
+          description: Receipt upload accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptStatus'
+  /receipts/{id}/status:
+    get:
+      summary: Receipt processing status
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptStatus'
+  /receipts/{id}/report:
+    get:
+      summary: Receipt report
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptReport'
+  /receipts/{id}/confirm:
+    post:
+      summary: Confirm receipt line items
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReceiptConfirmRequest'
+      responses:
+        '204':
+          description: Confirmed
+components:
+  schemas:
+    GuestSessionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+    RegisterRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      required: [email, password]
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      required: [email, password]
+    AuthResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        user:
+          $ref: '#/components/schemas/UserProfile'
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        city:
+          type: string
+        consents:
+          type: object
+    StorePin:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        chain:
+          type: string
+        lat:
+          type: number
+        lon:
+          type: number
+        verified_ratio:
+          type: number
+        updated_at:
+          type: string
+          format: date-time
+        top_deals:
+          type: array
+          items:
+            $ref: '#/components/schemas/DealSummary'
+    StoreDetail:
+      type: object
+      properties:
+        store:
+          $ref: '#/components/schemas/StorePin'
+        ending_soon:
+          type: array
+          items:
+            $ref: '#/components/schemas/DealSummary'
+        top_deals:
+          type: array
+          items:
+            $ref: '#/components/schemas/DealSummary'
+    CityFeed:
+      type: object
+      properties:
+        deal_of_day:
+          $ref: '#/components/schemas/DealSummary'
+        price_shocks:
+          type: array
+          items:
+            $ref: '#/components/schemas/DealSummary'
+        new_flyers:
+          type: array
+          items:
+            $ref: '#/components/schemas/DealSummary'
+    DealSummary:
+      type: object
+      properties:
+        product_id:
+          type: string
+        product_name:
+          type: string
+        price:
+          type: number
+        old_price:
+          type: number
+        source:
+          type: string
+        valid_to:
+          type: string
+          format: date
+        savings_eur:
+          type: number
+        savings_percent:
+          type: number
+        verified:
+          type: boolean
+    SearchResult:
+      type: object
+      properties:
+        product_id:
+          type: string
+        name:
+          type: string
+        best_price:
+          type: number
+        best_source:
+          type: string
+        unit_price:
+          type: number
+        store_chain:
+          type: string
+        updated_at:
+          type: string
+          format: date-time
+    ProductDetail:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        brand:
+          type: string
+        unit_price:
+          type: number
+        offers:
+          type: array
+          items:
+            $ref: '#/components/schemas/DealSummary'
+    BasketCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+    BasketItemsRequest:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              product_id:
+                type: string
+              raw_name:
+                type: string
+              quantity:
+                type: number
+    BasketOptimizeRequest:
+      type: object
+      properties:
+        mode:
+          type: string
+        max_stores:
+          type: integer
+        travel_cost_eur:
+          type: number
+    Basket:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+    BasketPlan:
+      type: object
+      properties:
+        total_price:
+          type: number
+        savings_eur:
+          type: number
+        plan:
+          type: array
+          items:
+            type: object
+            properties:
+              store_name:
+                type: string
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DealSummary'
+    ReceiptUploadRequest:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+    ReceiptStatus:
+      type: object
+      properties:
+        receipt_id:
+          type: string
+        status:
+          type: string
+        progress:
+          type: integer
+    ReceiptReport:
+      type: object
+      properties:
+        overpaid_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DealSummary'
+        savings_total:
+          type: number
+        verified_ratio:
+          type: number
+    ReceiptConfirmRequest:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              receipt_item_id:
+                type: string
+              product_id:
+                type: string

@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pranešimai & Įspėjimai - ReceiptRadar</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .alerts-container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        
+        .notification-item {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 15px;
+            align-items: start;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .notification-item:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .notification-item.unread {
+            border-left: 4px solid #ff6b35;
+            background: #fff8f5;
+        }
+        
+        .notification-icon {
+            font-size: 2rem;
+            flex-shrink: 0;
+        }
+        
+        .notification-content {
+            flex: 1;
+        }
+        
+        .notification-title {
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .notification-message {
+            color: #666;
+            font-size: 0.95rem;
+        }
+        
+        .notification-time {
+            font-size: 0.85rem;
+            color: #999;
+            margin-top: 8px;
+        }
+        
+        .alerts-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .alert-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .alert-info {
+            flex: 1;
+        }
+        
+        .alert-product {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .alert-target {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .alert-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn-delete {
+            padding: 8px 16px;
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .create-alert-form {
+            display: grid;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .create-alert-form input, .create-alert-form select {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        
+        .create-alert-form button {
+            padding: 12px;
+            background: #ff6b35;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .create-alert-form button:hover {
+            background: #f4511e;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            border: none;
+            background: none;
+            font-weight: 600;
+            cursor: pointer;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            color: #ff6b35;
+            border-bottom-color: #ff6b35;
+        }
+    </style>
+</head>
+<body>
+    <div class="alerts-container">
+        <h1>🔔 Pranešimai & Įspėjimai</h1>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('notifications')">📬 Pranešimai</button>
+            <button class="tab" onclick="switchTab('alerts')">⚡ Mano Įspėjimai</button>
+            <button class="tab" onclick="switchTab('create')">➕ Sukurti Įspėjimą</button>
+        </div>
+        
+        <!-- NOTIFICATIONS TAB -->
+        <div id="notificationsTab" class="tab-content">
+            <div id="notificationsList"></div>
+        </div>
+        
+        <!-- ALERTS TAB -->
+        <div id="alertsTab" class="tab-content" style="display: none;">
+            <div class="alerts-section">
+                <h3>Aktyvūs Kainos Įspėjimai</h3>
+                <div id="alertsList"></div>
+            </div>
+        </div>
+        
+        <!-- CREATE ALERT TAB -->
+        <div id="createTab" class="tab-content" style="display: none;">
+            <div class="alerts-section">
+                <h3>Sukurti Naują Įspėjimą</h3>
+                <form class="create-alert-form" id="createAlertForm">
+                    <input type="text" id="productSearch" placeholder="Ieškoti produkto..." required>
+                    <select id="alertType">
+                        <option value="PRICE_DROP">💰 Kainos Kritimas</option>
+                        <option value="DEAL_ALERT">🎯 Akcijos Pranešimas</option>
+                        <option value="EXPIRING_SOON">⏰ Baigiasi Greitai</option>
+                    </select>
+                    <input type="number" step="0.01" id="targetPrice" placeholder="Tikslinė kaina (€)" required>
+                    <button type="submit">✅ Sukurti Įspėjimą</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function switchTab(tab) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Show/hide tab content
+            document.querySelectorAll('.tab-content').forEach(tc => tc.style.display = 'none');
+            document.getElementById(`${tab}Tab`).style.display = 'block';
+            
+            // Load data
+            if (tab === 'notifications') loadNotifications();
+            if (tab === 'alerts') loadAlerts();
+        }
+        
+        async function loadNotifications() {
+            try {
+                const response = await fetch('/api/notifications', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                
+                const notifications = await response.json();
+                const container = document.getElementById('notificationsList');
+                
+                if (notifications.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #999;">Pranešimų nėra</p>';
+                    return;
+                }
+                
+                container.innerHTML = notifications.map(n => `
+                    <div class="notification-item ${n.is_read ? '' : 'unread'}" onclick="markRead('${n.id}')">
+                        <div class="notification-icon">${getNotificationIcon(n.type)}</div>
+                        <div class="notification-content">
+                            <div class="notification-title">${n.title}</div>
+                            <div class="notification-message">${n.message}</div>
+                            <div class="notification-time">${formatTime(n.created_at)}</div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Load notifications error:', error);
+            }
+        }
+        
+        async function loadAlerts() {
+            try {
+                const response = await fetch('/api/alerts', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                
+                const alerts = await response.json();
+                const container = document.getElementById('alertsList');
+                
+                if (alerts.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #999;">Įspėjimų nėra. Sukurkite naują!</p>';
+                    return;
+                }
+                
+                container.innerHTML = alerts.map(a => `
+                    <div class="alert-item">
+                        <div class="alert-info">
+                            <div class="alert-product">${a.product_name}</div>
+                            <div class="alert-target">Įspėti kai kaina ≤ €${a.target_price}</div>
+                        </div>
+                        <div class="alert-actions">
+                            <button class="btn-delete" onclick="deleteAlert('${a.id}')">🗑️ Ištrinti</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Load alerts error:', error);
+            }
+        }
+        
+        async function markRead(notificationId) {
+            try {
+                await fetch(`/api/notifications/${notificationId}/read`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                loadNotifications();
+            } catch (error) {
+                console.error('Mark read error:', error);
+            }
+        }
+        
+        async function deleteAlert(alertId) {
+            if (confirm('Ar tikrai norite ištrinti šį įspėjimą?')) {
+                try {
+                    await fetch(`/api/alerts/${alertId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        }
+                    });
+                    loadAlerts();
+                } catch (error) {
+                    console.error('Delete alert error:', error);
+                }
+            }
+        }
+        
+        function getNotificationIcon(type) {
+            const icons = {
+                'PRICE_DROP': '💰',
+                'BASKET_READY': '🛒',
+                'DEAL_ALERT': '🎯',
+                'EXPIRING_SOON': '⏰',
+                'SYSTEM': 'ℹ️'
+            };
+            return icons[type] || '📬';
+        }
+        
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            
+            if (diffMins < 60) return `prieš ${diffMins} min`;
+            if (diffMins < 1440) return `prieš ${Math.floor(diffMins / 60)} val`;
+            return date.toLocaleDateString('lt-LT');
+        }
+        
+        // Load initial data
+        loadNotifications();
+    </script>
+</body>
+</html>

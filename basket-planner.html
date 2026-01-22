@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Basket Planner - Pricelio</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .planner-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: var(--space-5);
+    }
+    
+    .category-selector {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: var(--space-3);
+      margin-bottom: var(--space-6);
+    }
+    
+    .category-card {
+      background: white;
+      border: 2px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      text-align: center;
+      cursor: pointer;
+      transition: all var(--transition-base);
+    }
+    
+    .category-card:hover {
+      border-color: var(--primary);
+      background: var(--bg-tertiary);
+      transform: translateY(-2px);
+    }
+    
+    .category-card.active {
+      border-color: var(--primary);
+      background: var(--primary-gradient);
+      color: white;
+    }
+    
+    .category-icon {
+      font-size: 2.5rem;
+      margin-bottom: var(--space-2);
+    }
+    
+    .search-section {
+      margin-bottom: var(--space-5);
+    }
+    
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: var(--space-4);
+      margin-bottom: var(--space-6);
+    }
+    
+    .product-card {
+      background: white;
+      border: 2px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      transition: all var(--transition-base);
+      cursor: pointer;
+    }
+    
+    .product-card:hover {
+      border-color: var(--primary);
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-4px);
+    }
+    
+    .product-card.selected {
+      border-color: var(--primary);
+      background: var(--bg-tertiary);
+    }
+    
+    .product-image {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      background: var(--bg-secondary);
+    }
+    
+    .product-info {
+      padding: var(--space-4);
+    }
+    
+    .product-name {
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: var(--text-primary);
+      margin-bottom: var(--space-2);
+    }
+    
+    .product-description {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin-bottom: var(--space-3);
+      line-height: 1.4;
+    }
+    
+    .product-details {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-3);
+    }
+    
+    .product-price {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--primary);
+    }
+    
+    .product-unit {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+    
+    .add-btn {
+      width: 100%;
+      padding: var(--space-3);
+      border: none;
+      border-radius: var(--radius-md);
+      background: var(--primary-gradient);
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+    
+    .add-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+    
+    .basket-summary {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      border-top: 2px solid var(--border-light);
+      padding: var(--space-4) var(--space-5);
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+      z-index: 100;
+      display: none;
+    }
+    
+    .basket-summary.show {
+      display: block;
+    }
+    
+    .basket-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    .basket-count {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    
+    .optimize-btn {
+      padding: var(--space-3) var(--space-6);
+      border: none;
+      border-radius: var(--radius-full);
+      background: var(--primary-gradient);
+      color: white;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      box-shadow: var(--shadow-md);
+    }
+  </style>
+</head>
+<body>
+  <div class="planner-container">
+    <h1 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 2rem; margin-bottom: var(--space-3);">
+      🛒 Plan Your Shopping
+    </h1>
+    <p style="color: var(--text-secondary); margin-bottom: var(--space-6);">
+      Select category and add products to your basket
+    </p>
+    
+    <!-- Category Selector -->
+    <div class="category-selector" id="categorySelector">
+      <div class="category-card active" data-category="all">
+        <div class="category-icon">🛍️</div>
+        <div>All</div>
+      </div>
+      <div class="category-card" data-category="food">
+        <div class="category-icon">🍞</div>
+        <div>Food</div>
+      </div>
+      <div class="category-card" data-category="dairy">
+        <div class="category-icon">🥛</div>
+        <div>Dairy</div>
+      </div>
+      <div class="category-card" data-category="meat">
+        <div class="category-icon">🥩</div>
+        <div>Meat</div>
+      </div>
+      <div class="category-card" data-category="vegetables">
+        <div class="category-icon">🥕</div>
+        <div>Vegetables</div>
+      </div>
+      <div class="category-card" data-category="beverages">
+        <div class="category-icon">🥤</div>
+        <div>Beverages</div>
+      </div>
+    </div>
+    
+    <!-- Search Section -->
+    <div class="search-section">
+      <input 
+        type="text" 
+        id="productSearch" 
+        placeholder="Search products... (e.g., 'duona', 'pienas')"
+        style="width: 100%; padding: var(--space-4); border: 2px solid var(--border-light); border-radius: var(--radius-full); font-size: 1.1rem;"
+      />
+    </div>
+    
+    <!-- Product Grid -->
+    <div id="productGrid" class="product-grid">
+      <!-- Products will be loaded here -->
+    </div>
+    
+    <!-- Basket Summary -->
+    <div class="basket-summary" id="basketSummary">
+      <div class="basket-info">
+        <div>
+          <div class="basket-count" id="basketCount">0 items in basket</div>
+          <div style="font-size: 0.9rem; color: var(--text-secondary);">Ready to optimize</div>
+        </div>
+        <button class="optimize-btn" onclick="optimizeBasket()">
+          Find Best Plan →
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    const API_BASE = 'http://localhost:3000';
+    let selectedCategory = 'all';
+    let basket = [];
+    
+    // Sample products (will be replaced with API call)
+    const sampleProducts = [
+      {
+        id: '1',
+        name: 'Juoda Duona 500g',
+        description: 'Šviežia ruginė duona, kepama kasdien',
+        category: 'food',
+        price: 1.29,
+        unit: 'vnt',
+        image: 'https://via.placeholder.com/300x200?text=Duona',
+        brand: 'Vilniaus Duona',
+        pack_size: '500g'
+      },
+      {
+        id: '2',
+        name: 'Balta Duona 400g',
+        description: 'Švelnios tekstūros balta duona',
+        category: 'food',
+        price: 0.99,
+        unit: 'vnt',
+        image: 'https://via.placeholder.com/300x200?text=Balta+Duona',
+        brand: 'Fazer',
+        pack_size: '400g'
+      },
+      {
+        id: '3',
+        name: 'Pienas 3.5% 1L',
+        description: 'Šviežias pienas iš lietuviškų ūkių',
+        category: 'dairy',
+        price: 1.49,
+        unit: 'L',
+        image: 'https://via.placeholder.com/300x200?text=Pienas',
+        brand: 'Žemaitijos Pienas',
+        pack_size: '1L'
+      },
+      {
+        id: '4',
+        name: 'Jogurtas Natūralus 500g',
+        description: 'Natūralus jogurtas be cukraus',
+        category: 'dairy',
+        price: 1.79,
+        unit: 'vnt',
+        image: 'https://via.placeholder.com/300x200?text=Jogurtas',
+        brand: 'Ehrmann',
+        pack_size: '500g'
+      },
+      {
+        id: '5',
+        name: 'Vištiena 1kg',
+        description: 'Šviežia vištienos krūtinėlė',
+        category: 'meat',
+        price: 5.99,
+        unit: 'kg',
+        image: 'https://via.placeholder.com/300x200?text=Vistiena',
+        brand: 'Krekenavos',
+        pack_size: '1kg'
+      },
+      {
+        id: '6',
+        name: 'Pomidorai 500g',
+        description: 'Šviežūs pomidorai iš šiltnamių',
+        category: 'vegetables',
+        price: 2.49,
+        unit: 'kg',
+        image: 'https://via.placeholder.com/300x200?text=Pomidorai',
+        brand: 'Lietuviški',
+        pack_size: '500g'
+      },
+      {
+        id: '7',
+        name: 'Coca-Cola 2L',
+        description: 'Gaivus gėrimas',
+        category: 'beverages',
+        price: 1.99,
+        unit: 'L',
+        image: 'https://via.placeholder.com/300x200?text=Coca-Cola',
+        brand: 'Coca-Cola',
+        pack_size: '2L'
+      },
+      {
+        id: '8',
+        name: 'Sūris Džiugas 200g',
+        description: 'Brandintas sūris, 40% riebumo',
+        category: 'dairy',
+        price: 3.49,
+        unit: 'vnt',
+        image: 'https://via.placeholder.com/300x200?text=Suris',
+        brand: 'Džiugas',
+        pack_size: '200g'
+      }
+    ];
+    
+    // Category selection
+    document.querySelectorAll('.category-card').forEach(card => {
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.category-card').forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+        selectedCategory = card.dataset.category;
+        renderProducts();
+      });
+    });
+    
+    // Search
+    document.getElementById('productSearch').addEventListener('input', (e) => {
+      renderProducts(e.target.value);
+    });
+    
+    function renderProducts(searchQuery = '') {
+      const grid = document.getElementById('productGrid');
+      
+      let filtered = sampleProducts;
+      
+      // Filter by category
+      if (selectedCategory !== 'all') {
+        filtered = filtered.filter(p => p.category === selectedCategory);
+      }
+      
+      // Filter by search
+      if (searchQuery) {
+        filtered = filtered.filter(p => 
+          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          p.description.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+      }
+      
+      if (filtered.length === 0) {
+        grid.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: var(--space-8);">No products found</p>';
+        return;
+      }
+      
+      grid.innerHTML = filtered.map(product => `
+        <div class="product-card ${basket.find(b => b.id === product.id) ? 'selected' : ''}" data-id="${product.id}">
+          <img src="${product.image}" alt="${product.name}" class="product-image">
+          <div class="product-info">
+            <div class="product-name">${product.name}</div>
+            <div class="product-description">${product.description}</div>
+            <div class="product-details">
+              <div>
+                <div class="product-price">€${product.price.toFixed(2)}</div>
+                <div class="product-unit">${product.pack_size}</div>
+              </div>
+              <div style="font-size: 0.85rem; color: var(--text-secondary);">
+                ${product.brand}
+              </div>
+            </div>
+            <button class="add-btn" onclick="addToBasket('${product.id}')">
+              ${basket.find(b => b.id === product.id) ? '✓ Added' : '+ Add to Basket'}
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    function addToBasket(productId) {
+      const product = sampleProducts.find(p => p.id === productId);
+      const existing = basket.find(b => b.id === productId);
+      
+      if (existing) {
+        basket = basket.filter(b => b.id !== productId);
+      } else {
+        basket.push({ ...product, quantity: 1 });
+      }
+      
+      updateBasketSummary();
+      renderProducts(document.getElementById('productSearch').value);
+    }
+    
+    function updateBasketSummary() {
+      const summary = document.getElementById('basketSummary');
+      const count = document.getElementById('basketCount');
+      
+      if (basket.length === 0) {
+        summary.classList.remove('show');
+      } else {
+        summary.classList.add('show');
+        count.textContent = `${basket.length} items in basket`;
+      }
+    }
+    
+    function optimizeBasket() {
+      if (basket.length === 0) {
+        alert('Please add items to basket first');
+        return;
+      }
+      
+      // Save basket to localStorage
+      localStorage.setItem('plannerBasket', JSON.stringify(basket));
+      
+      // Redirect to main app basket view
+      window.location.href = 'index.html?view=basket&optimize=true';
+    }
+    
+    // Initial render
+    renderProducts();
+  </script>
+</body>
+</html>
