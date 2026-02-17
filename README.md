@@ -114,6 +114,16 @@
 
 ## 🚀 Quick Start
 
+## 🧪 Dev in 5 Steps
+
+1) `npm run doctor`
+2) `npm run install:all`
+3) `npm run dev:infra` (if port 5432 is busy, set `POSTGRES_PORT=55432` in `infra/.env`)
+4) Create missing `.env` files from `.env.example` or docs (use strong secrets)
+5) `npm run dev:services`
+
+Stop infra with: `npm run dev:infra:down`
+
 ### Option A: Automated Setup with Real Data (Recommended)
 
 ```bash
@@ -168,7 +178,7 @@ python -m http.server 8000
 
 - **PWA**: http://localhost:8000
 - **API**: http://localhost:3000
-- **Admin**: http://localhost:3003 (login: admin@receiptradar.app / admin123)
+- **Admin**: http://localhost:3003 (login: ADMIN_EMAIL / password for ADMIN_PASSWORD_HASH)
 
 ## 📚 Documentation
 

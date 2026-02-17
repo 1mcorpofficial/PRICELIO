@@ -46,13 +46,26 @@ echo ""
 
 # Step 3: Run database migrations
 echo -e "${BLUE}🗄️  Step 3: Running database migrations...${NC}"
-export PGPASSWORD=postgres
+DB_PASSWORD=${DB_PASSWORD:-${POSTGRES_PASSWORD:-""}}
+if [ -z "$DB_PASSWORD" ]; then
+  echo "❌ Missing DB_PASSWORD/POSTGRES_PASSWORD. Aborting."
+  exit 1
+fi
+export PGPASSWORD="$DB_PASSWORD"
 psql -h localhost -U postgres -d postgres -c "CREATE DATABASE receiptadar;" 2>/dev/null || echo "Database already exists"
 psql -h localhost -U postgres -d receiptadar < db/schema.sql
 psql -h localhost -U postgres -d receiptadar < db/migrations/002_add_new_store_chains.sql 2>/dev/null || true
 psql -h localhost -U postgres -d receiptadar < db/migrations/003_real_stores_all_chains.sql 2>/dev/null || true
 psql -h localhost -U postgres -d receiptadar < db/migrations/004_complete_all_chains.sql 2>/dev/null || true
 psql -h localhost -U postgres -d receiptadar < db/migrations/005_alerts_and_features.sql 2>/dev/null || true
+psql -h localhost -U postgres -d receiptadar < db/migrations/006_admin_users.sql 2>/dev/null || true
+psql -h localhost -U postgres -d receiptadar < db/migrations/007_gamification_core.sql 2>/dev/null || true
+psql -h localhost -U postgres -d receiptadar < db/migrations/008_premium_entitlements.sql 2>/dev/null || true
+psql -h localhost -U postgres -d receiptadar < db/migrations/009_family_households.sql 2>/dev/null || true
+psql -h localhost -U postgres -d receiptadar < db/migrations/010_bounty_missions.sql 2>/dev/null || true
+psql -h localhost -U postgres -d receiptadar < db/migrations/011_trust_and_quality.sql 2>/dev/null || true
+psql -h localhost -U postgres -d receiptadar < db/migrations/012_kids_mode.sql 2>/dev/null || true
+psql -h localhost -U postgres -d receiptadar < db/migrations/013_feature_flags.sql 2>/dev/null || true
 echo -e "${GREEN}✅ Database migrations complete${NC}"
 echo ""
 
@@ -73,7 +86,7 @@ echo ""
 echo "🎯 What's been set up:"
 echo "  ✅ All Node.js dependencies installed"
 echo "  ✅ Docker infrastructure running"
-echo "  ✅ Database created with 5 migrations"
+echo "  ✅ Database created with 13 migrations"
 echo "  ✅ 21 store connectors tested"
 echo ""
 echo "🚀 Next steps:"

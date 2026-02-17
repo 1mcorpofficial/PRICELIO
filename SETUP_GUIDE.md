@@ -28,7 +28,7 @@ docker compose ps
 ```
 
 This starts:
-- PostgreSQL (port 5432)
+- PostgreSQL (default port 5432; if conflict, set POSTGRES_PORT in infra/.env to 55432 and update service .env files)
 - Redis (port 6379)
 - RabbitMQ (port 5672, management UI: 15672)
 - MinIO (port 9000, console: 9001)
@@ -66,12 +66,12 @@ npm install
 cat > .env << EOF
 PORT=3000
 POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
+POSTGRES_PORT=5432 # if conflict, set to 55432 and update infra/.env
 POSTGRES_DB=receiptradar
 POSTGRES_USER=receiptradar
-POSTGRES_PASSWORD=receiptradar
+POSTGRES_PASSWORD=CHANGEME_STRONG
 RABBITMQ_URL=amqp://localhost
-JWT_SECRET=dev-secret-change-in-production
+JWT_SECRET=CHANGEME_STRONG
 AI_GATEWAY_URL=http://localhost:3001
 EOF
 
@@ -93,8 +93,8 @@ PORT=3001
 NODE_ENV=development
 
 # Add at least one of these
-OPENAI_API_KEY=CHANGE_ME
-ANTHROPIC_API_KEY=sk-ant-your-anthropic-key-here
+OPENAI_API_KEY=CHANGEME_STRONG
+ANTHROPIC_API_KEY=CHANGEME_STRONG
 
 DEFAULT_PROVIDER=openai
 MAX_RETRIES=2
@@ -118,10 +118,10 @@ npm install
 # Create .env
 cat > .env << EOF
 POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
+POSTGRES_PORT=5432 # if conflict, set to 55432 and update infra/.env
 POSTGRES_DB=receiptradar
 POSTGRES_USER=receiptradar
-POSTGRES_PASSWORD=receiptradar
+POSTGRES_PASSWORD=CHANGEME_STRONG
 RABBITMQ_URL=amqp://localhost
 AI_GATEWAY_URL=http://localhost:3001
 EOF
@@ -142,10 +142,10 @@ npm install
 cat > .env << EOF
 PORT=3002
 POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
+POSTGRES_PORT=5432 # if conflict, set to 55432 and update infra/.env
 POSTGRES_DB=receiptradar
 POSTGRES_USER=receiptradar
-POSTGRES_PASSWORD=receiptradar
+POSTGRES_PASSWORD=CHANGEME_STRONG
 EOF
 
 # Start service
@@ -164,11 +164,12 @@ npm install
 cat > .env << EOF
 PORT=3003
 POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
+POSTGRES_PORT=5432 # if conflict, set to 55432 and update infra/.env
 POSTGRES_DB=receiptradar
 POSTGRES_USER=receiptradar
-POSTGRES_PASSWORD=receiptradar
-JWT_SECRET=admin-secret-change-in-production
+POSTGRES_PASSWORD=CHANGEME_STRONG
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD_HASH=CHANGEME_STRONG
 EOF
 
 # Start service
@@ -187,10 +188,10 @@ npm install
 cat > .env << EOF
 PORT=3004
 POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
+POSTGRES_PORT=5432 # if conflict, set to 55432 and update infra/.env
 POSTGRES_DB=receiptradar
 POSTGRES_USER=receiptradar
-POSTGRES_PASSWORD=receiptradar
+POSTGRES_PASSWORD=CHANGEME_STRONG
 RABBITMQ_URL=amqp://localhost
 EOF
 
@@ -264,7 +265,7 @@ curl -X POST http://localhost:3000/baskets/{basket_id}/optimize
 ### Test Admin Panel
 
 1. Open http://localhost:3003
-2. Login with `admin@receiptradar.app` / `admin123`
+2. Login with the credentials that match `ADMIN_EMAIL` and `ADMIN_PASSWORD_HASH`
 3. Check dashboard stats
 4. Review low confidence receipts
 

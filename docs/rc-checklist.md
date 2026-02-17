@@ -10,10 +10,9 @@
 - Basic monitoring in place (logs, alert thresholds, queue lag).
 
 ## Current blockers
-- API/worker services are not part of compose and have no health endpoints running on 4001/4002/4003.
-- Root-level tests are missing (`npm test` fails because no root package.json).
-- Ingest connectors are still stubbed and not running.
-- AI gateway is not wired into receipt extraction.
+- API/worker services are available in Compose via `--profile app`; validate startup in target environment.
+- Root-level tests exist (`npm test`), but integration/E2E coverage is still limited.
+- Some connectors still rely on heuristic parsing and need per-store hardening.
 - Observability is basic (no metrics/alerts wired).
 
 ## Environment assumptions

@@ -1,11 +1,11 @@
 # Web app (PWA)
 
-This folder is reserved for the production PWA. The current prototype lives in the repo root:
+This folder is reserved for a future extracted production PWA package.
+Current active PWA remains in repo root:
 - `index.html`
 - `styles.css`
 - `app.js`
 
-TODO:
-- Decide framework (vanilla vs React/Next/Vue).
-- Wire API calls for map, search, basket, receipts.
-- Implement auth and guest session flow.
+Current decision:
+- Keep vanilla PWA in root for MVP speed.
+- API calls for map/search/basket/receipts are wired from `app.js`.

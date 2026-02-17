@@ -26,10 +26,16 @@ DB_NAME=${DB_NAME:-"receiptadar"}
 DB_USER=${DB_USER:-"postgres"}
 DB_HOST=${DB_HOST:-"localhost"}
 DB_PORT=${DB_PORT:-"5432"}
+DB_PASSWORD=${DB_PASSWORD:-${POSTGRES_PASSWORD:-""}}
+
+if [ -z "$DB_PASSWORD" ]; then
+    echo -e "${RED}❌ Missing DB_PASSWORD/POSTGRES_PASSWORD!${NC}"
+    exit 1
+fi
 
 # Step 2: Check database connection
 echo -e "\n${YELLOW}Step 2:${NC} Checking database connection..."
-if ! PGPASSWORD=${DB_PASSWORD} psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "SELECT 1" &> /dev/null; then
+if ! PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "SELECT 1" &> /dev/null; then
     echo -e "${RED}❌ Cannot connect to database!${NC}"
     exit 1
 fi
@@ -40,7 +46,7 @@ echo -e "\n${YELLOW}Step 3:${NC} Running REAL STORES migration..."
 echo -e "${BLUE}This will add 15 store chains with 70+ real addresses${NC}"
 
 if [ -f "db/migrations/003_real_stores_all_chains.sql" ]; then
-    PGPASSWORD=${DB_PASSWORD} psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f db/migrations/003_real_stores_all_chains.sql
+    PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f db/migrations/003_real_stores_all_chains.sql
     
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}✅ Migration completed successfully${NC}"
@@ -53,11 +59,27 @@ else
     exit 1
 fi
 
+# Optional: apply ecosystem migrations if present
+for m in \
+  db/migrations/005_alerts_and_features.sql \
+  db/migrations/006_admin_users.sql \
+  db/migrations/007_gamification_core.sql \
+  db/migrations/008_premium_entitlements.sql \
+  db/migrations/009_family_households.sql \
+  db/migrations/010_bounty_missions.sql \
+  db/migrations/011_trust_and_quality.sql \
+  db/migrations/012_kids_mode.sql \
+  db/migrations/013_feature_flags.sql; do
+  if [ -f "$m" ]; then
+    PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f "$m" >/dev/null 2>&1 || true
+  fi
+done
+
 # Step 4: Verify stores
 echo -e "\n${YELLOW}Step 4:${NC} Verifying stores..."
-STORE_COUNT=$(PGPASSWORD=${DB_PASSWORD} psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT COUNT(*) FROM stores WHERE is_active = true")
-CHAIN_COUNT=$(PGPASSWORD=${DB_PASSWORD} psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT COUNT(DISTINCT chain) FROM stores WHERE is_active = true")
-CITY_COUNT=$(PGPASSWORD=${DB_PASSWORD} psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT COUNT(DISTINCT city_id) FROM stores WHERE is_active = true")
+STORE_COUNT=$(PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT COUNT(*) FROM stores WHERE is_active = true")
+CHAIN_COUNT=$(PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT COUNT(DISTINCT chain) FROM stores WHERE is_active = true")
+CITY_COUNT=$(PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT COUNT(DISTINCT city_id) FROM stores WHERE is_active = true")
 
 echo -e "${GREEN}✅ Stores: $STORE_COUNT${NC}"
 echo -e "${GREEN}✅ Chains: $CHAIN_COUNT${NC}"
@@ -66,7 +88,7 @@ echo -e "${GREEN}✅ Cities: $CITY_COUNT${NC}"
 # Step 5: List all chains
 echo -e "\n${YELLOW}Step 5:${NC} Listing all store chains..."
 echo "─────────────────────────────────────────────────────────────────"
-PGPASSWORD=${DB_PASSWORD} psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "
+PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "
 SELECT 
   chain as \"Tinklas\", 
   COUNT(*) as \"Parduotuvių\",

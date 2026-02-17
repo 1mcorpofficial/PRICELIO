@@ -14,13 +14,13 @@ POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
 POSTGRES_DB=receiptradar
 POSTGRES_USER=receiptradar
-POSTGRES_PASSWORD=receiptradar
+POSTGRES_PASSWORD=CHANGEME_STRONG
 
 # Queue
 RABBITMQ_URL=amqp://localhost
 
 # Authentication
-JWT_SECRET=change-this-secret-in-production-use-long-random-string
+JWT_SECRET=CHANGEME_STRONG
 
 # External Services
 AI_GATEWAY_URL=http://localhost:3001
@@ -38,8 +38,8 @@ PORT=3001
 NODE_ENV=development
 
 # AI Providers (add at least one!)
-OPENAI_API_KEY=CHANGE_ME
-ANTHROPIC_API_KEY=sk-ant-your-anthropic-api-key-here
+OPENAI_API_KEY=CHANGEME_STRONG
+ANTHROPIC_API_KEY=CHANGEME_STRONG
 
 # Provider Settings
 DEFAULT_PROVIDER=openai
@@ -59,7 +59,7 @@ POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
 POSTGRES_DB=receiptradar
 POSTGRES_USER=receiptradar
-POSTGRES_PASSWORD=receiptradar
+POSTGRES_PASSWORD=CHANGEME_STRONG
 
 # Queue
 RABBITMQ_URL=amqp://localhost
@@ -85,7 +85,7 @@ POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
 POSTGRES_DB=receiptradar
 POSTGRES_USER=receiptradar
-POSTGRES_PASSWORD=receiptradar
+POSTGRES_PASSWORD=CHANGEME_STRONG
 
 # Connector Settings
 USER_AGENT=Mozilla/5.0 (compatible; ReceiptRadar/1.0)
@@ -104,7 +104,7 @@ POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
 POSTGRES_DB=receiptradar
 POSTGRES_USER=receiptradar
-POSTGRES_PASSWORD=receiptradar
+POSTGRES_PASSWORD=CHANGEME_STRONG
 
 # Queue
 RABBITMQ_URL=amqp://localhost
@@ -126,15 +126,11 @@ POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
 POSTGRES_DB=receiptradar
 POSTGRES_USER=receiptradar
-POSTGRES_PASSWORD=receiptradar
+POSTGRES_PASSWORD=CHANGEME_STRONG
 
-# Authentication
-JWT_SECRET=admin-secret-change-in-production
-JWT_EXPIRES_IN=8h
-
-# Admin Credentials (CHANGE THESE!)
-DEFAULT_ADMIN_EMAIL=admin@receiptradar.app
-DEFAULT_ADMIN_PASSWORD=admin123
+# Admin Auth (bcrypt hash)
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD_HASH=CHANGEME_STRONG
 ```
 
 ## 📁 infra/.env
@@ -142,19 +138,19 @@ DEFAULT_ADMIN_PASSWORD=admin123
 ```bash
 # Infrastructure
 POSTGRES_USER=receiptradar
-POSTGRES_PASSWORD=receiptradar
+POSTGRES_PASSWORD=CHANGEME_STRONG
 POSTGRES_DB=receiptradar
 POSTGRES_PORT=5432
 
 REDIS_PORT=6379
 
 RABBITMQ_DEFAULT_USER=receiptradar
-RABBITMQ_DEFAULT_PASS=receiptradar
+RABBITMQ_DEFAULT_PASS=CHANGEME_STRONG
 RABBITMQ_PORT=5672
 RABBITMQ_MANAGEMENT_PORT=15672
 
 MINIO_ROOT_USER=receiptradar
-MINIO_ROOT_PASSWORD=receiptradar123
+MINIO_ROOT_PASSWORD=CHANGEME_STRONG
 MINIO_PORT=9000
 MINIO_CONSOLE_PORT=9001
 ```
@@ -173,16 +169,16 @@ POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
 POSTGRES_DB=receiptradar
 POSTGRES_USER=receiptradar
-POSTGRES_PASSWORD=receiptradar
+POSTGRES_PASSWORD=CHANGEME_STRONG
 RABBITMQ_URL=amqp://localhost
-JWT_SECRET=dev-secret-change-in-production
+JWT_SECRET=CHANGEME_STRONG
 AI_GATEWAY_URL=http://localhost:3001
 EOF
 
 # services/ai-gateway/.env
 cat > services/ai-gateway/.env << 'EOF'
 PORT=3001
-OPENAI_API_KEY=CHANGE_ME
+OPENAI_API_KEY=CHANGEME_STRONG
 DEFAULT_PROVIDER=openai
 EOF
 
@@ -192,7 +188,7 @@ POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
 POSTGRES_DB=receiptradar
 POSTGRES_USER=receiptradar
-POSTGRES_PASSWORD=receiptradar
+POSTGRES_PASSWORD=CHANGEME_STRONG
 RABBITMQ_URL=amqp://localhost
 AI_GATEWAY_URL=http://localhost:3001
 EOF
@@ -204,7 +200,7 @@ POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
 POSTGRES_DB=receiptradar
 POSTGRES_USER=receiptradar
-POSTGRES_PASSWORD=receiptradar
+POSTGRES_PASSWORD=CHANGEME_STRONG
 EOF
 
 # services/analytics/.env
@@ -214,7 +210,7 @@ POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
 POSTGRES_DB=receiptradar
 POSTGRES_USER=receiptradar
-POSTGRES_PASSWORD=receiptradar
+POSTGRES_PASSWORD=CHANGEME_STRONG
 RABBITMQ_URL=amqp://localhost
 EOF
 
@@ -225,19 +221,19 @@ POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
 POSTGRES_DB=receiptradar
 POSTGRES_USER=receiptradar
-POSTGRES_PASSWORD=receiptradar
-JWT_SECRET=admin-dev-secret
+POSTGRES_PASSWORD=CHANGEME_STRONG
+JWT_SECRET=CHANGEME_STRONG
 EOF
 
 # infra/.env
 cat > infra/.env << 'EOF'
 POSTGRES_USER=receiptradar
-POSTGRES_PASSWORD=receiptradar
+POSTGRES_PASSWORD=CHANGEME_STRONG
 POSTGRES_DB=receiptradar
 RABBITMQ_DEFAULT_USER=receiptradar
-RABBITMQ_DEFAULT_PASS=receiptradar
+RABBITMQ_DEFAULT_PASS=CHANGEME_STRONG
 MINIO_ROOT_USER=receiptradar
-MINIO_ROOT_PASSWORD=receiptradar123
+MINIO_ROOT_PASSWORD=CHANGEME_STRONG
 EOF
 
 echo "✅ All .env files created!"
@@ -254,9 +250,9 @@ nano services/ai-gateway/.env
 
 And add your real API key:
 ```bash
-OPENAI_API_KEY=CHANGE_ME
+OPENAI_API_KEY=CHANGEME_STRONG
 # OR
-ANTHROPIC_API_KEY=sk-ant-your-actual-key-here
+ANTHROPIC_API_KEY=CHANGEME_STRONG
 ```
 
 Without this, receipt processing will only use Tesseract (lower quality).

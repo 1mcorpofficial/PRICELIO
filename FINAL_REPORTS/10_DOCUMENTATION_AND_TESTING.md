@@ -458,7 +458,7 @@ test('user can register and login', async ({ page }) => {
   
   // Fill form
   await page.fill('[name="email"]', 'test@example.com');
-  await page.fill('[name="password"]', 'test123');
+  await page.fill('[name="password"]', 'CHANGEME_STRONG');
   await page.fill('[name="firstName"]', 'Test');
   await page.click('[data-testid="submit-register"]');
   

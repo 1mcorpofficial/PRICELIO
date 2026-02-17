@@ -154,7 +154,7 @@ GET  /api/nutrition/:receiptId // Get nutrition analysis
 PORT=4000
 DATABASE_URL=postgresql://user:pass@localhost:5432/pricelio
 REDIS_URL=redis://localhost:6379
-JWT_SECRET=your_secret_here
+JWT_SECRET=CHANGEME_STRONG
 RATE_LIMIT_MAX=100
 RATE_LIMIT_WINDOW=900000
 ```

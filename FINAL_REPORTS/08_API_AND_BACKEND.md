@@ -79,7 +79,7 @@ ReceiptRadar backend susideda iš **8 microservices** su **60+ REST endpoints**,
 ```json
 {
   "email": "user@example.com",
-  "password": "securePassword123",
+  "password": "CHANGEME_STRONG",
   "firstName": "John",
   "lastName": "Doe",
   "cityId": 1
@@ -142,7 +142,7 @@ async function register(email, password, userData) {
 ```json
 {
   "email": "user@example.com",
-  "password": "securePassword123"
+  "password": "CHANGEME_STRONG"
 }
 ```
 

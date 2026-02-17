@@ -23,6 +23,18 @@ CREATE TABLE IF NOT EXISTS users (
   last_login_at timestamptz
 );
 
+CREATE TABLE IF NOT EXISTS admin_users (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  email text NOT NULL UNIQUE,
+  password_hash text NOT NULL,
+  status text NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'disabled')),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  last_login_at timestamptz
+);
+
+CREATE INDEX IF NOT EXISTS admin_users_status_idx ON admin_users (status);
+
 CREATE TABLE IF NOT EXISTS guest_sessions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   device_hash text,
@@ -82,7 +94,7 @@ CREATE TABLE IF NOT EXISTS product_aliases (
   raw_name text NOT NULL,
   normalized_name text,
   product_id uuid REFERENCES products(id),
-  source_type text NOT NULL CHECK (source_type IN ('flyer', 'online', 'receipt')),
+  source_type text NOT NULL CHECK (source_type IN ('flyer', 'online', 'receipt', 'manual')),
   confidence numeric(4,3),
   created_at timestamptz NOT NULL DEFAULT now()
 );

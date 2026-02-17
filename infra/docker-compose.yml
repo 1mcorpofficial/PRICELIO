@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -39,6 +37,96 @@ services:
     ports:
       - "${RABBITMQ_PORT:-5672}:5672"
       - "${RABBITMQ_CONSOLE_PORT:-15672}:15672"
+
+  api:
+    image: node:22-alpine
+    working_dir: /workspace
+    profiles: ["app"]
+    command: sh -lc "npm -w services/api install && npm -w services/api run dev"
+    env_file:
+      - ../services/api/.env
+    depends_on:
+      - postgres
+      - rabbitmq
+    ports:
+      - "3000:3000"
+    volumes:
+      - ..:/workspace
+
+  ai-gateway:
+    image: node:22-alpine
+    working_dir: /workspace
+    profiles: ["app"]
+    command: sh -lc "npm -w services/ai-gateway install && npm -w services/ai-gateway run dev"
+    env_file:
+      - ../services/ai-gateway/.env
+    depends_on:
+      - postgres
+    ports:
+      - "3001:3001"
+    volumes:
+      - ..:/workspace
+
+  receipts:
+    image: node:22-alpine
+    working_dir: /workspace
+    profiles: ["app"]
+    command: sh -lc "npm -w services/receipts install && npm -w services/receipts run dev"
+    env_file:
+      - ../services/receipts/.env
+    depends_on:
+      - api
+      - ai-gateway
+      - rabbitmq
+      - postgres
+    ports:
+      - "4002:4002"
+    volumes:
+      - ..:/workspace
+
+  ingest:
+    image: node:22-alpine
+    working_dir: /workspace
+    profiles: ["app"]
+    command: sh -lc "npm -w services/ingest install && npm -w services/ingest run dev"
+    env_file:
+      - ../services/ingest/.env
+    depends_on:
+      - postgres
+    ports:
+      - "3002:3002"
+    volumes:
+      - ..:/workspace
+
+  analytics:
+    image: node:22-alpine
+    working_dir: /workspace
+    profiles: ["app"]
+    command: sh -lc "npm -w services/analytics install && npm -w services/analytics run dev"
+    env_file:
+      - ../services/analytics/.env
+    depends_on:
+      - postgres
+      - rabbitmq
+    ports:
+      - "3004:3004"
+    volumes:
+      - ..:/workspace
+
+  admin:
+    image: node:22-alpine
+    working_dir: /workspace
+    profiles: ["app"]
+    command: sh -lc "npm -w apps/admin install && npm -w apps/admin run dev"
+    env_file:
+      - ../apps/admin/.env
+    depends_on:
+      - api
+      - postgres
+    ports:
+      - "3003:3003"
+    volumes:
+      - ..:/workspace
 
 volumes:
   postgres_data:

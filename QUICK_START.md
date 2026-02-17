@@ -272,16 +272,16 @@ infra/.env
 **Important Variables**:
 ```bash
 # AI Gateway
-OPENAI_API_KEY=CHANGE_ME
+OPENAI_API_KEY=CHANGEME_STRONG
 
 # API Service
 DATABASE_URL=postgresql://pricelio_user:...
 PORT=3000
-JWT_SECRET=your-secret-here
+JWT_SECRET=CHANGEME_STRONG
 
 # PostgreSQL
 POSTGRES_USER=pricelio_user
-POSTGRES_PASSWORD=pricelio_pass
+POSTGRES_PASSWORD=CHANGEME_STRONG
 POSTGRES_DB=pricelio_db
 ```
 
@@ -386,7 +386,7 @@ Do the same for:
 ### Performance
 - Images auto-compressed before upload
 - API calls timeout after 4s
-- Debounce search input (TODO)
+- Search input is debounced (300ms)
 - Cache map tiles locally
 
 ### Design
@@ -404,7 +404,7 @@ Do the same for:
 cd /home/mcorpofficial/projektai/Pricelio
 
 # Start everything
-./start.sh  # (TODO: create this script)
+./start.sh
 
 # Or manually:
 docker-compose -f infra/docker-compose.yml up -d

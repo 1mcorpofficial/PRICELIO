@@ -90,7 +90,7 @@ cp apps/admin/.env.example apps/admin/.env
 #### 2.2 Configure OpenAI API Key:
 ```bash
 # Edit services/ai-gateway/.env
-OPENAI_API_KEY=CHANGE_ME
+OPENAI_API_KEY=CHANGEME_STRONG
 ```
 
 #### 2.3 All .env Files Content:
@@ -99,19 +99,19 @@ OPENAI_API_KEY=CHANGE_ME
 ```bash
 # PostgreSQL
 POSTGRES_USER=pricelio
-POSTGRES_PASSWORD=pricelio123
+POSTGRES_PASSWORD=CHANGEME_STRONG
 POSTGRES_DB=pricelio
 
 # Redis
-REDIS_PASSWORD=redis123
+REDIS_PASSWORD=CHANGEME_STRONG
 
 # RabbitMQ
 RABBITMQ_USER=pricelio
-RABBITMQ_PASSWORD=rabbit123
+RABBITMQ_PASSWORD=CHANGEME_STRONG
 
 # MinIO
 MINIO_ROOT_USER=pricelio
-MINIO_ROOT_PASSWORD=minio123
+MINIO_ROOT_PASSWORD=CHANGEME_STRONG
 ```
 
 **services/api/.env:**
@@ -123,13 +123,13 @@ NODE_ENV=development
 DATABASE_URL=postgresql://pricelio:pricelio123@localhost:5432/pricelio
 
 # Redis
-REDIS_URL=redis://:redis123@localhost:6379
+REDIS_URL=redis://:CHANGEME_STRONG@localhost:6379
 
 # RabbitMQ
-RABBITMQ_URL=amqp://pricelio:rabbit123@localhost:5672
+RABBITMQ_URL=amqp://pricelio:CHANGEME_STRONG@localhost:5672
 
 # JWT
-JWT_SECRET=your-super-secret-jwt-key-change-in-production
+JWT_SECRET=CHANGEME_STRONG
 
 # Rate Limiting
 RATE_LIMIT_MAX=100
@@ -145,7 +145,7 @@ PORT=4002
 NODE_ENV=development
 
 # OpenAI
-OPENAI_API_KEY=CHANGE_ME
+OPENAI_API_KEY=CHANGEME_STRONG
 
 # Anthropic (optional)
 ANTHROPIC_API_KEY=
@@ -160,12 +160,12 @@ PORT=4001
 NODE_ENV=development
 
 DATABASE_URL=postgresql://pricelio:pricelio123@localhost:5432/pricelio
-RABBITMQ_URL=amqp://pricelio:rabbit123@localhost:5672
+RABBITMQ_URL=amqp://pricelio:CHANGEME_STRONG@localhost:5672
 AI_GATEWAY_URL=http://localhost:4002
 MINIO_ENDPOINT=localhost
 MINIO_PORT=9000
 MINIO_ACCESS_KEY=pricelio
-MINIO_SECRET_KEY=minio123
+MINIO_SECRET_KEY=CHANGEME_STRONG
 ```
 
 **services/ingest/.env:**
@@ -175,7 +175,7 @@ NODE_ENV=development
 
 DATABASE_URL=postgresql://pricelio:pricelio123@localhost:5432/pricelio
 AI_GATEWAY_URL=http://localhost:4002
-REDIS_URL=redis://:redis123@localhost:6379
+REDIS_URL=redis://:CHANGEME_STRONG@localhost:6379
 ```
 
 **services/analytics/.env:**
@@ -184,7 +184,7 @@ PORT=4004
 NODE_ENV=development
 
 DATABASE_URL=postgresql://pricelio:pricelio123@localhost:5432/pricelio
-RABBITMQ_URL=amqp://pricelio:rabbit123@localhost:5672
+RABBITMQ_URL=amqp://pricelio:CHANGEME_STRONG@localhost:5672
 ```
 
 **apps/admin/.env:**
@@ -220,16 +220,16 @@ docker-compose ps
 psql -h localhost -U pricelio -d pricelio -c "SELECT version();"
 
 # Redis
-redis-cli -a redis123 ping
+redis-cli -a CHANGEME_STRONG ping
 # PONG
 
 # RabbitMQ Management UI
 open http://localhost:15672
-# Login: pricelio / rabbit123
+# Login: pricelio / CHANGEME_STRONG
 
 # MinIO Console
 open http://localhost:9001
-# Login: pricelio / minio123
+# Login: pricelio / CHANGEME_STRONG
 ```
 
 ---
@@ -449,7 +449,7 @@ curl "http://localhost:4000/api/stores?city=Vilnius"
 # 3. Register User
 curl -X POST http://localhost:4000/api/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"test123","firstName":"Test","cityId":1}'
+  -d '{"email":"test@example.com","password":"CHANGEME_STRONG","firstName":"Test","cityId":1}'
 
 # 4. Test AI Gateway
 curl -X POST http://localhost:4002/ai/assistant \
