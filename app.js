@@ -836,7 +836,8 @@
       if (location) {
         params.set('lat', String(location.lat));
         params.set('lon', String(location.lon));
-        params.set('radiusKm', '5');
+        const radiusKm = $('searchRadiusKm')?.value || '2';
+        params.set('radiusKm', String(radiusKm));
       }
 
       const rows = await apiRequest(`/products/compare?${params.toString()}`);
@@ -855,6 +856,11 @@
           <div class="result-price">${formatMoney(row.best_price)}</div>
           <div class="muted small">
             ${row.radius_km ? `Showing stores within ${sanitize(row.radius_km)} km` : 'Location unavailable, showing all stores'}
+          </div>
+          <div class="row">
+            ${row.best_nearby_store?.lat != null && row.best_nearby_store?.lon != null
+              ? `<button class="btn btn-ghost" type="button" data-nav-lat="${sanitize(row.best_nearby_store.lat)}" data-nav-lon="${sanitize(row.best_nearby_store.lon)}">Vesti į pigiausią</button>`
+              : '<span class="muted small">Nėra lokacijos duomenų navigacijai</span>'}
           </div>
           <div class="list compact">
             ${(Array.isArray(row.store_prices) && row.store_prices.length)
@@ -1906,6 +1912,15 @@
         event.preventDefault();
         runSearch().catch(() => {});
       }
+    });
+    $('searchResults')?.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const lat = target.dataset.navLat;
+      const lon = target.dataset.navLon;
+      if (!lat || !lon) return;
+      const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${lat},${lon}`)}`;
+      window.open(url, '_blank', 'noopener,noreferrer');
     });
 
     $('buildBasketBtn')?.addEventListener('click', () => { buildBasket().catch(() => {}); });
