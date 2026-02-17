@@ -31,23 +31,66 @@ async function extract(raw) {
   
   const $ = cheerio.load(raw.raw_html);
   const offers = [];
-  
-  // This is a mock structure - real implementation would parse actual HTML
-  // Each store has different HTML structure, needs custom parsing
-  
-  // Mock extraction for demonstration
-  offers.push({
-    product_name: 'Greek yogurt 400g',
-    price: 1.19,
-    old_price: 1.79,
-    unit_price: 2.98,
-    unit_price_unit: 'kg',
-    valid_from: '2026-01-20',
-    valid_to: '2026-01-26',
-    image_url: null,
-    category: 'Dairy',
-    raw_data: {}
+
+  const containers = $('.product-item, .offer-card, article, .card, .item').toArray();
+  containers.forEach((element) => {
+    const item = $(element);
+    const name = item.find('.product-name, .title, h2, h3, [data-testid*="name"]').first().text().trim();
+    const priceText = item.find('.price, .current-price, [data-testid*="price"]').first().text().trim();
+    const oldPriceText = item.find('.old-price, .strike, .previous-price').first().text().trim();
+    const validityText = item.find('.validity, .dates, .period').first().text().trim();
+
+    if (!name || !priceText) {
+      return;
+    }
+
+    const price = normalizePrice(priceText);
+    const oldPrice = oldPriceText ? normalizePrice(oldPriceText) : null;
+    if (price == null || Number.isNaN(price)) {
+      return;
+    }
+
+    const validity = parseValidityDates(validityText || '');
+    offers.push({
+      product_name: name,
+      price,
+      old_price: oldPrice,
+      unit_price: null,
+      unit_price_unit: null,
+      valid_from: validity.valid_from || null,
+      valid_to: validity.valid_to || null,
+      image_url: item.find('img').first().attr('src') || null,
+      category: item.find('.category, [data-testid*="category"]').first().text().trim() || null,
+      raw_data: { html: $.html(item).slice(0, 1000) }
+    });
   });
+
+  if (offers.length === 0) {
+    const text = $.text();
+    const regex = /([A-Za-z0-9ĄČĘĖĮŠŲŪŽąćęėįšųūž ,.\-]{4,80})\s+(\d+[,.]\d{2})\s*€/g;
+    let match;
+    while ((match = regex.exec(text)) !== null && offers.length < 40) {
+      const productName = match[1].trim();
+      const price = normalizePrice(match[2]);
+      if (!productName || price == null || Number.isNaN(price)) continue;
+      offers.push({
+        product_name: productName,
+        price,
+        old_price: null,
+        unit_price: null,
+        unit_price_unit: null,
+        valid_from: null,
+        valid_to: null,
+        image_url: null,
+        category: null,
+        raw_data: { regex_source: true }
+      });
+    }
+  }
+
+  if (offers.length === 0) {
+    console.warn('No offers parsed from Maxima page');
+  }
   
   return {
     offers,

@@ -4,6 +4,7 @@
  */
 
 const { query } = require('./db');
+const axios = require('axios');
 
 /**
  * Alert types:
@@ -57,7 +58,7 @@ async function checkTriggeredAlerts() {
        AND a.alert_type = 'PRICE_DROP'
        AND o.price_value <= a.target_price
        AND o.status = 'active'
-       AND a.last_triggered_at < NOW() - INTERVAL '24 hours' OR a.last_triggered_at IS NULL
+       AND (a.last_triggered_at < NOW() - INTERVAL '24 hours' OR a.last_triggered_at IS NULL)
      ORDER BY o.price_value ASC`
   );
   
@@ -179,10 +180,21 @@ async function sendNotification(userId, notification) {
     ]
   );
   
-  // TODO: Implement actual push notification / email
-  // - PWA Push API
-  // - Email via SendGrid/AWS SES
-  // - In-app notification
+  // Optional webhook delivery for real external notifications.
+  // Configure ALERT_WEBHOOK_URL to forward notification payloads.
+  const webhookUrl = process.env.ALERT_WEBHOOK_URL;
+  if (webhookUrl) {
+    try {
+      await axios.post(
+        webhookUrl,
+        { user_id: userId, ...notification },
+        { timeout: Number(process.env.ALERT_WEBHOOK_TIMEOUT_MS || 5000) }
+      );
+    } catch (error) {
+      // Do not fail alert workflow if webhook delivery fails.
+      console.error('Notification webhook failed:', error.message);
+    }
+  }
   
   return true;
 }

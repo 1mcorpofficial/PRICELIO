@@ -222,6 +222,7 @@ module.exports = {
   loginUser,
   getUserProfile,
   authMiddleware,
+  requireUser: authMiddleware,
   optionalAuthMiddleware,
   getUserOrGuestId
 };

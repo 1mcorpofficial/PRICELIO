@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
 const multer = require('multer');
+const { query } = require('./db');
 const {
   getStorePins,
   getStoreDetail,
@@ -23,6 +24,7 @@ const {
 } = require('./queries');
 const { publishReceiptJob } = require('./queue');
 const { optimizeSingleStore } = require('./optimizer');
+const ecosystem = require('./ecosystem');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -62,6 +64,34 @@ app.get('/health', (req, res) => {
 
 const auth = require('./auth');
 
+function withFeatureFlag(flagKey) {
+  return async (req, res, next) => {
+    try {
+      const enabled = await ecosystem.isFeatureEnabled(flagKey, req.user?.id || null, 'LT');
+      if (!enabled) {
+        return res.status(403).json({ error: 'feature_disabled', flag: flagKey });
+      }
+      return next();
+    } catch (error) {
+      return res.status(500).json({ error: 'feature_flag_check_failed' });
+    }
+  };
+}
+
+function requirePlusFeature(featureKey) {
+  return async (req, res, next) => {
+    try {
+      const has = await ecosystem.hasFeature(req.user.id, featureKey);
+      if (!has) {
+        return res.status(402).json({ error: 'plus_feature_required', feature: featureKey });
+      }
+      return next();
+    } catch (error) {
+      return res.status(500).json({ error: 'feature_check_failed' });
+    }
+  };
+}
+
 app.post('/auth/guest', async (req, res) => {
   try {
     const ipHash = crypto.createHash('sha256').update(req.ip || 'unknown').digest('hex');
@@ -90,6 +120,7 @@ app.post('/auth/register', async (req, res) => {
     }
     
     const user = await auth.registerUser(email, password);
+    await ecosystem.getGamification(user.id);
     const accessToken = auth.generateAccessToken(user.id, user.email);
     const refreshToken = auth.generateRefreshToken(user.id);
     
@@ -177,6 +208,119 @@ app.get('/me', auth.authMiddleware, async (req, res) => {
     });
   } catch (error) {
     res.status(404).json({ error: 'user_not_found' });
+  }
+});
+
+// =============================
+// Gamification / Points / Plus
+// =============================
+
+app.get('/ranks', withFeatureFlag('gamification'), async (req, res) => {
+  try {
+    const ranks = await ecosystem.getRankLevels();
+    res.json(ranks);
+  } catch (error) {
+    res.status(500).json({ error: 'ranks_fetch_failed' });
+  }
+});
+
+app.get('/me/gamification', auth.requireUser, withFeatureFlag('gamification'), async (req, res) => {
+  try {
+    const data = await ecosystem.getGamification(req.user.id);
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: 'gamification_fetch_failed' });
+  }
+});
+
+app.get('/leaderboard/global', withFeatureFlag('gamification'), async (req, res) => {
+  try {
+    const rows = await ecosystem.getLeaderboardGlobal(req.query.limit || 50);
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ error: 'leaderboard_fetch_failed' });
+  }
+});
+
+app.get('/leaderboard/friends', auth.requireUser, withFeatureFlag('gamification'), async (req, res) => {
+  try {
+    const rows = await ecosystem.getLeaderboardFriends(req.user.id, req.query.limit || 50);
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ error: 'leaderboard_fetch_failed' });
+  }
+});
+
+app.get('/points/ledger', auth.requireUser, withFeatureFlag('gamification'), async (req, res) => {
+  try {
+    const rows = await ecosystem.getPointsLedger(req.user.id, req.query.limit || 100);
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ error: 'points_ledger_failed' });
+  }
+});
+
+app.get('/points/redeem/options', auth.requireUser, withFeatureFlag('premium_redeem'), async (req, res) => {
+  try {
+    res.json(await ecosystem.getRedeemOptions());
+  } catch (error) {
+    res.status(500).json({ error: 'redeem_options_failed' });
+  }
+});
+
+app.post('/points/redeem', auth.requireUser, withFeatureFlag('premium_redeem'), async (req, res) => {
+  try {
+    const { reward_key } = req.body || {};
+    if (reward_key !== 'plus_30d') {
+      return res.status(400).json({ error: 'unsupported_reward' });
+    }
+    const result = await ecosystem.unlockPlusWithPoints(req.user.id);
+    if (!result.ok) {
+      return res.status(400).json({ error: result.reason || 'redeem_failed' });
+    }
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: 'redeem_failed' });
+  }
+});
+
+app.get('/plus/features', async (req, res) => {
+  try {
+    res.json(await ecosystem.getPlusFeatures());
+  } catch (error) {
+    res.status(500).json({ error: 'plus_features_failed' });
+  }
+});
+
+app.get('/plus/status', auth.requireUser, async (req, res) => {
+  try {
+    res.json(await ecosystem.getPlusStatus(req.user.id));
+  } catch (error) {
+    res.status(500).json({ error: 'plus_status_failed' });
+  }
+});
+
+app.post('/plus/subscribe', auth.requireUser, async (req, res) => {
+  try {
+    const result = await ecosystem.subscribePlus(req.user.id);
+    if (!result.ok) {
+      return res.status(400).json({ error: result.reason || 'plus_subscribe_failed' });
+    }
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'plus_subscribe_failed' });
+  }
+});
+
+app.post('/plus/unlock-with-points', auth.requireUser, withFeatureFlag('premium_redeem'), async (req, res) => {
+  try {
+    const result = await ecosystem.unlockPlusWithPoints(req.user.id);
+    if (!result.ok) {
+      return res.status(400).json({ error: result.reason || 'unlock_failed' });
+    }
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: 'unlock_failed' });
   }
 });
 
@@ -282,11 +426,31 @@ app.get('/products/:id', async (req, res) => {
   }
 });
 
-app.post('/baskets', async (req, res) => {
+app.post('/baskets', auth.optionalAuthMiddleware, async (req, res) => {
   try {
-    const ipHash = crypto.createHash('sha256').update(req.ip || 'unknown').digest('hex');
-    const guestSessionId = await createGuestSession(ipHash);
-    const basket = await createBasket({ guestSessionId, name: req.body.name });
+    let userId = null;
+    let guestSessionId = null;
+
+    if (req.user?.id) {
+      userId = req.user.id;
+      const hasMultiBaskets = await ecosystem.hasFeature(userId, 'multi_baskets');
+      if (!hasMultiBaskets) {
+        const active = await query(
+          `SELECT COUNT(*)::int AS cnt
+           FROM baskets
+           WHERE user_id = $1 AND status = 'active'`,
+          [userId]
+        );
+        if (Number(active.rows[0]?.cnt || 0) >= 1) {
+          return res.status(402).json({ error: 'plus_feature_required', feature: 'multi_baskets' });
+        }
+      }
+    } else {
+      const ipHash = crypto.createHash('sha256').update(req.ip || 'unknown').digest('hex');
+      guestSessionId = await createGuestSession(ipHash);
+    }
+
+    const basket = await createBasket({ userId, guestSessionId, name: req.body.name });
     res.json(basket);
   } catch (error) {
     res.status(500).json({ error: 'basket_create_failed' });
@@ -339,7 +503,98 @@ app.post('/baskets/:id/optimize', async (req, res) => {
   }
 });
 
-app.post('/receipts/upload', upload.single('file'), async (req, res) => {
+// =============================
+// Family / Household
+// =============================
+
+app.post('/families', auth.requireUser, withFeatureFlag('family_core'), async (req, res) => {
+  try {
+    const family = await ecosystem.createFamily(req.user.id, req.body?.name);
+    res.json(family);
+  } catch (error) {
+    res.status(500).json({ error: 'family_create_failed' });
+  }
+});
+
+app.post('/families/:id/invite', auth.requireUser, withFeatureFlag('family_core'), async (req, res) => {
+  try {
+    const invite = await ecosystem.inviteFamilyMember(req.params.id, req.user.id, req.body || {});
+    res.json(invite);
+  } catch (error) {
+    if (error.message === 'family_plus_required') {
+      return res.status(402).json({ error: 'family_plus_required' });
+    }
+    if (error.message === 'forbidden_household' || error.message === 'forbidden_role') {
+      return res.status(403).json({ error: error.message });
+    }
+    res.status(500).json({ error: 'family_invite_failed' });
+  }
+});
+
+app.post('/families/:id/join', auth.requireUser, withFeatureFlag('family_core'), async (req, res) => {
+  try {
+    const token = req.body?.token;
+    if (!token) {
+      return res.status(400).json({ error: 'token_required' });
+    }
+    const data = await ecosystem.joinFamilyByToken(req.user.id, token);
+    if (String(data.household_id) !== String(req.params.id)) {
+      return res.status(400).json({ error: 'invite_household_mismatch' });
+    }
+    res.json(data);
+  } catch (error) {
+    if (['invite_not_found', 'invite_expired'].includes(error.message)) {
+      return res.status(400).json({ error: error.message });
+    }
+    if (error.message === 'family_plus_required') {
+      return res.status(402).json({ error: 'family_plus_required' });
+    }
+    res.status(500).json({ error: 'family_join_failed' });
+  }
+});
+
+app.get('/families/:id/lists', auth.requireUser, withFeatureFlag('family_core'), async (req, res) => {
+  try {
+    const lists = await ecosystem.getFamilyLists(req.params.id, req.user.id);
+    res.json(lists);
+  } catch (error) {
+    if (error.message === 'forbidden_household') {
+      return res.status(403).json({ error: 'forbidden_household' });
+    }
+    res.status(500).json({ error: 'family_lists_failed' });
+  }
+});
+
+app.post('/families/:id/lists/:listId/items', auth.requireUser, withFeatureFlag('family_core'), async (req, res) => {
+  try {
+    const item = await ecosystem.addFamilyListItem(req.params.id, req.params.listId, req.user.id, req.body || {});
+    res.json(item);
+  } catch (error) {
+    if (['forbidden_household', 'list_not_found'].includes(error.message)) {
+      return res.status(403).json({ error: error.message });
+    }
+    res.status(500).json({ error: 'family_item_add_failed' });
+  }
+});
+
+app.post('/families/:id/events/poll', auth.requireUser, withFeatureFlag('family_core'), async (req, res) => {
+  try {
+    const data = await ecosystem.pollFamilyEvents(
+      req.params.id,
+      req.user.id,
+      req.body?.cursor || 0,
+      req.body?.limit || 100
+    );
+    res.json(data);
+  } catch (error) {
+    if (error.message === 'forbidden_household') {
+      return res.status(403).json({ error: 'forbidden_household' });
+    }
+    res.status(500).json({ error: 'family_events_failed' });
+  }
+});
+
+app.post('/receipts/upload', auth.optionalAuthMiddleware, upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       res.status(400).json({ error: 'file_required' });
@@ -351,9 +606,16 @@ app.post('/receipts/upload', upload.single('file'), async (req, res) => {
     const targetPath = ensureUploadPath(objectKey);
     fs.writeFileSync(targetPath, req.file.buffer);
 
-    const ipHash = crypto.createHash('sha256').update(req.ip || 'unknown').digest('hex');
-    const guestSessionId = await createGuestSession(ipHash);
+    let userId = null;
+    let guestSessionId = null;
+    if (req.user?.id) {
+      userId = req.user.id;
+    } else {
+      const ipHash = crypto.createHash('sha256').update(req.ip || 'unknown').digest('hex');
+      guestSessionId = await createGuestSession(ipHash);
+    }
     const receipt = await createReceipt({
+      userId,
       guestSessionId,
       storeChain: req.body.store_chain,
       imageObjectKey: objectKey
@@ -361,10 +623,23 @@ app.post('/receipts/upload', upload.single('file'), async (req, res) => {
 
     await publishReceiptJob({ receipt_id: receipt.id, object_key: objectKey });
 
+    if (userId) {
+      await ecosystem.awardPoints(userId, {
+        eventType: 'receipt_upload',
+        xp: 10,
+        points: 10,
+        referenceType: 'receipt',
+        referenceId: receipt.id
+      });
+    }
+
+    const hasPriority = userId ? await ecosystem.hasFeature(userId, 'priority_scan') : false;
+
     res.json({
       receipt_id: receipt.id,
       status: receipt.status,
-      progress: statusToProgress(receipt.status)
+      progress: statusToProgress(receipt.status),
+      processing_priority: hasPriority ? 'priority' : 'standard'
     });
   } catch (error) {
     res.status(500).json({ error: 'receipt_upload_failed' });
@@ -388,18 +663,33 @@ app.get('/receipts/:id/status', async (req, res) => {
   }
 });
 
-app.get('/receipts/:id/report', async (req, res) => {
+app.get('/receipts/:id/report', auth.optionalAuthMiddleware, async (req, res) => {
   try {
     const status = await getReceiptStatus(req.params.id);
     if (!status) {
       res.status(404).json({ error: 'receipt_not_found' });
       return;
     }
-    const items = await getReceiptReport(req.params.id);
+    const report = await getReceiptReport(req.params.id);
+
+    if (req.user?.id) {
+      const hasHighSavingsFind = report.items.some((item) => Number(item.savings_percent || 0) >= 50);
+      if (hasHighSavingsFind) {
+        await ecosystem.awardPoints(req.user.id, {
+          eventType: 'high_savings_find',
+          xp: 100,
+          points: 100,
+          referenceType: 'receipt',
+          referenceId: req.params.id
+        });
+      }
+    }
+
     res.json({
-      overpaid_items: items,
-      savings_total: 0,
-      verified_ratio: 0
+      overpaid_items: report.items.filter((item) => item.savings_eur > 0),
+      line_items: report.items,
+      savings_total: report.savings_total,
+      verified_ratio: report.verified_ratio
     });
   } catch (error) {
     res.status(500).json({ error: 'receipt_report_unavailable' });
@@ -425,8 +715,8 @@ app.post('/receipts/:id/confirm', async (req, res) => {
       await query(
         `UPDATE receipt_items 
          SET raw_name = $1, 
-             user_confirmed = $2,
-             confidence_score = 1.0
+             match_confidence = CASE WHEN $2 THEN 1.0 ELSE match_confidence END,
+             match_status = CASE WHEN $2 THEN 'matched' ELSE match_status END
          WHERE id = $3 AND receipt_id = $4`,
         [corrected_name, user_confirmed, original_line_id, receiptId]
       );
@@ -443,10 +733,6 @@ app.post('/receipts/:id/confirm', async (req, res) => {
     console.error('Confirmation error:', error);
     res.status(500).json({ error: 'confirmation_failed' });
   }
-});
-
-app.post('/receipts/:id/confirm', (req, res) => {
-  res.status(204).send();
 });
 
 // Get nutritional analysis for receipt
@@ -580,7 +866,7 @@ app.get('/offers', async (req, res) => {
          o.id,
          o.price_value,
          o.old_price_value,
-         o.unit_price,
+         o.unit_price_value AS unit_price,
          o.unit_price_unit,
          o.valid_from,
          o.valid_to,
@@ -779,7 +1065,7 @@ app.post('/warranty/add', auth.requireUser, async (req, res) => {
     const { receiptId, receiptItemId, warrantyMonths } = req.body;
     
     const item = await query(
-      `SELECT ri.*, r.scanned_at as purchase_date, s.name as store_name
+      `SELECT ri.*, r.created_at as purchase_date, s.name as store_name
        FROM receipt_items ri
        JOIN receipts r ON r.id = ri.receipt_id
        LEFT JOIN stores s ON s.id = r.store_id
@@ -806,11 +1092,11 @@ app.post('/warranty/add', auth.requireUser, async (req, res) => {
         receiptId,
         receiptItemId,
         item.rows[0].product_id,
-        item.rows[0].product_name,
+        item.rows[0].normalized_name || item.rows[0].raw_name,
         purchaseDate.toISOString().split('T')[0],
         warrantyMonths,
         warrantyExpires.toISOString().split('T')[0],
-        item.rows[0].price,
+        item.rows[0].total_price,
         item.rows[0].store_name
       ]
     );
@@ -837,6 +1123,168 @@ app.get('/warranty/list', auth.requireUser, async (req, res) => {
   }
 });
 
+// ==============================================
+// BOUNTY / TRUST / KIDS / PREMIUM INTELLIGENCE
+// ==============================================
+
+app.get('/missions/nearby', auth.requireUser, withFeatureFlag('bounty'), async (req, res) => {
+  try {
+    const missions = await ecosystem.getNearbyMissions(req.user.id, {
+      lat: req.query.lat ? Number(req.query.lat) : null,
+      lon: req.query.lon ? Number(req.query.lon) : null,
+      limit: req.query.limit ? Number(req.query.limit) : 20,
+      app_foreground: req.query.app_foreground !== 'false'
+    });
+    res.json(missions);
+  } catch (error) {
+    res.status(500).json({ error: 'missions_nearby_failed' });
+  }
+});
+
+app.post('/missions/:id/start', auth.requireUser, withFeatureFlag('bounty'), async (req, res) => {
+  try {
+    const task = await ecosystem.startMission(req.user.id, req.params.id);
+    res.json(task);
+  } catch (error) {
+    if (error.message === 'mission_unavailable') {
+      return res.status(400).json({ error: 'mission_unavailable' });
+    }
+    res.status(500).json({ error: 'mission_start_failed' });
+  }
+});
+
+app.post('/missions/:id/submit', auth.requireUser, withFeatureFlag('bounty'), async (req, res) => {
+  try {
+    const payload = req.body || {};
+    if (!payload.product_canonical_name || !payload.barcode) {
+      return res.status(400).json({ error: 'product_canonical_name_and_barcode_required' });
+    }
+    const submission = await ecosystem.submitMission(req.user.id, req.params.id, payload);
+    res.json(submission);
+  } catch (error) {
+    if (['shadow_banned', 'mission_not_found'].includes(error.message)) {
+      return res.status(403).json({ error: error.message });
+    }
+    res.status(500).json({ error: 'mission_submit_failed' });
+  }
+});
+
+app.post('/missions/:id/verify', auth.requireUser, withFeatureFlag('bounty'), async (req, res) => {
+  try {
+    const vote = req.body?.vote;
+    const submissionId = req.body?.submission_id;
+    if (!submissionId || !['confirm', 'reject'].includes(vote)) {
+      return res.status(400).json({ error: 'submission_id_and_vote_required' });
+    }
+    const result = await ecosystem.verifyMissionSubmission(req.user.id, req.params.id, submissionId, vote);
+    res.json(result);
+  } catch (error) {
+    if (['submission_not_found', 'cannot_verify_own_submission'].includes(error.message)) {
+      return res.status(400).json({ error: error.message });
+    }
+    res.status(500).json({ error: 'mission_verify_failed' });
+  }
+});
+
+app.get('/proof/:id/status', auth.requireUser, withFeatureFlag('bounty'), async (req, res) => {
+  try {
+    const status = await ecosystem.getProofStatus(req.params.id);
+    if (!status) {
+      return res.status(404).json({ error: 'proof_not_found' });
+    }
+    res.json(status);
+  } catch (error) {
+    res.status(500).json({ error: 'proof_status_failed' });
+  }
+});
+
+app.post('/proof/:id/dispute', auth.requireUser, withFeatureFlag('bounty'), async (req, res) => {
+  try {
+    const result = await ecosystem.disputeProof(req.user.id, req.params.id, req.body?.reason || null);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: 'proof_dispute_failed' });
+  }
+});
+
+app.post('/kids/activate', auth.requireUser, withFeatureFlag('kids_mode'), async (req, res) => {
+  try {
+    const session = await ecosystem.activateKidsMode(req.user.id, req.body || {});
+    res.json(session);
+  } catch (error) {
+    if (['kid_profile_not_found', 'invalid_parent_pin'].includes(error.message)) {
+      return res.status(400).json({ error: error.message });
+    }
+    res.status(500).json({ error: 'kids_activate_failed' });
+  }
+});
+
+app.get('/kids/missions', auth.requireUser, withFeatureFlag('kids_mode'), async (req, res) => {
+  try {
+    const sessionId = req.query.session_id;
+    if (!sessionId) {
+      return res.status(400).json({ error: 'session_id_required' });
+    }
+    const missions = await ecosystem.getKidsMissions(req.user.id, sessionId);
+    res.json(missions);
+  } catch (error) {
+    if (error.message === 'kids_session_not_found') {
+      return res.status(404).json({ error: 'kids_session_not_found' });
+    }
+    res.status(500).json({ error: 'kids_missions_failed' });
+  }
+});
+
+app.post('/kids/missions/:id/submit', auth.requireUser, withFeatureFlag('kids_mode'), async (req, res) => {
+  try {
+    const sessionId = req.body?.session_id;
+    if (!sessionId) {
+      return res.status(400).json({ error: 'session_id_required' });
+    }
+    const result = await ecosystem.submitKidsMission(req.user.id, sessionId, req.params.id, req.body || {});
+    res.json(result);
+  } catch (error) {
+    if (['kids_session_not_found', 'adult_mission_not_allowed', 'mission_not_found'].includes(error.message)) {
+      return res.status(400).json({ error: error.message });
+    }
+    res.status(500).json({ error: 'kids_submit_failed' });
+  }
+});
+
+app.post('/kids/deactivate', auth.requireUser, withFeatureFlag('kids_mode'), async (req, res) => {
+  try {
+    const sessionId = req.body?.session_id;
+    if (!sessionId) {
+      return res.status(400).json({ error: 'session_id_required' });
+    }
+    const result = await ecosystem.deactivateKidsMode(req.user.id, sessionId);
+    res.json(result);
+  } catch (error) {
+    if (error.message === 'kids_session_not_found') {
+      return res.status(404).json({ error: 'kids_session_not_found' });
+    }
+    res.status(500).json({ error: 'kids_deactivate_failed' });
+  }
+});
+
+app.get('/insights/time-machine/:productId', auth.requireUser, requirePlusFeature('time_machine'), async (req, res) => {
+  try {
+    const result = await ecosystem.getTimeMachinePrediction(req.params.productId);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: 'time_machine_failed' });
+  }
+});
+
+app.get('/insights/analytics/spending', auth.requireUser, requirePlusFeature('advanced_analytics'), async (req, res) => {
+  try {
+    const result = await ecosystem.getAdvancedAnalytics(req.user.id);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: 'advanced_analytics_failed' });
+  }
+});
+
 app.listen(port, () => {
   console.log(`ReceiptRadar API running on port ${port}`);
   console.log('✅ All features enabled:');
@@ -847,4 +1295,3 @@ app.listen(port, () => {
   console.log('  - Package Size Traps');
   console.log('  - Warranty Vault');
 });
-

@@ -280,6 +280,407 @@ paths:
       responses:
         '204':
           description: Confirmed
+  /me/gamification:
+    get:
+      summary: Current user gamification state
+      responses:
+        '200':
+          description: Gamification profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GamificationProfile'
+  /leaderboard/global:
+    get:
+      summary: Global leaderboard
+      responses:
+        '200':
+          description: Leaderboard entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LeaderboardEntry'
+  /leaderboard/friends:
+    get:
+      summary: Friends/family leaderboard
+      responses:
+        '200':
+          description: Leaderboard entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LeaderboardEntry'
+  /ranks:
+    get:
+      summary: Rank levels
+      responses:
+        '200':
+          description: Rank levels
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RankLevel'
+  /points/ledger:
+    get:
+      summary: Points ledger for authenticated user
+      responses:
+        '200':
+          description: Ledger records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PointsLedgerRecord'
+  /points/redeem/options:
+    get:
+      summary: Available points redemption options
+      responses:
+        '200':
+          description: Redemption options
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RedeemOption'
+  /points/redeem:
+    post:
+      summary: Redeem points
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RedeemRequest'
+      responses:
+        '200':
+          description: Redemption result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicSuccess'
+  /plus/features:
+    get:
+      summary: Plus feature catalog
+      responses:
+        '200':
+          description: Plus catalog
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PlusFeature'
+  /plus/status:
+    get:
+      summary: Active plus entitlements
+      responses:
+        '200':
+          description: Active features
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Entitlement'
+  /plus/subscribe:
+    post:
+      summary: Activate plus by subscription (stub backend activation)
+      responses:
+        '200':
+          description: Activated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicSuccess'
+  /plus/unlock-with-points:
+    post:
+      summary: Unlock plus with points
+      responses:
+        '200':
+          description: Activated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicSuccess'
+  /families:
+    post:
+      summary: Create family household
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        '200':
+          description: Household created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FamilyHousehold'
+  /families/{id}/invite:
+    post:
+      summary: Invite family member
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                role:
+                  type: string
+      responses:
+        '200':
+          description: Invite created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FamilyInvite'
+  /families/{id}/join:
+    post:
+      summary: Join family via invite token
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+      responses:
+        '200':
+          description: Joined
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicSuccess'
+  /families/{id}/lists:
+    get:
+      summary: Family lists with items
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lists
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FamilyList'
+  /families/{id}/lists/{listId}/items:
+    post:
+      summary: Add item to family list
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: listId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Item created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FamilyListItem'
+  /families/{id}/events/poll:
+    post:
+      summary: Poll family events by cursor
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cursor:
+                  type: integer
+      responses:
+        '200':
+          description: Event page
+          content:
+            application/json:
+              schema:
+                type: object
+  /missions/nearby:
+    get:
+      summary: Nearby open missions
+      responses:
+        '200':
+          description: Mission list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Mission'
+  /missions/{id}/start:
+    post:
+      summary: Start mission task
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Task started
+          content:
+            application/json:
+              schema:
+                type: object
+  /missions/{id}/submit:
+    post:
+      summary: Submit mission proof
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Submission stored
+          content:
+            application/json:
+              schema:
+                type: object
+  /missions/{id}/verify:
+    post:
+      summary: Verify mission proof
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Consensus status
+          content:
+            application/json:
+              schema:
+                type: object
+  /proof/{id}/status:
+    get:
+      summary: Get proof status and consensus counters
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Proof status
+          content:
+            application/json:
+              schema:
+                type: object
+  /proof/{id}/dispute:
+    post:
+      summary: Dispute proof
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Dispute accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicSuccess'
+  /kids/activate:
+    post:
+      summary: Activate kids mode
+      responses:
+        '200':
+          description: Session started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KidsSession'
+  /kids/missions:
+    get:
+      summary: Fetch missions for active kids session
+      responses:
+        '200':
+          description: Mission list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Mission'
+  /kids/missions/{id}/submit:
+    post:
+      summary: Submit kids mission
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Submission result
+          content:
+            application/json:
+              schema:
+                type: object
+  /kids/deactivate:
+    post:
+      summary: Deactivate kids mode
+      responses:
+        '200':
+          description: Session stopped
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicSuccess'
 components:
   schemas:
     GuestSessionResponse:
@@ -522,3 +923,190 @@ components:
                 type: string
               product_id:
                 type: string
+    BasicSuccess:
+      type: object
+      properties:
+        success:
+          type: boolean
+    RankLevel:
+      type: object
+      properties:
+        level:
+          type: integer
+        rank_name:
+          type: string
+        tier:
+          type: string
+        min_xp:
+          type: integer
+    GamificationProfile:
+      type: object
+      properties:
+        spendable_points:
+          type: integer
+        lifetime_xp:
+          type: integer
+        rank:
+          $ref: '#/components/schemas/RankLevel'
+    LeaderboardEntry:
+      type: object
+      properties:
+        position:
+          type: integer
+        user_id:
+          type: string
+        email_masked:
+          type: string
+        level:
+          type: integer
+        rank_name:
+          type: string
+        lifetime_xp:
+          type: integer
+        spendable_points:
+          type: integer
+    PointsLedgerRecord:
+      type: object
+      properties:
+        id:
+          type: string
+        event_type:
+          type: string
+        xp_delta:
+          type: integer
+        points_delta:
+          type: integer
+        reference_type:
+          type: string
+        reference_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    RedeemOption:
+      type: object
+      properties:
+        reward_key:
+          type: string
+        points_cost:
+          type: integer
+        duration_days:
+          type: integer
+    RedeemRequest:
+      type: object
+      required: [reward_key]
+      properties:
+        reward_key:
+          type: string
+    PlusFeature:
+      type: object
+      properties:
+        plan_code:
+          type: string
+        plan_name:
+          type: string
+        price_eur:
+          type: number
+        billing_days:
+          type: integer
+        feature_key:
+          type: string
+    Entitlement:
+      type: object
+      properties:
+        feature_key:
+          type: string
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        source_type:
+          type: string
+    FamilyHousehold:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        owner_user_id:
+          type: string
+        city_code:
+          type: string
+        currency:
+          type: string
+    FamilyInvite:
+      type: object
+      properties:
+        id:
+          type: string
+        token:
+          type: string
+        role:
+          type: string
+        status:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+    FamilyList:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        is_active:
+          type: boolean
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/FamilyListItem'
+    FamilyListItem:
+      type: object
+      properties:
+        id:
+          type: string
+        list_id:
+          type: string
+        product_id:
+          type: string
+        raw_name:
+          type: string
+        quantity:
+          type: number
+        status:
+          type: string
+    Mission:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        reward_points:
+          type: integer
+        status:
+          type: string
+        store_name:
+          type: string
+        store_chain:
+          type: string
+    KidsSession:
+      type: object
+      properties:
+        id:
+          type: string
+        kid_profile_id:
+          type: string
+        parent_user_id:
+          type: string
+        started_at:
+          type: string
+          format: date-time

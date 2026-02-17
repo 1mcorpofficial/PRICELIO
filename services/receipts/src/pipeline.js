@@ -3,6 +3,7 @@ const path = require('path');
 const axios = require('axios');
 const FormData = require('form-data');
 const { findProductByName, findProductByEAN, fuzzyMatchProduct } = require('./matcher');
+const { query } = require('./db');
 
 const AI_GATEWAY_URL = process.env.AI_GATEWAY_URL || 'http://localhost:3001';
 
@@ -166,19 +167,59 @@ function scoreConfidence(lines) {
   };
 }
 
-function buildReport(lines) {
+async function buildReport(lines) {
   const overpaidItems = [];
   let savingsTotal = 0;
   let verifiedCount = 0;
 
-  lines.forEach(line => {
+  for (const line of lines) {
     if (line.match_status === 'matched' && line.match_confidence >= 0.8) {
       verifiedCount++;
     }
 
-    // TODO: Compare with current offers to find overpaid items
-    // This requires querying the offers table
-  });
+    if (!line.matched_product_id || line.total_price == null) {
+      continue;
+    }
+
+    try {
+      const bestOffer = await query(
+        `SELECT price_value, old_price_value, store_chain, valid_to
+         FROM offers
+         WHERE product_id = $1
+           AND status = 'active'
+           AND (valid_to IS NULL OR valid_to >= CURRENT_DATE)
+         ORDER BY price_value ASC
+         LIMIT 1`,
+        [line.matched_product_id]
+      );
+
+      if (bestOffer.rows.length === 0) {
+        continue;
+      }
+
+      const offer = bestOffer.rows[0];
+      const paid = Number(line.total_price);
+      const best = Number(offer.price_value);
+
+      if (paid > best) {
+        const savings = Number((paid - best).toFixed(2));
+        savingsTotal += savings;
+        overpaidItems.push({
+          product_id: line.matched_product_id,
+          product_name: line.normalized_name || line.raw_name,
+          paid_price: paid,
+          best_offer_price: best,
+          old_price: offer.old_price_value != null ? Number(offer.old_price_value) : null,
+          store_chain: offer.store_chain || null,
+          valid_to: offer.valid_to || null,
+          savings_eur: savings,
+          savings_percent: Number((((paid - best) / paid) * 100).toFixed(1))
+        });
+      }
+    } catch (error) {
+      console.error('buildReport offer comparison failed:', error.message);
+    }
+  }
 
   const verifiedRatio = lines.length > 0 
     ? Number((verifiedCount / lines.length).toFixed(2))

@@ -1,0 +1,25 @@
+{
+  "name": "pricelio",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/admin",
+    "services/api",
+    "services/ai-gateway",
+    "services/ingest",
+    "services/receipts",
+    "services/analytics"
+  ],
+  "scripts": {
+    "install:all": "npm -w apps/admin install && npm -w services/api install && npm -w services/ai-gateway install && npm -w services/ingest install && npm -w services/receipts install && npm -w services/analytics install",
+    "dev:infra": "bash scripts/dev-infra-up.sh",
+    "dev:infra:down": "bash scripts/dev-infra-down.sh",
+    "dev:infra:logs": "bash scripts/dev-infra-logs.sh",
+    "dev:services": "concurrently -k -n admin,api,ai,ingest,receipts,analytics \"npm -w apps/admin run dev\" \"npm -w services/api run dev\" \"npm -w services/ai-gateway run dev\" \"npm -w services/ingest run dev\" \"npm -w services/receipts run dev\" \"npm -w services/analytics run dev\"",
+    "doctor": "bash scripts/doctor.sh",
+    "test": "node --test tests/*.test.js"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

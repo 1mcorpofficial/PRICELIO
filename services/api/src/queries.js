@@ -1,4 +1,5 @@
 const { query } = require('./db');
+const { computeWeightedTruthPrice } = require('./ecosystem-algorithms');
 
 async function getStorePins(filters = {}) {
   const { category, verified, maxDistance, lat, lon, cityId } = filters;
@@ -284,22 +285,34 @@ async function createGuestSession(ipHash) {
   return result.rows[0].id;
 }
 
-async function createReceipt({ guestSessionId, storeChain, imageObjectKey }) {
+async function createReceipt({ userId = null, guestSessionId = null, storeChain, imageObjectKey }) {
+  if (!userId && !guestSessionId) {
+    throw new Error('receipt_owner_required');
+  }
+  if (userId && guestSessionId) {
+    throw new Error('receipt_owner_conflict');
+  }
   const result = await query(
-    `INSERT INTO receipts (guest_session_id, store_chain, status, image_object_key)
-     VALUES ($1, $2, 'processing', $3)
+    `INSERT INTO receipts (user_id, guest_session_id, store_chain, status, image_object_key)
+     VALUES ($1, $2, $3, 'processing', $4)
      RETURNING id, status`,
-    [guestSessionId, storeChain || null, imageObjectKey]
+    [userId, guestSessionId, storeChain || null, imageObjectKey]
   );
   return result.rows[0];
 }
 
-async function createBasket({ guestSessionId, name }) {
+async function createBasket({ userId = null, guestSessionId = null, name }) {
+  if (!userId && !guestSessionId) {
+    throw new Error('basket_owner_required');
+  }
+  if (userId && guestSessionId) {
+    throw new Error('basket_owner_conflict');
+  }
   const result = await query(
-    `INSERT INTO baskets (guest_session_id, name)
-     VALUES ($1, $2)
+    `INSERT INTO baskets (user_id, guest_session_id, name)
+     VALUES ($1, $2, $3)
      RETURNING id, name, status`,
-    [guestSessionId, name || 'My basket']
+    [userId, guestSessionId, name || 'My basket']
   );
   return result.rows[0];
 }
@@ -365,26 +378,107 @@ async function getReceiptStatus(receiptId) {
 
 async function getReceiptReport(receiptId) {
   const items = await query(
-    `SELECT raw_name, total_price, confidence
-     FROM receipt_items
-     WHERE receipt_id = $1
-     ORDER BY line_number ASC
-     LIMIT 20`,
+    `SELECT
+       ri.id,
+       ri.raw_name,
+       ri.total_price,
+       ri.confidence,
+       ri.match_status,
+       ri.matched_product_id,
+       p.name AS matched_product_name,
+       o.price_value AS best_offer_price,
+       o.old_price_value AS best_offer_old_price,
+       o.store_chain AS best_offer_store_chain,
+       o.valid_to AS best_offer_valid_to
+     FROM receipt_items ri
+     LEFT JOIN products p ON p.id = ri.matched_product_id
+     LEFT JOIN LATERAL (
+       SELECT o.price_value, o.old_price_value, o.store_chain, o.valid_to
+       FROM offers o
+       WHERE o.product_id = ri.matched_product_id
+         AND o.status = 'active'
+         AND (o.valid_to IS NULL OR o.valid_to >= CURRENT_DATE)
+       ORDER BY o.price_value ASC
+       LIMIT 1
+     ) o ON true
+     WHERE ri.receipt_id = $1
+     ORDER BY ri.line_number ASC
+     LIMIT 200`,
     [receiptId]
   );
 
-  return items.rows.map((row) => ({
-    product_id: null,
-    product_name: row.raw_name,
-    price: row.total_price ? Number(row.total_price) : null,
-    old_price: null,
-    source: 'RECEIPT',
-    valid_to: null,
-    savings_eur: 0,
-    savings_percent: 0,
-    verified: false,
-    confidence: row.confidence ? Number(row.confidence) : null
-  }));
+  let savingsTotal = 0;
+  let verifiedCount = 0;
+
+  const mapped = [];
+  for (const row of items.rows) {
+    const receiptPrice = row.total_price != null ? Number(row.total_price) : null;
+    let bestOfferPrice = row.best_offer_price != null ? Number(row.best_offer_price) : null;
+    const oldPrice = row.best_offer_old_price != null ? Number(row.best_offer_old_price) : null;
+
+    if (row.matched_product_id) {
+      const truthSources = await query(
+        `SELECT o.price_value AS price,
+                o.source_type,
+                o.updated_at AS timestamp,
+                o.is_verified
+         FROM offers o
+         WHERE o.product_id = $1
+           AND o.status = 'active'
+         ORDER BY o.updated_at DESC
+         LIMIT 60`,
+        [row.matched_product_id]
+      );
+      const truthPrice = computeWeightedTruthPrice(truthSources.rows);
+      if (truthPrice != null) {
+        bestOfferPrice = truthPrice;
+      }
+    }
+
+    const hasComparablePrice = receiptPrice != null && bestOfferPrice != null;
+
+    const savings = hasComparablePrice && receiptPrice > bestOfferPrice
+      ? Number((receiptPrice - bestOfferPrice).toFixed(2))
+      : 0;
+    const savingsPercent = hasComparablePrice && receiptPrice > 0
+      ? Number((((receiptPrice - bestOfferPrice) / receiptPrice) * 100).toFixed(1))
+      : 0;
+    const verified = row.match_status === 'matched' && bestOfferPrice != null;
+
+    if (verified) {
+      verifiedCount += 1;
+    }
+    if (savings > 0) {
+      savingsTotal += savings;
+    }
+
+    const item = {
+      product_id: row.matched_product_id || null,
+      product_name: row.matched_product_name || row.raw_name,
+      receipt_name: row.raw_name,
+      price: receiptPrice,
+      best_offer_price: bestOfferPrice,
+      old_price: oldPrice,
+      store_chain: row.best_offer_store_chain || null,
+      source: bestOfferPrice != null ? 'OFFER' : 'RECEIPT',
+      valid_to: row.best_offer_valid_to || null,
+      savings_eur: savings,
+      savings_percent: savingsPercent,
+      verified,
+      confidence: row.confidence != null ? Number(row.confidence) : null
+    };
+    mapped.push(item);
+  }
+
+  const verifiedRatio = mapped.length > 0
+    ? Number((verifiedCount / mapped.length).toFixed(2))
+    : 0;
+
+  return {
+    items: mapped,
+    savings_total: Number(savingsTotal.toFixed(2)),
+    verified_ratio: verifiedRatio
+  };
 }
 
 module.exports = {

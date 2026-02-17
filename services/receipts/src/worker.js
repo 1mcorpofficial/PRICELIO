@@ -1,8 +1,13 @@
 require('dotenv').config();
 
+const http = require('http');
 const pipeline = require('./pipeline');
 const { connectQueue, QUEUE_NAME } = require('./queue');
 const { updateReceiptStatus, insertReceiptItems } = require('./queries');
+
+let queueConnected = false;
+let lastError = null;
+let processedCount = 0;
 
 async function handleReceiptJob(payload) {
   try {
@@ -54,15 +59,45 @@ async function handleReceiptJob(payload) {
     await updateReceiptStatus(payload.receipt_id, finalStatus, confidence.receipt_confidence);
     
     console.log(`Receipt ${payload.receipt_id} completed with status: ${finalStatus}`);
+    processedCount += 1;
+    lastError = null;
   } catch (error) {
     console.error(`Receipt job ${payload.receipt_id} failed:`, error);
     await updateReceiptStatus(payload.receipt_id, 'needs_confirmation');
+    lastError = error.message;
     throw error;
   }
 }
 
+function startHealthServer() {
+  const port = Number(process.env.HEALTH_PORT || process.env.PORT || 4002);
+  const server = http.createServer((req, res) => {
+    if (req.url !== '/health') {
+      res.statusCode = 404;
+      res.end('not_found');
+      return;
+    }
+
+    const body = JSON.stringify({
+      status: queueConnected ? 'ok' : 'degraded',
+      service: 'receipts-worker',
+      queue_connected: queueConnected,
+      processed_count: processedCount,
+      last_error: lastError,
+      timestamp: new Date().toISOString()
+    });
+    res.setHeader('Content-Type', 'application/json');
+    res.end(body);
+  });
+
+  server.listen(port, () => {
+    console.log(`Receipts worker health endpoint on port ${port}`);
+  });
+}
+
 async function startWorker() {
   const { connection, channel } = await connectQueue();
+  queueConnected = true;
   channel.prefetch(1);
   channel.consume(QUEUE_NAME, async (message) => {
     if (!message) return;
@@ -77,12 +112,16 @@ async function startWorker() {
   });
 
   process.on('SIGINT', async () => {
+    queueConnected = false;
     await channel.close();
     await connection.close();
     process.exit(0);
   });
 }
 
+startHealthServer();
 startWorker().catch((error) => {
+  queueConnected = false;
+  lastError = error.message;
   console.error('Worker failed to start', error);
 });
