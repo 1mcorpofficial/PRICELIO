@@ -792,10 +792,10 @@
       return;
     }
 
-    setLoading(container, 'Searching products...');
+    setLoading(container, 'Searching prices across stores...');
 
     try {
-      const rows = await apiRequest(`/search?q=${encodeURIComponent(query)}`);
+      const rows = await apiRequest(`/products/compare?q=${encodeURIComponent(query)}&limit=5`);
       if (!rows || !rows.length) {
         renderEmpty(container, 'No matching products found.');
         return;
@@ -805,11 +805,20 @@
         <div class="result-card">
           <div class="result-top">
             <strong>${sanitize(row.name || '-')}</strong>
-            <span class="chip-static">${sanitize((row.best_source || 'unknown').toUpperCase())}</span>
+            <span class="chip-static">BEST ${formatMoney(row.best_price)}</span>
           </div>
-          <div class="muted small">Best chain: ${sanitize(row.store_chain || '-')}</div>
+          <div class="muted small">Brand: ${sanitize(row.brand || '-')}</div>
           <div class="result-price">${formatMoney(row.best_price)}</div>
-          <div class="muted small">Updated ${formatDate(row.updated_at)}</div>
+          <div class="list compact">
+            ${(Array.isArray(row.store_prices) && row.store_prices.length)
+              ? row.store_prices.slice(0, 8).map((priceRow) => `
+                <div class="line-item compact">
+                  <span>${sanitize(priceRow.chain || '-')} / ${sanitize(priceRow.store_name || '-')}</span>
+                  <strong>${formatMoney(priceRow.price)}</strong>
+                </div>
+              `).join('')
+              : '<div class="muted small">No active store prices found.</div>'}
+          </div>
           <div class="muted small">Product ID: ${sanitize(row.product_id || '-')}</div>
         </div>
       `).join('');

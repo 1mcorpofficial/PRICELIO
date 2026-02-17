@@ -430,6 +430,87 @@ app.get('/search', async (req, res) => {
   }
 });
 
+// Compare one product prices across many stores by name or barcode
+app.get('/products/compare', async (req, res) => {
+  try {
+    const q = String(req.query.q || '').trim();
+    const limit = Math.max(1, Math.min(10, parseInt(req.query.limit, 10) || 5));
+    if (!q) {
+      return res.status(400).json({ error: 'query_required' });
+    }
+
+    const products = await query(
+      `SELECT p.id,
+              p.name,
+              p.brand,
+              p.ean
+       FROM products p
+       WHERE p.is_active = true
+         AND (p.name ILIKE $1 OR p.ean = $2)
+       ORDER BY
+         CASE WHEN lower(p.name) = lower($2) THEN 0 ELSE 1 END,
+         CASE WHEN p.name ILIKE $3 THEN 0 ELSE 1 END,
+         p.name ASC
+       LIMIT $4`,
+      [`%${q}%`, q, `${q}%`, limit]
+    );
+
+    if (!products.rows.length) {
+      return res.json([]);
+    }
+
+    const productIds = products.rows.map((p) => p.id);
+    const prices = await query(
+      `SELECT o.product_id,
+              s.id AS store_id,
+              s.chain,
+              s.name AS store_name,
+              MIN(o.price_value)::numeric(10,2) AS price,
+              BOOL_OR(o.is_verified) AS verified_any,
+              MAX(o.updated_at) AS updated_at
+       FROM offers o
+       JOIN stores s ON s.id = o.store_id
+       WHERE o.product_id = ANY($1::uuid[])
+         AND o.status = 'active'
+         AND s.is_active = true
+       GROUP BY o.product_id, s.id, s.chain, s.name
+       ORDER BY o.product_id, MIN(o.price_value) ASC`,
+      [productIds]
+    );
+
+    const pricesByProduct = new Map();
+    prices.rows.forEach((row) => {
+      const list = pricesByProduct.get(row.product_id) || [];
+      list.push({
+        store_id: row.store_id,
+        chain: row.chain,
+        store_name: row.store_name,
+        price: row.price == null ? null : Number(row.price),
+        verified: Boolean(row.verified_any),
+        updated_at: row.updated_at
+      });
+      pricesByProduct.set(row.product_id, list);
+    });
+
+    const payload = products.rows.map((product) => {
+      const storePrices = (pricesByProduct.get(product.id) || []).sort((a, b) => (a.price || 0) - (b.price || 0));
+      return {
+        product_id: product.id,
+        name: product.name,
+        brand: product.brand || null,
+        ean: product.ean || null,
+        best_price: storePrices.length ? storePrices[0].price : null,
+        store_prices: storePrices
+      };
+    });
+
+    return res.json(payload);
+  } catch (error) {
+    console.error('Product compare error:', error);
+    return res.status(500).json({ error: 'product_compare_unavailable' });
+  }
+});
+
 app.get('/products/:id', async (req, res) => {
   try {
     const detail = await getProductDetail(req.params.id);
