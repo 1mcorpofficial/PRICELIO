@@ -581,6 +581,31 @@
           </div>
         </div>
       </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Premium Gifts (Admin)</h2>
+        </div>
+        <form id="grantPlusForm" class="row">
+          <div class="field">
+            <label for="grantUserId">User ID (UUID)</label>
+            <input id="grantUserId" type="text" placeholder="Paste user UUID" required />
+          </div>
+          <div class="field">
+            <label for="grantDurationDays">Duration (days)</label>
+            <input id="grantDurationDays" type="number" min="1" max="3650" value="365" required />
+          </div>
+          <div class="field">
+            <label for="grantFeatureKeys">Feature Keys (comma-separated)</label>
+            <input id="grantFeatureKeys" type="text" placeholder="Leave empty to grant all Plus features" />
+          </div>
+          <div class="field" style="min-width: 140px; flex: 0 0 auto;">
+            <label>&nbsp;</label>
+            <button id="grantPlusSubmitBtn" class="btn btn-primary" type="submit">Grant Plus</button>
+          </div>
+        </form>
+        <p class="muted">Default features: time_machine, advanced_analytics, multi_baskets, priority_scan, family_plus.</p>
+      </section>
     </main>
   </div>
 
@@ -899,6 +924,26 @@
       await Promise.all([loadUnmatchedProducts(), loadStats()]);
     }
 
+    async function grantPlusForUser(userId, durationDays, featureKeys) {
+      if (!userId) {
+        showToast('User ID is required.', 'error');
+        return;
+      }
+
+      const payload = { duration_days: durationDays };
+      if (featureKeys.length) {
+        payload.feature_keys = featureKeys;
+      }
+
+      const result = await apiCall(`/admin/users/${encodeURIComponent(userId)}/grant-plus`, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+
+      const grantedCount = Array.isArray(result.features_granted) ? result.features_granted.length : 0;
+      showToast(`Plus granted: ${grantedCount} entitlements.`, 'success');
+    }
+
     function bindEvents() {
       qs('#loginForm').addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -972,6 +1017,24 @@
         const productId = input?.value?.trim();
         createMapping(rawName, productId)
           .catch((error) => showToast(error.message || 'Create mapping failed', 'error'));
+      });
+
+      qs('#grantPlusForm').addEventListener('submit', (event) => {
+        event.preventDefault();
+        const userId = qs('#grantUserId').value.trim();
+        const durationDays = parseInt(qs('#grantDurationDays').value, 10) || 365;
+        const featureKeysRaw = qs('#grantFeatureKeys').value.trim();
+        const featureKeys = featureKeysRaw
+          ? featureKeysRaw.split(',').map((item) => item.trim()).filter(Boolean)
+          : [];
+
+        grantPlusForUser(userId, durationDays, featureKeys)
+          .then(() => {
+            if (!featureKeysRaw) {
+              qs('#grantFeatureKeys').value = '';
+            }
+          })
+          .catch((error) => showToast(error.message || 'Grant Plus failed', 'error'));
       });
 
       qs('#closeReceiptModalBtn').addEventListener('click', closeReceiptModal);

@@ -20,6 +20,13 @@ const SESSION_COOKIE = 'admin_session';
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
 
 const sessions = new Map();
+const PLUS_FEATURES = [
+  'time_machine',
+  'advanced_analytics',
+  'multi_baskets',
+  'priority_scan',
+  'family_plus'
+];
 
 function parseCookies(req) {
   const header = req.headers.cookie || '';
@@ -382,6 +389,59 @@ app.get('/api/connectors/health', async (req, res) => {
     ]);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Grant Plus entitlements to a user (admin tool)
+app.post('/api/admin/users/:id/grant-plus', async (req, res) => {
+  try {
+    const client = await getClient();
+    const userId = String(req.params.id || '').trim();
+    const durationDays = Math.max(1, Math.min(3650, parseInt(req.body?.duration_days, 10) || 365));
+    const featureKeys = Array.isArray(req.body?.feature_keys) && req.body.feature_keys.length
+      ? req.body.feature_keys
+      : PLUS_FEATURES;
+
+    const userCheck = await client.query(
+      `SELECT id, email FROM users WHERE id = $1 LIMIT 1`,
+      [userId]
+    );
+    if (!userCheck.rows.length) {
+      return res.status(404).json({ error: 'user_not_found' });
+    }
+
+    const inserted = [];
+    for (const feature of featureKeys) {
+      const row = await client.query(
+        `INSERT INTO user_entitlements (
+          user_id, feature_key, source_type, source_id, starts_at, ends_at, is_active, metadata, created_at
+         )
+         VALUES (
+          $1, $2, 'promo', NULL, NOW(), NOW() + ($3 || ' days')::interval, true, $4::jsonb, NOW()
+         )
+         RETURNING id, feature_key, starts_at, ends_at`,
+        [
+          userId,
+          feature,
+          String(durationDays),
+          JSON.stringify({
+            granted_by_admin: req.admin?.email || null,
+            duration_days: durationDays
+          })
+        ]
+      );
+      inserted.push(row.rows[0]);
+    }
+
+    return res.json({
+      success: true,
+      user_id: userId,
+      email: userCheck.rows[0].email,
+      duration_days: durationDays,
+      features_granted: inserted
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message || 'grant_plus_failed' });
   }
 });
 

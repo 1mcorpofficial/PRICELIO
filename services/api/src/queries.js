@@ -17,13 +17,13 @@ async function getStorePins(filters = {}) {
   
   // Add category filter
   if (category && category !== 'All') {
-    whereConditions.push(`category = $${paramIndex}`);
+    whereConditions.push(`format = $${paramIndex}`);
     params.push(category);
     paramIndex++;
   }
   
   const stores = await query(
-    `SELECT id, name, chain, lat, lon, category, city_id
+    `SELECT id, name, chain, lat, lon, format, city_id
      FROM stores
      WHERE ${whereConditions.join(' AND ')}
      ORDER BY name ASC`,

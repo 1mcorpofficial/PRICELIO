@@ -326,7 +326,24 @@ app.post('/plus/unlock-with-points', auth.requireUser, withFeatureFlag('premium_
 
 app.get('/map/stores', async (req, res) => {
   try {
-    const { category, verified, maxDistance, lat, lon, cityId } = req.query;
+    const { category, verified, maxDistance, lat, lon, cityId, city } = req.query;
+    
+    let resolvedCityId = null;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    
+    if (cityId && uuidRegex.test(String(cityId))) {
+      resolvedCityId = String(cityId);
+    } else {
+      const defaultCity = (city || 'Vilnius').toString();
+      const cityRow = await query(
+        `SELECT id
+         FROM cities
+         WHERE name = $1
+         LIMIT 1`,
+        [defaultCity]
+      );
+      resolvedCityId = cityRow.rows[0]?.id || null;
+    }
     
     const filters = {
       category,
@@ -334,7 +351,7 @@ app.get('/map/stores', async (req, res) => {
       maxDistance: maxDistance ? parseFloat(maxDistance) : null,
       lat: lat ? parseFloat(lat) : null,
       lon: lon ? parseFloat(lon) : null,
-      cityId: cityId ? parseInt(cityId) : 1 // Default Vilnius
+      cityId: resolvedCityId
     };
     
     let pins = await getStorePins(filters);

@@ -1,6 +1,9 @@
+version: '3.8'
+
 services:
   postgres:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -13,12 +16,24 @@ services:
 
   redis:
     image: redis:7-alpine
+    restart: unless-stopped
     command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
     ports:
       - "${REDIS_PORT:-6379}:6379"
 
+  rabbitmq:
+    image: rabbitmq:3-management
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_CONSOLE_PORT:-15672}:15672"
+
   minio:
     image: minio/minio:latest
+    restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
@@ -29,25 +44,20 @@ services:
     volumes:
       - minio_data:/data
 
-  rabbitmq:
-    image: rabbitmq:3-management
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
-    ports:
-      - "${RABBITMQ_PORT:-5672}:5672"
-      - "${RABBITMQ_CONSOLE_PORT:-15672}:15672"
-
   api:
     image: node:22-alpine
+    restart: unless-stopped
     working_dir: /workspace
-    profiles: ["app"]
-    command: sh -lc "npm -w services/api install && npm -w services/api run dev"
+    command: sh -lc "npm -w services/api install --omit=dev && npm -w services/api run start"
     env_file:
       - ../services/api/.env
+    environment:
+      FEATURE_FLAGS_ENFORCE: "true"
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
     depends_on:
       - postgres
       - rabbitmq
+      - redis
     ports:
       - "3000:3000"
     volumes:
@@ -56,9 +66,9 @@ services:
 
   ai-gateway:
     image: node:22-alpine
+    restart: unless-stopped
     working_dir: /workspace
-    profiles: ["app"]
-    command: sh -lc "npm -w services/ai-gateway install && npm -w services/ai-gateway run dev"
+    command: sh -lc "npm -w services/ai-gateway install --omit=dev && npm -w services/ai-gateway run start"
     env_file:
       - ../services/ai-gateway/.env
     depends_on:
@@ -70,9 +80,9 @@ services:
 
   receipts:
     image: node:22-alpine
+    restart: unless-stopped
     working_dir: /workspace
-    profiles: ["app"]
-    command: sh -lc "npm -w services/receipts install && npm -w services/receipts run dev"
+    command: sh -lc "npm -w services/receipts install --omit=dev && npm -w services/receipts run start"
     env_file:
       - ../services/receipts/.env
     depends_on:
@@ -88,9 +98,9 @@ services:
 
   ingest:
     image: node:22-alpine
+    restart: unless-stopped
     working_dir: /workspace
-    profiles: ["app"]
-    command: sh -lc "npm -w services/ingest install && npm -w services/ingest run dev"
+    command: sh -lc "npm -w services/ingest install --omit=dev && npm -w services/ingest run start"
     env_file:
       - ../services/ingest/.env
     depends_on:
@@ -102,9 +112,9 @@ services:
 
   analytics:
     image: node:22-alpine
+    restart: unless-stopped
     working_dir: /workspace
-    profiles: ["app"]
-    command: sh -lc "npm -w services/analytics install && npm -w services/analytics run dev"
+    command: sh -lc "npm -w services/analytics install --omit=dev && npm -w services/analytics run start"
     env_file:
       - ../services/analytics/.env
     depends_on:
@@ -117,9 +127,9 @@ services:
 
   admin:
     image: node:22-alpine
+    restart: unless-stopped
     working_dir: /workspace
-    profiles: ["app"]
-    command: sh -lc "npm -w apps/admin install && npm -w apps/admin run dev"
+    command: sh -lc "npm -w apps/admin install --omit=dev && npm -w apps/admin run start"
     env_file:
       - ../apps/admin/.env
     depends_on:
