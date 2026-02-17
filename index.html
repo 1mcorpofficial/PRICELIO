@@ -3,300 +3,321 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#f7d84b" />
-    <title>ReceiptRadar MVP</title>
+    <meta name="theme-color" content="#0c1220" />
+    <title>PRICELIO</title>
     <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body data-view="home" data-mode="save">
-    <div class="bg-orbit"></div>
-    <header class="app-header">
-      <div class="brand">
-        <div class="brand-mark">RR</div>
-        <div>
-          <p class="brand-name">ReceiptRadar</p>
-          <p class="brand-sub">Real prices. Clear sources.</p>
+  <body data-view="overview">
+    <div class="bg-layer"></div>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand-block">
+          <div class="brand-logo">PL</div>
+          <div>
+            <h1>PRICELIO</h1>
+            <p>Post-purchase intelligence and next-trip savings</p>
+          </div>
         </div>
-      </div>
-      <div class="city-chip">
-        <span class="dot"></span>
-        Vilnius
-      </div>
-    </header>
+        <div class="topbar-actions">
+          <div id="authStatus" class="auth-status">Guest mode</div>
+          <button id="refreshAllBtn" class="btn btn-ghost">Refresh</button>
+        </div>
+      </header>
 
-    <section class="mode-switch" aria-label="Mode switch">
-      <button class="mode-btn" data-mode="save">Save today</button>
-      <button class="mode-btn" data-mode="plan">Plan a basket</button>
-      <button class="mode-btn" data-mode="after">Just bought</button>
-    </section>
+      <nav class="view-nav" aria-label="Views">
+        <button class="nav-btn active" data-view="overview">Overview</button>
+        <button class="nav-btn" data-view="market">Market</button>
+        <button class="nav-btn" data-view="basket">Basket</button>
+        <button class="nav-btn" data-view="receipts">Receipts</button>
+        <button class="nav-btn" data-view="family">Family</button>
+        <button class="nav-btn" data-view="missions">Missions</button>
+        <button class="nav-btn" data-view="leaderboard">Leaderboard</button>
+        <button class="nav-btn" data-view="plus">Plus</button>
+        <button class="nav-btn" data-view="kids">Kids</button>
+        <button class="nav-btn" data-view="profile">Profile</button>
+      </nav>
 
-    <section class="hero">
-      <div>
-        <p class="eyebrow">Today in your city</p>
-        <h1 class="hero-title" id="heroTitle">Top deals backed by flyers and receipts.</h1>
-      </div>
-      <div class="hero-card">
-        <div>
-          <p class="stat-label">Weekly savings</p>
-          <p class="stat-value">€18.40</p>
-        </div>
-        <div>
-          <p class="stat-label">Verified prices</p>
-          <p class="stat-value">1,284</p>
-        </div>
-        <div>
-          <p class="stat-label">Stores live</p>
-          <p class="stat-value">42</p>
-        </div>
-      </div>
-    </section>
+      <main class="content">
+        <section class="view active" id="view-overview">
+          <div class="grid two">
+            <article class="panel">
+              <h2>Auth</h2>
+              <p class="muted">Login to unlock points, family, missions and kids mode.</p>
+              <div class="auth-grid">
+                <form id="registerForm" class="stack">
+                  <h3>Create account</h3>
+                  <input type="email" id="registerEmail" placeholder="email@example.com" required />
+                  <input type="password" id="registerPassword" placeholder="password (min 8)" required />
+                  <button class="btn" type="submit">Register</button>
+                </form>
+                <form id="loginForm" class="stack">
+                  <h3>Login</h3>
+                  <input type="email" id="loginEmail" placeholder="email@example.com" required />
+                  <input type="password" id="loginPassword" placeholder="password" required />
+                  <div class="row">
+                    <button class="btn" type="submit">Login</button>
+                    <button class="btn btn-ghost" id="logoutBtn" type="button">Logout</button>
+                  </div>
+                </form>
+              </div>
+            </article>
+            <article class="panel">
+              <h2>Gamification</h2>
+              <div class="kpi-grid">
+                <div class="kpi"><span>Rank</span><strong id="kpiRank">-</strong></div>
+                <div class="kpi"><span>Level</span><strong id="kpiLevel">-</strong></div>
+                <div class="kpi"><span>Lifetime XP</span><strong id="kpiXp">-</strong></div>
+                <div class="kpi"><span>Spendable</span><strong id="kpiPoints">-</strong></div>
+              </div>
+              <h3 class="subhead">Recent Points</h3>
+              <div id="ledgerPreview" class="list compact"></div>
+            </article>
+          </div>
+        </section>
 
-    <nav class="tab-bar" aria-label="Primary">
-      <button class="tab-btn" data-view="home">Home</button>
-      <button class="tab-btn" data-view="map">Map</button>
-      <button class="tab-btn" data-view="search">Search</button>
-      <button class="tab-btn" data-view="basket">Basket</button>
-      <button class="tab-btn" data-view="scan">Scan</button>
-      <button class="tab-btn" data-view="report">Report</button>
-      <button class="tab-btn" data-view="profile">Profile</button>
-    </nav>
+        <section class="view" id="view-market">
+          <div class="grid two">
+            <article class="panel">
+              <div class="panel-head">
+                <h2>Store map</h2>
+                <div class="chips" id="mapChips">
+                  <button class="chip active" data-filter="category" data-value="All">All</button>
+                  <button class="chip" data-filter="verified" data-value="true">Verified</button>
+                  <button class="chip" data-filter="distance" data-value="2">&lt;2km</button>
+                  <button class="chip" data-filter="distance" data-value="5">&lt;5km</button>
+                </div>
+              </div>
+              <div id="map" class="map"></div>
+            </article>
+            <article class="panel">
+              <h2>Search and compare</h2>
+              <div class="row">
+                <input type="search" id="searchInput" placeholder="Search product or barcode" />
+                <button id="searchBtn" class="btn">Search</button>
+              </div>
+              <div id="searchResults" class="list"></div>
+            </article>
+          </div>
+        </section>
 
-    <main class="app-main">
-      <section class="view" id="view-home">
-        <div class="section-head">
-          <h2>Today feed</h2>
-          <div class="pill">Auto-ranked</div>
-        </div>
-        <div class="card-grid stagger">
-          <article class="deal-card">
-            <div class="deal-header">
-              <span class="deal-store">Maxima X</span>
-              <span class="badge badge-flyer">FLYER</span>
-            </div>
-            <h3>Greek yogurt 400g</h3>
-            <p class="deal-price">€1.19 <span class="deal-old">€1.79</span></p>
-            <p class="deal-meta">Valid until Sep 14</p>
-          </article>
-          <article class="deal-card">
-            <div class="deal-header">
-              <span class="deal-store">Rimi</span>
-              <span class="badge badge-receipt">RECEIPT</span>
-            </div>
-            <h3>Arabica coffee 1kg</h3>
-            <p class="deal-price">€9.49 <span class="deal-old">€12.99</span></p>
-            <p class="deal-meta">Paid yesterday</p>
-          </article>
-          <article class="deal-card">
-            <div class="deal-header">
-              <span class="deal-store">Iki Express</span>
-              <span class="badge badge-online">ONLINE</span>
-            </div>
-            <h3>Fresh salmon 300g</h3>
-            <p class="deal-price">€4.99 <span class="deal-old">€6.49</span></p>
-            <p class="deal-meta">Updated 2h ago</p>
-          </article>
-        </div>
+        <section class="view" id="view-basket">
+          <div class="grid two">
+            <article class="panel">
+              <h2>Basket builder</h2>
+              <p class="muted">One line per item. Use format: <code>milk x2</code>.</p>
+              <textarea id="basketInput" rows="8" placeholder="Greek yogurt x1&#10;Arabica coffee x1&#10;Fresh salmon x1"></textarea>
+              <div class="row">
+                <button id="buildBasketBtn" class="btn">Build Basket</button>
+                <button id="optimizeBasketBtn" class="btn btn-ghost">Optimize</button>
+              </div>
+              <div id="basketItems" class="list"></div>
+            </article>
+            <article class="panel">
+              <h2>Best plan</h2>
+              <div id="basketPlan" class="plan-box muted">Create basket to see optimization plan.</div>
+            </article>
+          </div>
+        </section>
 
-        <div class="section-head">
-          <h2>Fresh price shocks</h2>
-          <div class="pill">Price history</div>
-        </div>
-        <div class="shock-list">
-          <div class="shock-row">
-            <div>
-              <p class="shock-title">Laundry pods 40 ct</p>
-              <p class="shock-sub">Drogas • Verified</p>
-            </div>
-            <p class="shock-value down">-32%</p>
+        <section class="view" id="view-receipts">
+          <div class="grid two">
+            <article class="panel">
+              <h2>Upload receipt</h2>
+              <div class="dropzone" id="scanPreview">Select a receipt photo to start.</div>
+              <input type="file" id="scanInput" accept="image/*" />
+              <div class="row">
+                <button id="scanBtn" class="btn">Analyze Receipt</button>
+              </div>
+              <p id="scanStatus" class="muted">Awaiting upload.</p>
+            </article>
+            <article class="panel">
+              <h2>Overpaid report</h2>
+              <div id="receiptReport" class="list"></div>
+            </article>
           </div>
-          <div class="shock-row">
-            <div>
-              <p class="shock-title">Wholegrain bread</p>
-              <p class="shock-sub">Lidl • Receipt median</p>
-            </div>
-            <p class="shock-value down">-18%</p>
-          </div>
-          <div class="shock-row">
-            <div>
-              <p class="shock-title">Protein bars 12 pack</p>
-              <p class="shock-sub">Iki • Flyer</p>
-            </div>
-            <p class="shock-value up">+11%</p>
-          </div>
-        </div>
-      </section>
+        </section>
 
-      <section class="view" id="view-map">
-        <div class="section-head">
-          <h2>Map view</h2>
-          <div class="pill">Top deals nearby</div>
-        </div>
-        <div class="chip-row">
-          <button class="chip active" data-filter="category" data-value="All">All</button>
-          <button class="chip" data-filter="category" data-value="Grocery">Grocery</button>
-          <button class="chip" data-filter="category" data-value="Beauty">Beauty</button>
-          <button class="chip" data-filter="category" data-value="DIY">DIY</button>
-          <button class="chip" data-filter="verified" data-value="true">Verified</button>
-          <button class="chip" data-filter="distance" data-value="2">< 2km</button>
-          <button class="chip" data-filter="distance" data-value="5">< 5km</button>
-        </div>
-        <div class="map-shell">
-          <div id="map" role="application" aria-label="Store map"></div>
-          <div class="map-legend">
-            <p class="legend-title">Top deals</p>
-            <div class="legend-item"><span class="legend-dot flyer"></span>Flyer</div>
-            <div class="legend-item"><span class="legend-dot receipt"></span>Receipt</div>
-            <div class="legend-item"><span class="legend-dot online"></span>Online</div>
+        <section class="view" id="view-family">
+          <div class="grid two">
+            <article class="panel">
+              <h2>Family household</h2>
+              <div class="stack">
+                <input id="familyName" placeholder="Family name" />
+                <button id="createFamilyBtn" class="btn">Create Family</button>
+              </div>
+              <hr />
+              <div class="stack">
+                <input id="familyIdInput" placeholder="Household ID" />
+                <input id="familyInviteEmail" placeholder="Invite email" />
+                <select id="familyInviteRole">
+                  <option value="planner">Planner</option>
+                  <option value="runner">Runner</option>
+                  <option value="junior">Junior</option>
+                </select>
+                <button id="inviteFamilyBtn" class="btn btn-ghost">Create Invite</button>
+              </div>
+              <hr />
+              <div class="stack">
+                <input id="joinFamilyId" placeholder="Household ID" />
+                <input id="joinFamilyToken" placeholder="Invite token" />
+                <button id="joinFamilyBtn" class="btn btn-ghost">Join Family</button>
+              </div>
+            </article>
+            <article class="panel">
+              <h2>Shared lists</h2>
+              <div class="stack">
+                <input id="familyListHouseholdId" placeholder="Household ID" />
+                <button id="loadFamilyListsBtn" class="btn btn-ghost">Load Lists</button>
+                <div class="row">
+                  <input id="familyListItem" placeholder="New list item" />
+                  <button id="addFamilyItemBtn" class="btn">Add</button>
+                </div>
+                <button id="pollFamilyBtn" class="btn btn-ghost">Poll Family Events</button>
+              </div>
+              <div id="familyLists" class="list"></div>
+              <div id="familyEvents" class="list compact"></div>
+            </article>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section class="view" id="view-search">
-        <div class="section-head">
-          <h2>Search prices</h2>
-          <div class="pill">Clear sources</div>
-        </div>
-        <div class="search-bar">
-          <input type="search" id="searchInput" placeholder="Type a product or barcode" />
-          <button class="primary-btn" id="searchBtn">Search</button>
-        </div>
-        <div class="search-results" id="searchResults"></div>
-      </section>
+        <section class="view" id="view-missions">
+          <div class="grid two">
+            <article class="panel">
+              <h2>Bounty missions</h2>
+              <div class="row">
+                <input id="missionLat" placeholder="Lat" />
+                <input id="missionLon" placeholder="Lon" />
+                <button id="loadMissionsBtn" class="btn">Nearby</button>
+              </div>
+              <div id="missionsList" class="list"></div>
+            </article>
+            <article class="panel">
+              <h2>Submit / verify proof</h2>
+              <div class="stack">
+                <input id="missionIdInput" placeholder="Mission ID" />
+                <input id="missionProductName" placeholder="Canonical product name" />
+                <input id="missionBarcode" placeholder="Barcode" />
+                <input id="missionStoreChain" placeholder="Store chain" />
+                <input id="missionMediaHash" placeholder="Media hash" />
+                <label><input type="checkbox" id="missionForeground" checked /> App was foreground</label>
+                <button id="submitMissionBtn" class="btn">Submit Mission</button>
+              </div>
+              <hr />
+              <div class="row">
+                <input id="verifySubmissionId" placeholder="Submission ID" />
+                <select id="verifyVote">
+                  <option value="confirm">Confirm</option>
+                  <option value="reject">Reject</option>
+                </select>
+                <button id="verifyMissionBtn" class="btn btn-ghost">Verify</button>
+              </div>
+              <div class="row">
+                <input id="proofIdInput" placeholder="Proof ID" />
+                <button id="loadProofBtn" class="btn btn-ghost">Status</button>
+              </div>
+              <div id="proofStatus" class="list compact"></div>
+            </article>
+          </div>
+        </section>
 
-      <section class="view" id="view-basket">
-        <div class="section-head">
-          <h2>Basket optimizer</h2>
-          <div class="pill">1 store plan</div>
-        </div>
-        <div class="basket-wrap">
-          <div class="basket-list" id="basketList">
-            <div class="basket-item">
-              <p>Whole milk 1L</p>
-              <span class="badge badge-receipt">RECEIPT</span>
-            </div>
-            <div class="basket-item">
-              <p>Pasta 500g</p>
-              <span class="badge badge-flyer">FLYER</span>
-            </div>
-            <div class="basket-item">
-              <p>Tomatoes 1kg</p>
-              <span class="badge badge-online">ONLINE</span>
-            </div>
+        <section class="view" id="view-leaderboard">
+          <div class="grid two">
+            <article class="panel">
+              <h2>Global leaderboard</h2>
+              <button id="loadGlobalLeaderboardBtn" class="btn btn-ghost">Refresh Global</button>
+              <div id="globalLeaderboard" class="table-wrap"></div>
+            </article>
+            <article class="panel">
+              <h2>Friends leaderboard</h2>
+              <button id="loadFriendsLeaderboardBtn" class="btn btn-ghost">Refresh Friends</button>
+              <div id="friendsLeaderboard" class="table-wrap"></div>
+            </article>
           </div>
-          <div class="plan-card">
-            <p class="plan-title">Best plan</p>
-            <h3 id="planStore">Shop at Lidl, City Center</h3>
-            <p class="plan-meta" id="planTotal">Estimated total: €12.40</p>
-            <p class="plan-meta" id="planSave">Potential save: €3.15</p>
-            <button class="primary-btn">Open route</button>
-          </div>
-        </div>
-      </section>
+        </section>
 
-      <section class="view" id="view-scan">
-        <div class="section-head">
-          <h2>Scan receipt</h2>
-          <div class="pill">AI extraction</div>
-        </div>
-        <div class="scan-card">
-          <div class="scan-preview" id="scanPreview">
-            <p>Drop a receipt photo to see extraction.</p>
+        <section class="view" id="view-plus">
+          <div class="grid two">
+            <article class="panel">
+              <h2>PRICELIO Plus</h2>
+              <p class="muted">2.99 EUR/month or 3000 points for 30 days.</p>
+              <div class="row">
+                <button id="loadPlusFeaturesBtn" class="btn btn-ghost">Load Features</button>
+                <button id="subscribePlusBtn" class="btn">Subscribe</button>
+                <button id="unlockPlusBtn" class="btn btn-ghost">Unlock with Points</button>
+              </div>
+              <div id="plusFeatures" class="list"></div>
+              <div id="plusStatus" class="list compact"></div>
+            </article>
+            <article class="panel">
+              <h2>Premium insights</h2>
+              <div class="stack">
+                <input id="timeMachineProductId" placeholder="Product ID for Time Machine" />
+                <button id="runTimeMachineBtn" class="btn btn-ghost">Run Time Machine</button>
+                <button id="loadAdvancedAnalyticsBtn" class="btn btn-ghost">Load Spending Analytics</button>
+              </div>
+              <div id="premiumInsights" class="list"></div>
+            </article>
           </div>
-          <div class="scan-actions">
-            <input type="file" id="scanInput" accept="image/*" />
-            <button class="primary-btn" id="scanBtn">Analyze receipt</button>
-          </div>
-          <div class="scan-status" id="scanStatus">Awaiting upload.</div>
-        </div>
-      </section>
+        </section>
 
-      <section class="view" id="view-report">
-        <div class="section-head">
-          <h2>Receipt report</h2>
-          <div class="pill">After purchase</div>
-        </div>
-        <div class="report-grid">
-          <div class="report-card">
-            <p class="report-title">Overpaid items</p>
-            <h3>3 products</h3>
-            <p class="report-meta">Potential save: €4.20</p>
+        <section class="view" id="view-kids">
+          <div class="grid two">
+            <article class="panel">
+              <h2>Kids mode (parent controlled)</h2>
+              <div class="stack">
+                <input id="kidDisplayName" placeholder="Kid display name" />
+                <select id="kidAgeGroup">
+                  <option value="4-8">4-8</option>
+                  <option value="9-12">9-12</option>
+                </select>
+                <input id="kidParentPin" placeholder="Parent PIN" type="password" />
+                <button id="activateKidsBtn" class="btn">Activate Kids Mode</button>
+              </div>
+              <div class="row">
+                <input id="kidsSessionId" placeholder="Kids session ID" />
+                <button id="deactivateKidsBtn" class="btn btn-ghost">Deactivate</button>
+              </div>
+            </article>
+            <article class="panel">
+              <h2>Kids missions</h2>
+              <div class="row">
+                <input id="kidsMissionSessionId" placeholder="Session ID" />
+                <button id="loadKidsMissionsBtn" class="btn btn-ghost">Load</button>
+              </div>
+              <div class="stack">
+                <input id="kidsMissionId" placeholder="Mission ID" />
+                <input id="kidsMissionProduct" placeholder="Canonical product name" />
+                <input id="kidsMissionBarcode" placeholder="Barcode" />
+                <input id="kidsMissionStoreChain" placeholder="Store chain" />
+                <button id="submitKidsMissionBtn" class="btn">Submit Kids Mission</button>
+              </div>
+              <div id="kidsMissions" class="list"></div>
+            </article>
           </div>
-          <div class="report-card">
-            <p class="report-title">Next time buy at</p>
-            <h3>Rimi Hyper</h3>
-            <p class="report-meta">Based on receipts + flyers</p>
-          </div>
-          <div class="report-card">
-            <p class="report-title">Verified lines</p>
-            <h3>18 / 21</h3>
-            <p class="report-meta">Confidence 0.82</p>
-          </div>
-        </div>
-        <div class="report-list">
-          <div class="report-row">
-            <div>
-              <p class="report-item">Apples 1kg</p>
-              <p class="report-sub">Paid €2.49 • Flyer €1.79</p>
-            </div>
-            <span class="badge badge-flyer">FLYER</span>
-          </div>
-          <div class="report-row">
-            <div>
-              <p class="report-item">Butter 200g</p>
-              <p class="report-sub">Paid €2.19 • Receipt median €1.69</p>
-            </div>
-            <span class="badge badge-receipt">RECEIPT</span>
-          </div>
-        </div>
-      </section>
+        </section>
 
-      <section class="view" id="view-profile">
-        <div class="section-head">
-          <h2>Your profile</h2>
-          <div class="pill">Privacy first</div>
-        </div>
-        <div class="profile-grid">
-          <div class="profile-card">
-            <p class="profile-title">Sources you trust</p>
-            <div class="toggle-row">
-              <label><input type="checkbox" checked /> Flyers</label>
-              <label><input type="checkbox" checked /> Online</label>
-              <label><input type="checkbox" checked /> Receipts</label>
-            </div>
+        <section class="view" id="view-profile">
+          <div class="grid two">
+            <article class="panel">
+              <h2>Profile</h2>
+              <div id="profileData" class="list compact"></div>
+            </article>
+            <article class="panel">
+              <h2>Rank catalog</h2>
+              <button id="loadRanksBtn" class="btn btn-ghost">Load Ranks</button>
+              <div id="rankCatalog" class="list"></div>
+            </article>
           </div>
-          <div class="profile-card">
-            <p class="profile-title">Alerts</p>
-            <div class="toggle-row">
-              <label><input type="checkbox" checked /> Price drops</label>
-              <label><input type="checkbox" /> Basket ready</label>
-            </div>
-          </div>
-          <div class="profile-card">
-            <p class="profile-title">Data controls</p>
-            <button class="ghost-btn">Download my data</button>
-            <button class="ghost-btn">Delete receipts</button>
-          </div>
-        </div>
-      </section>
-    </main>
-
-    <!-- Receipt Confirmation Modal -->
-    <div class="modal-overlay" id="confirmationModal">
-      <div class="modal">
-        <div class="modal-header">
-          <h3 class="modal-title">Confirm Receipt Items</h3>
-          <button class="modal-close" onclick="closeConfirmationModal()">×</button>
-        </div>
-        <div class="modal-body" id="confirmationBody">
-          <!-- Dynamic content -->
-        </div>
-        <div class="modal-footer">
-          <button class="secondary-btn" onclick="closeConfirmationModal()">Cancel</button>
-          <button class="primary-btn" onclick="submitConfirmations()">Confirm All</button>
-        </div>
-      </div>
+        </section>
+      </main>
     </div>
+
+    <div id="toastRoot" class="toast-root"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="app.js"></script>
