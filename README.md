@@ -994,3 +994,38 @@ Adjust license section if public open-source model is chosen.
 
 This document should be treated as the current truth baseline.
 If code changes, update this README in the same PR/commit cycle.
+
+---
+
+## 31. Mobile Production Checklist (VPS + PWA)
+
+Before sharing with larger user groups, run this exact checklist:
+
+1. HTTPS is enabled (required for geolocation on mobile browsers).
+2. PWA install prompt works (Android Chrome baseline).
+3. Service worker updates correctly after deployment (new version visible after refresh/reopen).
+4. `manifest.webmanifest` branding is correct (`PRICELIO` name/theme/icon).
+5. API base URL in frontend points to production API host.
+6. CORS allows only expected frontend origins (no wide-open `*` in production).
+7. Geolocation permission flow is validated on real phone:
+   - allow once,
+   - deny,
+   - deny permanently.
+8. Nearby price compare fallback works when geolocation denied (shows non-nearby global list).
+9. Receipt upload persists after server restart (uploads volume mounted).
+10. Auth flow tested on mobile:
+   - register,
+   - login,
+   - logout,
+   - token expiration behavior.
+11. Family invite tested end-to-end with token copy/paste.
+12. Critical error surfaces are user-readable (no blank screens).
+13. Basic rate limiting is active for auth and upload endpoints.
+14. Logs are centralized and searchable (API + workers).
+15. Nightly DB backup and restore drill are configured.
+
+Recommended smoke-test scenarios for each release:
+- Search `Twix` and verify cheapest nearby store appears with distance.
+- Press `Vesti į pigiausią` and verify Google Maps opens destination.
+- Upload one receipt and verify report generation path.
+- Create family, generate token invite, join from second account.

@@ -1413,7 +1413,7 @@ app.get('/insights/analytics/spending', auth.requireUser, requirePlusFeature('ad
 });
 
 app.listen(port, () => {
-  console.log(`ReceiptRadar API running on port ${port}`);
+  console.log(`PRICELIO API running on port ${port}`);
   console.log('✅ All features enabled:');
   console.log('  - Alerts & Notifications');
   console.log('  - Project Baskets');

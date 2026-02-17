@@ -40,7 +40,8 @@
     setView: null
   };
 
-  const API_BASE = window.RECEIPT_RADAR_API ||
+  const API_BASE = window.PRICELIO_API ||
+    window.RECEIPT_RADAR_API ||
     ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
       ? 'http://localhost:3000'
       : window.location.origin);
