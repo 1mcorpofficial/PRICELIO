@@ -25,7 +25,8 @@
       maxDistance: null,
       lat: null,
       lon: null,
-      cityId: 1
+      cityId: null,
+      city: 'Vilnius'
     },
     activeBasketId: null,
     activeBasketItems: [],
@@ -722,7 +723,11 @@
   async function loadMapStores() {
     if (!state.map) return;
     const query = new URLSearchParams();
-    query.set('cityId', String(state.mapFilters.cityId));
+    if (state.mapFilters.cityId) {
+      query.set('cityId', String(state.mapFilters.cityId));
+    } else if (state.mapFilters.city) {
+      query.set('city', String(state.mapFilters.city));
+    }
     if (state.mapFilters.category && state.mapFilters.category !== 'All') {
       query.set('category', state.mapFilters.category);
     }
@@ -1082,20 +1087,38 @@
     const email = $('familyInviteEmail')?.value?.trim();
     const role = $('familyInviteRole')?.value || 'runner';
 
-    if (!householdId || !email) {
-      showToast('Household ID and invite email are required.', 'warning');
+    if (!householdId) {
+      showToast('Household ID is required.', 'warning');
       return;
     }
 
     try {
       const invite = await apiRequest(`/families/${encodeURIComponent(householdId)}/invite`, {
         method: 'POST',
-        body: { email, role }
+        body: { email: email || null, role }
       });
       showToast(`Invite created. Token: ${invite.token}`, 'success');
       $('joinFamilyToken').value = invite.token;
+      const tokenOutput = $('familyInviteTokenOutput');
+      if (tokenOutput) {
+        tokenOutput.value = invite.token || '';
+      }
     } catch (error) {
       showToast(`Invite failed: ${toApiErrorLabel(error)}`, 'error');
+    }
+  }
+
+  async function copyFamilyInviteToken() {
+    const source = $('familyInviteTokenOutput')?.value?.trim() || $('joinFamilyToken')?.value?.trim();
+    if (!source) {
+      showToast('No invite token to copy yet.', 'warning');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(source);
+      showToast('Invite token copied.', 'success');
+    } catch (error) {
+      showToast('Copy failed. Copy token manually.', 'warning');
     }
   }
 
@@ -1833,6 +1856,7 @@
 
     $('createFamilyBtn')?.addEventListener('click', () => { createFamily().catch(() => {}); });
     $('inviteFamilyBtn')?.addEventListener('click', () => { inviteFamilyMember().catch(() => {}); });
+    $('copyFamilyInviteTokenBtn')?.addEventListener('click', () => { copyFamilyInviteToken().catch(() => {}); });
     $('joinFamilyBtn')?.addEventListener('click', () => { joinFamily().catch(() => {}); });
     $('loadFamilyListsBtn')?.addEventListener('click', () => { loadFamilyLists().catch(() => {}); });
     $('addFamilyItemBtn')?.addEventListener('click', () => { addFamilyItem().catch(() => {}); });

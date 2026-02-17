@@ -153,13 +153,17 @@
               <hr />
               <div class="stack">
                 <input id="familyIdInput" placeholder="Household ID" />
-                <input id="familyInviteEmail" placeholder="Invite email" />
+                <input id="familyInviteEmail" placeholder="Invite email (optional for token-only invite)" />
                 <select id="familyInviteRole">
                   <option value="planner">Planner</option>
                   <option value="runner">Runner</option>
                   <option value="junior">Junior</option>
                 </select>
                 <button id="inviteFamilyBtn" class="btn btn-ghost">Create Invite</button>
+                <div class="row">
+                  <input id="familyInviteTokenOutput" placeholder="Generated invite token will appear here" readonly />
+                  <button id="copyFamilyInviteTokenBtn" class="btn btn-ghost" type="button">Copy Token</button>
+                </div>
               </div>
               <hr />
               <div class="stack">
