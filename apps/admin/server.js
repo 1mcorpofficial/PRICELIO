@@ -3,55 +3,162 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const crypto = require('crypto');
+const bcrypt = require('bcrypt');
 const { getClient } = require('./db');
-const jwt = require('jsonwebtoken');
 
 const app = express();
 const port = process.env.PORT || 3003;
 
-app.use(cors());
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-const JWT_SECRET = process.env.JWT_SECRET || 'admin-secret-change-in-production';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH;
+const SESSION_COOKIE = 'admin_session';
+const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
 
-// Auth middleware
-function authMiddleware(req, res, next) {
-  const token = req.headers.authorization?.replace('Bearer ', '');
-  
-  if (!token) {
-    return res.status(401).json({ error: 'unauthorized' });
-  }
-  
+const sessions = new Map();
+
+function parseCookies(req) {
+  const header = req.headers.cookie || '';
+  return header.split(';').reduce((acc, pair) => {
+    const [rawKey, ...rest] = pair.trim().split('=');
+    if (!rawKey) return acc;
+    acc[decodeURIComponent(rawKey)] = decodeURIComponent(rest.join('=') || '');
+    return acc;
+  }, {});
+}
+
+function createSession(email) {
+  const sessionId = crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(32).toString('hex');
+  sessions.set(sessionId, { email, expiresAt: Date.now() + SESSION_TTL_MS });
+  return sessionId;
+}
+
+async function getDbAdminByEmail(email) {
+  const client = await getClient();
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.admin = decoded;
-    next();
+    const result = await client.query(
+      `SELECT id, email, password_hash, status
+       FROM admin_users
+       WHERE LOWER(email) = LOWER($1)
+       LIMIT 1`,
+      [email]
+    );
+    return result.rows[0] || null;
   } catch (error) {
-    return res.status(401).json({ error: 'invalid_token' });
+    // admin_users table might not exist yet in older environments.
+    if (error && (error.code === '42P01' || /admin_users/.test(error.message))) {
+      return null;
+    }
+    throw error;
   }
 }
 
-// Admin login (mock - use real auth in production)
-app.post('/api/auth/login', (req, res) => {
-  const { email, password } = req.body;
-  
-  // Mock authentication
-  if (email === 'admin@receiptradar.app' && password === 'admin123') {
-    const token = jwt.sign(
-      { email, role: 'admin' },
-      JWT_SECRET,
-      { expiresIn: '8h' }
+async function bootstrapAdminFromEnv() {
+  if (!ADMIN_EMAIL || !ADMIN_PASSWORD_HASH) return;
+  const client = await getClient();
+  try {
+    await client.query(
+      `INSERT INTO admin_users (email, password_hash, status)
+       VALUES ($1, $2, 'active')
+       ON CONFLICT (email) DO NOTHING`,
+      [ADMIN_EMAIL, ADMIN_PASSWORD_HASH]
     );
-    
-    return res.json({ token, email });
+  } catch (error) {
+    if (error && error.code === '42P01') {
+      return;
+    }
+    console.error('Failed to bootstrap admin user:', error.message);
   }
-  
-  res.status(401).json({ error: 'invalid_credentials' });
+}
+
+// Auth middleware
+function requireAuth(req, res, next) {
+  const cookies = parseCookies(req);
+  const sessionId = cookies[SESSION_COOKIE];
+  if (!sessionId) {
+    return res.status(401).json({ error: 'unauthorized' });
+  }
+
+  const session = sessions.get(sessionId);
+  if (!session || session.expiresAt < Date.now()) {
+    sessions.delete(sessionId);
+    return res.status(401).json({ error: 'unauthorized' });
+  }
+
+  req.admin = { email: session.email };
+  next();
+}
+
+app.post('/login', async (req, res) => {
+  const { email, password } = req.body || {};
+
+  if (!email || !password) {
+    return res.status(401).json({ error: 'invalid_credentials' });
+  }
+
+  // Primary auth path: DB-backed admin users.
+  let authenticatedEmail = null;
+  const dbAdmin = await getDbAdminByEmail(email);
+  if (dbAdmin && dbAdmin.status === 'active') {
+    const ok = await bcrypt.compare(password, dbAdmin.password_hash);
+    if (!ok) {
+      return res.status(401).json({ error: 'invalid_credentials' });
+    }
+    authenticatedEmail = dbAdmin.email;
+  }
+
+  // Fallback auth path: env-based admin credentials.
+  if (!authenticatedEmail && ADMIN_EMAIL && ADMIN_PASSWORD_HASH && email === ADMIN_EMAIL) {
+    const ok = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
+    if (!ok) {
+      return res.status(401).json({ error: 'invalid_credentials' });
+    }
+    authenticatedEmail = email;
+  }
+
+  if (!authenticatedEmail) {
+    if (!ADMIN_EMAIL && !dbAdmin) {
+      return res.status(500).json({ error: 'admin_credentials_not_configured' });
+    }
+    return res.status(401).json({ error: 'invalid_credentials' });
+  }
+
+  const sessionId = createSession(authenticatedEmail);
+  res.cookie(SESSION_COOKIE, sessionId, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: SESSION_TTL_MS
+  });
+
+  return res.json({ ok: true, email: authenticatedEmail });
 });
 
+app.post('/logout', (req, res) => {
+  const cookies = parseCookies(req);
+  const sessionId = cookies[SESSION_COOKIE];
+  if (sessionId) {
+    sessions.delete(sessionId);
+  }
+
+  res.clearCookie(SESSION_COOKIE, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production'
+  });
+
+  res.json({ ok: true });
+});
+
+// Protect all admin API routes
+app.use('/api', requireAuth);
+
 // Dashboard stats
-app.get('/api/dashboard/stats', authMiddleware, async (req, res) => {
+app.get('/api/dashboard/stats', async (req, res) => {
   try {
     const client = await getClient();
     
@@ -74,7 +181,7 @@ app.get('/api/dashboard/stats', authMiddleware, async (req, res) => {
 });
 
 // Low confidence receipts
-app.get('/api/receipts/low-confidence', authMiddleware, async (req, res) => {
+app.get('/api/receipts/low-confidence', async (req, res) => {
   try {
     const client = await getClient();
     const limit = parseInt(req.query.limit) || 20;
@@ -114,7 +221,7 @@ app.get('/api/receipts/low-confidence', authMiddleware, async (req, res) => {
 });
 
 // Receipt detail with items
-app.get('/api/receipts/:id', authMiddleware, async (req, res) => {
+app.get('/api/receipts/:id', async (req, res) => {
   try {
     const client = await getClient();
     
@@ -148,7 +255,7 @@ app.get('/api/receipts/:id', authMiddleware, async (req, res) => {
 });
 
 // Confirm receipt item matching
-app.post('/api/receipts/:id/items/:itemId/confirm', authMiddleware, async (req, res) => {
+app.post('/api/receipts/:id/items/:itemId/confirm', async (req, res) => {
   try {
     const client = await getClient();
     const { product_id } = req.body;
@@ -182,7 +289,7 @@ app.post('/api/receipts/:id/items/:itemId/confirm', authMiddleware, async (req, 
 });
 
 // Unmatched products
-app.get('/api/products/unmatched', authMiddleware, async (req, res) => {
+app.get('/api/products/unmatched', async (req, res) => {
   try {
     const client = await getClient();
     const limit = parseInt(req.query.limit) || 50;
@@ -210,8 +317,34 @@ app.get('/api/products/unmatched', authMiddleware, async (req, res) => {
   }
 });
 
+// Product lookup for manual mapping in review flow
+app.get('/api/products/search', async (req, res) => {
+  try {
+    const client = await getClient();
+    const q = (req.query.q || '').toString().trim();
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 20));
+
+    if (!q) {
+      return res.json([]);
+    }
+
+    const result = await client.query(
+      `SELECT id, name, brand
+       FROM products
+       WHERE name ILIKE $1
+       ORDER BY name ASC
+       LIMIT $2`,
+      [`%${q}%`, limit]
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Create product mapping
-app.post('/api/products/create-mapping', authMiddleware, async (req, res) => {
+app.post('/api/products/create-mapping', async (req, res) => {
   try {
     const client = await getClient();
     const { raw_name, product_id } = req.body;
@@ -239,7 +372,7 @@ app.post('/api/products/create-mapping', authMiddleware, async (req, res) => {
 });
 
 // Connector health
-app.get('/api/connectors/health', authMiddleware, async (req, res) => {
+app.get('/api/connectors/health', async (req, res) => {
   try {
     // Mock connector health - would call ingest service in production
     res.json([
@@ -259,5 +392,7 @@ app.get('*', (req, res) => {
 
 app.listen(port, () => {
   console.log(`Admin panel running on port ${port}`);
-  console.log(`Demo login: admin@receiptradar.app / admin123`);
+  bootstrapAdminFromEnv().catch((error) => {
+    console.error('Admin bootstrap failed:', error.message);
+  });
 });

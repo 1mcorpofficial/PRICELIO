@@ -1,343 +1,1008 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ReceiptRadar Admin</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PRICELIO Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet" />
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; }
-    .login-container { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-    .login-box { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
-    .login-box h1 { margin-bottom: 1.5rem; color: #333; }
-    .form-group { margin-bottom: 1rem; }
-    .form-group label { display: block; margin-bottom: 0.5rem; color: #666; font-size: 0.9rem; }
-    .form-group input { width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; }
-    .btn { width: 100%; padding: 0.75rem; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; }
-    .btn:hover { background: #0056b3; }
-    .error { color: #dc3545; font-size: 0.9rem; margin-top: 0.5rem; }
-    
-    .dashboard { display: none; }
-    .dashboard.active { display: block; }
-    .header { background: white; padding: 1rem 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
-    .header h1 { font-size: 1.5rem; color: #333; }
-    .logout-btn { padding: 0.5rem 1rem; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; }
-    .content { padding: 2rem; max-width: 1400px; margin: 0 auto; }
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
-    .stat-card { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    .stat-card h3 { font-size: 0.9rem; color: #666; margin-bottom: 0.5rem; text-transform: uppercase; }
-    .stat-card .value { font-size: 2rem; font-weight: bold; color: #333; }
-    .section { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 1.5rem; }
-    .section h2 { margin-bottom: 1rem; color: #333; }
-    .table { width: 100%; border-collapse: collapse; }
-    .table th { text-align: left; padding: 0.75rem; border-bottom: 2px solid #eee; color: #666; font-size: 0.9rem; }
-    .table td { padding: 0.75rem; border-bottom: 1px solid #eee; }
-    .badge { display: inline-block; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; }
-    .badge-warning { background: #ffc107; color: #000; }
-    .badge-success { background: #28a745; color: white; }
-    .badge-danger { background: #dc3545; color: white; }
-    .btn-sm { padding: 0.25rem 0.75rem; font-size: 0.85rem; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
-    .btn-sm:hover { background: #0056b3; }
-    .tabs { display: flex; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 2px solid #eee; }
-    .tab { padding: 0.75rem 1rem; cursor: pointer; border: none; background: none; color: #666; }
-    .tab.active { color: #007bff; border-bottom: 2px solid #007bff; margin-bottom: -2px; }
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
+    :root {
+      color-scheme: light;
+      --font-ui: 'Manrope', 'Segoe UI', Arial, sans-serif;
+      --font-display: 'Sora', 'Segoe UI', Arial, sans-serif;
+
+      --ink-900: #111827;
+      --ink-700: #334155;
+      --ink-500: #64748b;
+      --ink-300: #cbd5e1;
+
+      --bg: #f4f7ff;
+      --card: #ffffff;
+
+      --brand-a: #0f172a;
+      --brand-b: #1d4ed8;
+      --brand-c: #0f766e;
+
+      --ok: #047857;
+      --warn: #b45309;
+      --danger: #b42318;
+
+      --radius-sm: 12px;
+      --radius-md: 16px;
+      --radius-lg: 20px;
+      --shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: var(--font-ui);
+      color: var(--ink-900);
+      background:
+        radial-gradient(circle at 90% -10%, rgba(37, 99, 235, 0.14) 0%, transparent 40%),
+        radial-gradient(circle at 10% 110%, rgba(15, 118, 110, 0.14) 0%, transparent 40%),
+        var(--bg);
+    }
+
+    .shell {
+      width: min(1400px, calc(100vw - 2rem));
+      margin: 1rem auto 1.5rem;
+      display: grid;
+      gap: 1rem;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      background: linear-gradient(135deg, var(--brand-a), var(--brand-b) 56%, var(--brand-c));
+      color: #f8fafc;
+      border-radius: var(--radius-lg);
+      padding: 1rem 1.1rem;
+      box-shadow: var(--shadow);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+
+    .brand-mark {
+      width: 44px;
+      height: 44px;
+      border-radius: 13px;
+      background: linear-gradient(145deg, #67e8f9, #2dd4bf);
+      color: #042f2e;
+      font-family: var(--font-display);
+      font-weight: 800;
+      display: grid;
+      place-items: center;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: 1.12rem;
+    }
+
+    .header p {
+      margin: 0.15rem 0 0;
+      font-size: 0.8rem;
+      opacity: 0.92;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 10px;
+      padding: 0.58rem 0.8rem;
+      font-weight: 800;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.84rem;
+      transition: transform 0.15s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #2563eb, #0891b2);
+      color: #f8fafc;
+    }
+
+    .btn-ghost {
+      background: #eef2ff;
+      color: #1d4ed8;
+      border: 1px solid #c9d7ff;
+    }
+
+    .btn-danger {
+      background: #fee2e2;
+      border: 1px solid #fecaca;
+      color: #b91c1c;
+    }
+
+    .login-wrap {
+      min-height: calc(100vh - 2.5rem);
+      display: grid;
+      place-items: center;
+    }
+
+    .login-card {
+      width: min(460px, calc(100vw - 2rem));
+      background: var(--card);
+      border: 1px solid #e2e8f0;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      padding: 1.2rem;
+      display: grid;
+      gap: 0.9rem;
+    }
+
+    .login-card h2 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+    }
+
+    .muted {
+      color: var(--ink-500);
+      font-size: 0.82rem;
+    }
+
+    .field {
+      display: grid;
+      gap: 0.35rem;
+    }
+
+    label {
+      font-size: 0.8rem;
+      color: var(--ink-700);
+      font-weight: 700;
+    }
+
+    input,
+    select {
+      width: 100%;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 0.62rem 0.72rem;
+      font-family: inherit;
+      font-size: 0.9rem;
+      background: #fbfdff;
+    }
+
+    input:focus,
+    select:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+    }
+
+    .error {
+      border: 1px solid #fecaca;
+      background: #fff1f2;
+      color: #b42318;
+      border-radius: 10px;
+      padding: 0.55rem 0.65rem;
+      font-size: 0.82rem;
+      display: none;
+    }
+
+    .error.active {
+      display: block;
+    }
+
+    .dashboard {
+      display: none;
+      gap: 1rem;
+    }
+
+    .dashboard.active {
+      display: grid;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 0.8rem;
+    }
+
+    .stat-card {
+      background: var(--card);
+      border: 1px solid #e2e8f0;
+      border-radius: var(--radius-md);
+      padding: 0.8rem;
+      box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
+    }
+
+    .stat-card h3 {
+      margin: 0;
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--ink-500);
+    }
+
+    .stat-card .value {
+      margin-top: 0.26rem;
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--ink-900);
+      font-family: var(--font-display);
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid #e2e8f0;
+      border-radius: var(--radius-md);
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+      padding: 0.9rem;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.8rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.6rem;
+    }
+
+    .panel h2 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: 1rem;
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+    }
+
+    .tab {
+      border: 1px solid #d9e2f2;
+      background: #f8faff;
+      color: #334155;
+      border-radius: 999px;
+      padding: 0.38rem 0.72rem;
+      font-size: 0.78rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .tab.active {
+      background: linear-gradient(135deg, #1d4ed8, #0f766e);
+      border-color: transparent;
+      color: #f8fafc;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 820px;
+    }
+
+    th,
+    td {
+      text-align: left;
+      padding: 0.6rem 0.68rem;
+      border-bottom: 1px solid #edf2f7;
+      font-size: 0.82rem;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f8fbff;
+      color: #334155;
+      font-weight: 800;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      border-radius: 999px;
+      padding: 0.22rem 0.5rem;
+      font-size: 0.72rem;
+      font-weight: 800;
+    }
+
+    .badge-warning {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .badge-success {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .badge-danger {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .row .field {
+      min-width: 190px;
+      flex: 1;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.56);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      z-index: 999;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-card {
+      width: min(1080px, 100%);
+      max-height: 92vh;
+      overflow: auto;
+      background: #fff;
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 20px 55px rgba(15, 23, 42, 0.2);
+      padding: 0.9rem;
+      display: grid;
+      gap: 0.8rem;
+    }
+
+    .toast-root {
+      position: fixed;
+      right: 1rem;
+      bottom: 1rem;
+      z-index: 1200;
+      display: grid;
+      gap: 0.45rem;
+      width: min(360px, calc(100vw - 2rem));
+    }
+
+    .toast {
+      border-radius: 10px;
+      border: 1px solid transparent;
+      padding: 0.55rem 0.7rem;
+      font-size: 0.82rem;
+      font-weight: 700;
+      background: #ecfeff;
+      color: #155e75;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.14);
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .toast.error {
+      background: #fff1f2;
+      color: #be123c;
+      border-color: #fecdd3;
+    }
+
+    .toast.success {
+      background: #ecfdf5;
+      color: #065f46;
+      border-color: #bbf7d0;
+    }
+
+    @media (max-width: 780px) {
+      .shell {
+        width: calc(100vw - 1rem);
+        margin: 0.5rem auto 1rem;
+      }
+
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .btn {
+        width: 100%;
+      }
+
+      .toast-root {
+        right: 0.5rem;
+        left: 0.5rem;
+        width: auto;
+      }
+    }
   </style>
 </head>
 <body>
-  <div id="loginView" class="login-container">
-    <div class="login-box">
-      <h1>ReceiptRadar Admin</h1>
-      <form id="loginForm">
-        <div class="form-group">
-          <label>Email</label>
-          <input type="email" id="email" value="admin@receiptradar.app" required>
+  <div class="shell">
+    <header class="header">
+      <div class="brand">
+        <div class="brand-mark">PL</div>
+        <div>
+          <h1>PRICELIO Admin</h1>
+          <p>Data quality, moderation and ingestion health</p>
         </div>
-        <div class="form-group">
-          <label>Password</label>
-          <input type="password" id="password" value="admin123" required>
+      </div>
+      <div class="row">
+        <button id="refreshDashboardBtn" class="btn btn-ghost" type="button">Refresh</button>
+        <button id="logoutBtn" class="btn btn-danger" type="button">Logout</button>
+      </div>
+    </header>
+
+    <section id="loginView" class="login-wrap">
+      <form id="loginForm" class="login-card">
+        <h2>Admin Sign In</h2>
+        <p class="muted">Use admin credentials configured in environment or admin_users table.</p>
+
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" type="email" placeholder="admin@pricelio.lt" required />
         </div>
-        <button type="submit" class="btn">Login</button>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" type="password" placeholder="Your password" required />
+        </div>
+
+        <button class="btn btn-primary" type="submit">Login</button>
         <div id="loginError" class="error"></div>
       </form>
-    </div>
-  </div>
+    </section>
 
-  <div id="dashboardView" class="dashboard">
-    <div class="header">
-      <h1>ReceiptRadar Admin</h1>
-      <button class="logout-btn" onclick="logout()">Logout</button>
-    </div>
-    
-    <div class="content">
-      <div class="stats-grid">
-        <div class="stat-card">
+    <main id="dashboardView" class="dashboard">
+      <section class="stats-grid">
+        <article class="stat-card">
           <h3>Receipts Today</h3>
           <div class="value" id="statReceiptsToday">-</div>
-        </div>
-        <div class="stat-card">
+        </article>
+        <article class="stat-card">
           <h3>Needs Confirmation</h3>
           <div class="value" id="statNeedsConfirmation">-</div>
-        </div>
-        <div class="stat-card">
+        </article>
+        <article class="stat-card">
           <h3>Active Offers</h3>
           <div class="value" id="statActiveOffers">-</div>
-        </div>
-        <div class="stat-card">
+        </article>
+        <article class="stat-card">
           <h3>Unmatched Items</h3>
           <div class="value" id="statUnmatchedItems">-</div>
-        </div>
-      </div>
+        </article>
+      </section>
 
-      <div class="tabs">
-        <button class="tab active" onclick="showTab('receipts')">Low Confidence Receipts</button>
-        <button class="tab" onclick="showTab('unmatched')">Unmatched Products</button>
-        <button class="tab" onclick="showTab('connectors')">Connector Health</button>
-      </div>
-
-      <div id="receiptsTab" class="tab-content active">
-        <div class="section">
-          <h2>Low Confidence Receipts</h2>
-          <table class="table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Store</th>
-                <th>Date</th>
-                <th>Total</th>
-                <th>Confidence</th>
-                <th>Items</th>
-                <th>Status</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody id="receiptsTableBody">
-              <tr><td colspan="8" style="text-align: center;">Loading...</td></tr>
-            </tbody>
-          </table>
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Operations</h2>
+          <div class="tabs" id="tabsRoot">
+            <button class="tab active" data-tab="receipts" type="button">Low Confidence Receipts</button>
+            <button class="tab" data-tab="unmatched" type="button">Unmatched Products</button>
+            <button class="tab" data-tab="connectors" type="button">Connector Health</button>
+          </div>
         </div>
-      </div>
 
-      <div id="unmatchedTab" class="tab-content">
-        <div class="section">
-          <h2>Unmatched Products</h2>
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Raw Name</th>
-                <th>Occurrences</th>
-                <th>Avg Confidence</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody id="unmatchedTableBody">
-              <tr><td colspan="4" style="text-align: center;">Loading...</td></tr>
-            </tbody>
-          </table>
+        <div id="tab-receipts" class="tab-content active">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Store</th>
+                  <th>Date</th>
+                  <th>Total</th>
+                  <th>Confidence</th>
+                  <th>Items</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="receiptsTableBody">
+                <tr><td colspan="8">Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
 
-      <div id="connectorsTab" class="tab-content">
-        <div class="section">
-          <h2>Connector Health</h2>
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Connector</th>
-                <th>Status</th>
-                <th>Last Run</th>
-                <th>Offers Count</th>
-              </tr>
-            </thead>
-            <tbody id="connectorsTableBody">
-              <tr><td colspan="4" style="text-align: center;">Loading...</td></tr>
-            </tbody>
-          </table>
+        <div id="tab-unmatched" class="tab-content">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Raw Name</th>
+                  <th>Occurrences</th>
+                  <th>Avg Confidence</th>
+                  <th>Map Product ID</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="unmatchedTableBody">
+                <tr><td colspan="5">Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
+
+        <div id="tab-connectors" class="tab-content">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Connector</th>
+                  <th>Status</th>
+                  <th>Last Run</th>
+                  <th>Offers Count</th>
+                </tr>
+              </thead>
+              <tbody id="connectorsTableBody">
+                <tr><td colspan="4">Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="receiptModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="receiptModalTitle">
+    <div class="modal-card">
+      <div class="panel-head">
+        <h2 id="receiptModalTitle">Receipt Review</h2>
+        <button id="closeReceiptModalBtn" class="btn btn-ghost" type="button">Close</button>
+      </div>
+      <p id="receiptMeta" class="muted"></p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Raw Name</th>
+              <th>Matched</th>
+              <th>Confidence</th>
+              <th>Map Product ID</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="receiptItemsTableBody">
+            <tr><td colspan="6">Loading...</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
 
-  <script>
-    const API_BASE = window.location.origin + '/api';
-    let authToken = localStorage.getItem('admin_token');
+  <div id="toastRoot" class="toast-root"></div>
 
-    function showView(view) {
-      document.getElementById('loginView').style.display = view === 'login' ? 'flex' : 'none';
-      document.getElementById('dashboardView').classList.toggle('active', view === 'dashboard');
+  <script>
+    const API_BASE = `${window.location.origin}/api`;
+
+    function qs(selector) {
+      return document.querySelector(selector);
     }
 
-    function showTab(tab) {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-      event.target.classList.add('active');
-      document.getElementById(tab + 'Tab').classList.add('active');
+    function escapeHtml(value) {
+      return String(value || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    function showToast(message, kind = 'info') {
+      const root = qs('#toastRoot');
+      const toast = document.createElement('div');
+      toast.className = `toast ${kind === 'error' ? 'error' : kind === 'success' ? 'success' : ''}`;
+      toast.textContent = message;
+      root.appendChild(toast);
+      requestAnimationFrame(() => toast.classList.add('show'));
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 220);
+      }, 2800);
     }
 
     async function apiCall(endpoint, options = {}) {
-      const response = await fetch(API_BASE + endpoint, {
+      const response = await fetch(`${API_BASE}${endpoint}`, {
         ...options,
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json',
-          ...options.headers
+          ...(options.headers || {})
         }
       });
-      
+
+      if (response.status === 401) {
+        throw new Error('unauthorized');
+      }
+
+      let payload = null;
+      try {
+        payload = await response.json();
+      } catch (error) {
+        payload = null;
+      }
+
       if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
+        const errorText = payload?.error || `api_error_${response.status}`;
+        throw new Error(errorText);
       }
-      
-      return response.json();
+
+      return payload;
     }
 
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      const errorEl = document.getElementById('loginError');
-
-      try {
-        const response = await fetch(API_BASE + '/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
-        });
-
-        if (!response.ok) {
-          throw new Error('Invalid credentials');
-        }
-
-        const data = await response.json();
-        authToken = data.token;
-        localStorage.setItem('admin_token', authToken);
-        showView('dashboard');
-        loadDashboard();
-      } catch (error) {
-        errorEl.textContent = error.message;
-      }
-    });
-
-    function logout() {
-      localStorage.removeItem('admin_token');
-      authToken = null;
-      showView('login');
+    function setView(mode) {
+      const isLogin = mode === 'login';
+      qs('#loginView').style.display = isLogin ? 'grid' : 'none';
+      qs('#dashboardView').classList.toggle('active', !isLogin);
+      qs('#logoutBtn').style.display = isLogin ? 'none' : 'inline-flex';
+      qs('#refreshDashboardBtn').style.display = isLogin ? 'none' : 'inline-flex';
     }
 
-    async function loadDashboard() {
-      try {
-        const stats = await apiCall('/dashboard/stats');
-        document.getElementById('statReceiptsToday').textContent = stats.receipts_today;
-        document.getElementById('statNeedsConfirmation').textContent = stats.needs_confirmation;
-        document.getElementById('statActiveOffers').textContent = stats.active_offers;
-        document.getElementById('statUnmatchedItems').textContent = stats.unmatched_items;
+    function setTab(tabName) {
+      document.querySelectorAll('.tab').forEach((tab) => {
+        tab.classList.toggle('active', tab.dataset.tab === tabName);
+      });
+      document.querySelectorAll('.tab-content').forEach((content) => {
+        content.classList.toggle('active', content.id === `tab-${tabName}`);
+      });
+    }
 
-        await loadLowConfidenceReceipts();
-        await loadUnmatchedProducts();
-        await loadConnectorHealth();
+    function formatDate(value) {
+      if (!value) return '-';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return '-';
+      return date.toLocaleString('en-GB', {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    async function login(email, password) {
+      const response = await fetch('/login', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      let payload = null;
+      try {
+        payload = await response.json();
       } catch (error) {
-        console.error('Failed to load dashboard:', error);
-        if (error.message.includes('401')) {
-          logout();
-        }
+        payload = null;
       }
+
+      if (!response.ok) {
+        throw new Error(payload?.error || 'invalid_credentials');
+      }
+
+      return payload;
+    }
+
+    async function logout() {
+      try {
+        await fetch('/logout', { method: 'POST', credentials: 'include' });
+      } catch (error) {
+        // noop
+      }
+      setView('login');
+      showToast('Logged out.');
+    }
+
+    async function loadStats() {
+      const stats = await apiCall('/dashboard/stats');
+      qs('#statReceiptsToday').textContent = Number(stats.receipts_today || 0).toLocaleString('en-US');
+      qs('#statNeedsConfirmation').textContent = Number(stats.needs_confirmation || 0).toLocaleString('en-US');
+      qs('#statActiveOffers').textContent = Number(stats.active_offers || 0).toLocaleString('en-US');
+      qs('#statUnmatchedItems').textContent = Number(stats.unmatched_items || 0).toLocaleString('en-US');
     }
 
     async function loadLowConfidenceReceipts() {
-      try {
-        const receipts = await apiCall('/receipts/low-confidence');
-        const tbody = document.getElementById('receiptsTableBody');
-        
-        if (receipts.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No low confidence receipts</td></tr>';
-          return;
-        }
+      const tbody = qs('#receiptsTableBody');
+      tbody.innerHTML = '<tr><td colspan="8">Loading receipts...</td></tr>';
 
-        tbody.innerHTML = receipts.map(r => `
-          <tr>
-            <td>${r.id.substring(0, 8)}...</td>
-            <td>${r.store_chain || 'Unknown'}</td>
-            <td>${r.receipt_date ? new Date(r.receipt_date).toLocaleDateString() : '-'}</td>
-            <td>€${r.total ? r.total.toFixed(2) : '-'}</td>
-            <td>${r.confidence ? (r.confidence * 100).toFixed(0) + '%' : '-'}</td>
-            <td>${r.item_count}</td>
-            <td><span class="badge badge-warning">${r.status}</span></td>
-            <td><button class="btn-sm" onclick="viewReceipt('${r.id}')">Review</button></td>
-          </tr>
-        `).join('');
-      } catch (error) {
-        console.error('Failed to load receipts:', error);
+      const receipts = await apiCall('/receipts/low-confidence');
+      if (!receipts.length) {
+        tbody.innerHTML = '<tr><td colspan="8">No low confidence receipts.</td></tr>';
+        return;
       }
+
+      tbody.innerHTML = receipts.map((row) => {
+        const confidencePct = row.confidence == null ? '-' : `${Math.round(Number(row.confidence) * 100)}%`;
+        const badgeClass = row.status === 'finalized' ? 'badge-success' : row.status === 'needs_confirmation' ? 'badge-warning' : 'badge-danger';
+        return `
+          <tr>
+            <td>${escapeHtml(String(row.id).slice(0, 8))}...</td>
+            <td>${escapeHtml(row.store_chain || '-')}</td>
+            <td>${formatDate(row.receipt_date || row.created_at)}</td>
+            <td>${row.total == null ? '-' : `${Number(row.total).toFixed(2)} EUR`}</td>
+            <td>${confidencePct}</td>
+            <td>${Number(row.item_count || 0)}</td>
+            <td><span class="badge ${badgeClass}">${escapeHtml(row.status || '-')}</span></td>
+            <td><button class="btn btn-ghost" type="button" data-receipt-id="${escapeHtml(row.id)}">Review</button></td>
+          </tr>
+        `;
+      }).join('');
     }
 
     async function loadUnmatchedProducts() {
-      try {
-        const products = await apiCall('/products/unmatched');
-        const tbody = document.getElementById('unmatchedTableBody');
-        
-        if (products.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No unmatched products</td></tr>';
-          return;
-        }
+      const tbody = qs('#unmatchedTableBody');
+      tbody.innerHTML = '<tr><td colspan="5">Loading unmatched products...</td></tr>';
 
-        tbody.innerHTML = products.map(p => `
-          <tr>
-            <td>${p.raw_name}</td>
-            <td>${p.occurrence_count}</td>
-            <td>${p.avg_confidence ? (p.avg_confidence * 100).toFixed(0) + '%' : '-'}</td>
-            <td><button class="btn-sm" onclick="createMapping('${p.raw_name}')">Map</button></td>
-          </tr>
-        `).join('');
-      } catch (error) {
-        console.error('Failed to load unmatched products:', error);
+      const rows = await apiCall('/products/unmatched');
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="5">No unmatched products.</td></tr>';
+        return;
       }
+
+      tbody.innerHTML = rows.map((row, index) => {
+        const confidence = row.avg_confidence == null ? '-' : `${Math.round(Number(row.avg_confidence) * 100)}%`;
+        return `
+          <tr>
+            <td>${escapeHtml(row.raw_name)}</td>
+            <td>${Number(row.occurrence_count || 0)}</td>
+            <td>${confidence}</td>
+            <td>
+              <input id="map-input-${index}" placeholder="UUID product_id" />
+            </td>
+            <td>
+              <button class="btn btn-primary" type="button" data-map-raw-name="${escapeHtml(row.raw_name)}" data-map-input-id="map-input-${index}">Map</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
     }
 
     async function loadConnectorHealth() {
-      try {
-        const connectors = await apiCall('/connectors/health');
-        const tbody = document.getElementById('connectorsTableBody');
-        
-        tbody.innerHTML = connectors.map(c => `
+      const tbody = qs('#connectorsTableBody');
+      tbody.innerHTML = '<tr><td colspan="4">Loading connector health...</td></tr>';
+
+      const rows = await apiCall('/connectors/health');
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="4">No connector data.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = rows.map((row) => {
+        const status = String(row.status || '').toLowerCase();
+        const badgeClass = status === 'healthy' ? 'badge-success' : status === 'warning' ? 'badge-warning' : 'badge-danger';
+        return `
           <tr>
-            <td>${c.name}</td>
-            <td><span class="badge badge-${c.status === 'healthy' ? 'success' : 'warning'}">${c.status}</span></td>
-            <td>${new Date(c.last_run).toLocaleString()}</td>
-            <td>${c.offers_count}</td>
+            <td>${escapeHtml(row.name || '-')}</td>
+            <td><span class="badge ${badgeClass}">${escapeHtml(row.status || '-')}</span></td>
+            <td>${formatDate(row.last_run)}</td>
+            <td>${Number(row.offers_count || 0).toLocaleString('en-US')}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function loadDashboard() {
+      await Promise.all([
+        loadStats(),
+        loadLowConfidenceReceipts(),
+        loadUnmatchedProducts(),
+        loadConnectorHealth()
+      ]);
+    }
+
+    function openReceiptModal() {
+      qs('#receiptModal').classList.add('active');
+    }
+
+    function closeReceiptModal() {
+      qs('#receiptModal').classList.remove('active');
+    }
+
+    async function viewReceipt(receiptId) {
+      const payload = await apiCall(`/receipts/${encodeURIComponent(receiptId)}`);
+      const receipt = payload.receipt;
+      const items = payload.items || [];
+
+      qs('#receiptMeta').textContent =
+        `Receipt ${receipt.id} | Store: ${receipt.store_chain || '-'} | Status: ${receipt.status || '-'} | Confidence: ${receipt.confidence == null ? '-' : Math.round(Number(receipt.confidence) * 100) + '%'}`;
+
+      const tbody = qs('#receiptItemsTableBody');
+      if (!items.length) {
+        tbody.innerHTML = '<tr><td colspan="6">No receipt items found.</td></tr>';
+      } else {
+        tbody.innerHTML = items.map((item, idx) => `
+          <tr>
+            <td>${idx + 1}</td>
+            <td>${escapeHtml(item.raw_name || '-')}</td>
+            <td>${escapeHtml(item.matched_product_name || '-')}</td>
+            <td>${item.confidence == null ? '-' : `${Math.round(Number(item.confidence) * 100)}%`}</td>
+            <td><input id="receipt-map-${escapeHtml(item.id)}" placeholder="UUID product_id" value="${escapeHtml(item.matched_product_id || '')}" /></td>
+            <td><button class="btn btn-primary" type="button" data-confirm-receipt-id="${escapeHtml(receipt.id)}" data-confirm-item-id="${escapeHtml(item.id)}">Confirm</button></td>
           </tr>
         `).join('');
+      }
+
+      openReceiptModal();
+    }
+
+    async function confirmReceiptItem(receiptId, itemId) {
+      const input = qs(`#receipt-map-${CSS.escape(itemId)}`);
+      const productId = input?.value?.trim();
+      if (!productId) {
+        showToast('Product ID is required for confirm.', 'error');
+        return;
+      }
+
+      await apiCall(`/receipts/${encodeURIComponent(receiptId)}/items/${encodeURIComponent(itemId)}/confirm`, {
+        method: 'POST',
+        body: JSON.stringify({ product_id: productId })
+      });
+
+      showToast('Receipt item confirmed.', 'success');
+      await viewReceipt(receiptId);
+      await loadLowConfidenceReceipts();
+      await loadStats();
+    }
+
+    async function createMapping(rawName, productId) {
+      if (!rawName || !productId) {
+        showToast('Raw name and product ID are required.', 'error');
+        return;
+      }
+
+      await apiCall('/products/create-mapping', {
+        method: 'POST',
+        body: JSON.stringify({ raw_name: rawName, product_id: productId })
+      });
+
+      showToast('Mapping created and unmatched items updated.', 'success');
+      await Promise.all([loadUnmatchedProducts(), loadStats()]);
+    }
+
+    function bindEvents() {
+      qs('#loginForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const email = qs('#email').value.trim();
+        const password = qs('#password').value;
+        const errorEl = qs('#loginError');
+
+        errorEl.classList.remove('active');
+        errorEl.textContent = '';
+
+        try {
+          await login(email, password);
+          setView('dashboard');
+          await loadDashboard();
+          showToast('Login successful.', 'success');
+        } catch (error) {
+          errorEl.textContent = error.message || 'Login failed';
+          errorEl.classList.add('active');
+        }
+      });
+
+      qs('#logoutBtn').addEventListener('click', () => {
+        logout().catch(() => {});
+      });
+
+      qs('#refreshDashboardBtn').addEventListener('click', () => {
+        loadDashboard()
+          .then(() => showToast('Dashboard refreshed.', 'success'))
+          .catch((error) => showToast(error.message || 'Refresh failed', 'error'));
+      });
+
+      qs('#tabsRoot').addEventListener('click', (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) return;
+        const tab = target.dataset.tab;
+        if (!tab) return;
+        setTab(tab);
+      });
+
+      qs('#receiptsTableBody').addEventListener('click', (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) return;
+        const receiptId = target.dataset.receiptId;
+        if (!receiptId) return;
+
+        viewReceipt(receiptId)
+          .catch((error) => showToast(error.message || 'Failed to open receipt', 'error'));
+      });
+
+      qs('#receiptItemsTableBody').addEventListener('click', (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) return;
+
+        const receiptId = target.dataset.confirmReceiptId;
+        const itemId = target.dataset.confirmItemId;
+        if (!receiptId || !itemId) return;
+
+        confirmReceiptItem(receiptId, itemId)
+          .catch((error) => showToast(error.message || 'Confirm failed', 'error'));
+      });
+
+      qs('#unmatchedTableBody').addEventListener('click', (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) return;
+
+        const rawName = target.dataset.mapRawName;
+        const inputId = target.dataset.mapInputId;
+        if (!rawName || !inputId) return;
+
+        const input = qs(`#${CSS.escape(inputId)}`);
+        const productId = input?.value?.trim();
+        createMapping(rawName, productId)
+          .catch((error) => showToast(error.message || 'Create mapping failed', 'error'));
+      });
+
+      qs('#closeReceiptModalBtn').addEventListener('click', closeReceiptModal);
+      qs('#receiptModal').addEventListener('click', (event) => {
+        if (event.target === qs('#receiptModal')) {
+          closeReceiptModal();
+        }
+      });
+
+      window.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+          closeReceiptModal();
+        }
+      });
+    }
+
+    async function boot() {
+      bindEvents();
+      setView('login');
+
+      try {
+        await loadDashboard();
+        setView('dashboard');
       } catch (error) {
-        console.error('Failed to load connector health:', error);
+        setView('login');
       }
     }
 
-    function viewReceipt(id) {
-      alert('Receipt review UI coming soon. ID: ' + id);
-    }
-
-    function createMapping(rawName) {
-      const productId = prompt('Enter product ID to map to "' + rawName + '":');
-      if (productId) {
-        apiCall('/products/create-mapping', {
-          method: 'POST',
-          body: JSON.stringify({ raw_name: rawName, product_id: productId })
-        }).then(() => {
-          alert('Mapping created!');
-          loadUnmatchedProducts();
-        }).catch(error => {
-          alert('Failed to create mapping: ' + error.message);
-        });
-      }
-    }
-
-    // Initialize
-    if (authToken) {
-      showView('dashboard');
-      loadDashboard();
-    } else {
-      showView('login');
-    }
+    boot().catch(() => {
+      setView('login');
+    });
   </script>
 </body>
 </html>
