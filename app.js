@@ -35,6 +35,8 @@
     familyLists: [],
     familyEventCursor: 0,
     kidsSessionId: '',
+    currentLocation: null,
+    currentLocationAt: 0,
     setView: null
   };
 
@@ -83,6 +85,37 @@
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit'
+    });
+  }
+
+  async function resolveCurrentLocation() {
+    const now = Date.now();
+    if (state.currentLocation && now - state.currentLocationAt < 2 * 60 * 1000) {
+      return state.currentLocation;
+    }
+
+    if (!navigator.geolocation) {
+      return null;
+    }
+
+    return new Promise((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const location = {
+            lat: Number(position.coords.latitude.toFixed(6)),
+            lon: Number(position.coords.longitude.toFixed(6))
+          };
+          state.currentLocation = location;
+          state.currentLocationAt = Date.now();
+          resolve(location);
+        },
+        () => resolve(null),
+        {
+          enableHighAccuracy: false,
+          timeout: 7000,
+          maximumAge: 60000
+        }
+      );
     });
   }
 
@@ -795,7 +828,18 @@
     setLoading(container, 'Searching prices across stores...');
 
     try {
-      const rows = await apiRequest(`/products/compare?q=${encodeURIComponent(query)}&limit=5`);
+      const location = await resolveCurrentLocation();
+      const params = new URLSearchParams({
+        q: query,
+        limit: '5'
+      });
+      if (location) {
+        params.set('lat', String(location.lat));
+        params.set('lon', String(location.lon));
+        params.set('radiusKm', '5');
+      }
+
+      const rows = await apiRequest(`/products/compare?${params.toString()}`);
       if (!rows || !rows.length) {
         renderEmpty(container, 'No matching products found.');
         return;
@@ -805,15 +849,21 @@
         <div class="result-card">
           <div class="result-top">
             <strong>${sanitize(row.name || '-')}</strong>
-            <span class="chip-static">BEST ${formatMoney(row.best_price)}</span>
+            <span class="chip-static">AROUND YOU ${formatMoney(row.best_nearby_price ?? row.best_price)}</span>
           </div>
           <div class="muted small">Brand: ${sanitize(row.brand || '-')}</div>
           <div class="result-price">${formatMoney(row.best_price)}</div>
+          <div class="muted small">
+            ${row.radius_km ? `Showing stores within ${sanitize(row.radius_km)} km` : 'Location unavailable, showing all stores'}
+          </div>
           <div class="list compact">
             ${(Array.isArray(row.store_prices) && row.store_prices.length)
               ? row.store_prices.slice(0, 8).map((priceRow) => `
                 <div class="line-item compact">
-                  <span>${sanitize(priceRow.chain || '-')} / ${sanitize(priceRow.store_name || '-')}</span>
+                  <span>
+                    ${sanitize(priceRow.chain || '-')} / ${sanitize(priceRow.store_name || '-')}
+                    ${priceRow.distance_km != null ? ` (${sanitize(priceRow.distance_km)} km)` : ''}
+                  </span>
                   <strong>${formatMoney(priceRow.price)}</strong>
                 </div>
               `).join('')

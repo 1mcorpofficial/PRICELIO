@@ -435,6 +435,10 @@ app.get('/products/compare', async (req, res) => {
   try {
     const q = String(req.query.q || '').trim();
     const limit = Math.max(1, Math.min(10, parseInt(req.query.limit, 10) || 5));
+    const lat = req.query.lat != null ? parseFloat(req.query.lat) : null;
+    const lon = req.query.lon != null ? parseFloat(req.query.lon) : null;
+    const radiusKm = Math.max(0.5, Math.min(50, parseFloat(req.query.radiusKm) || 5));
+    const hasGeo = Number.isFinite(lat) && Number.isFinite(lon);
     if (!q) {
       return res.status(400).json({ error: 'query_required' });
     }
@@ -465,6 +469,8 @@ app.get('/products/compare', async (req, res) => {
               s.id AS store_id,
               s.chain,
               s.name AS store_name,
+              s.lat,
+              s.lon,
               MIN(o.price_value)::numeric(10,2) AS price,
               BOOL_OR(o.is_verified) AS verified_any,
               MAX(o.updated_at) AS updated_at
@@ -480,12 +486,19 @@ app.get('/products/compare', async (req, res) => {
 
     const pricesByProduct = new Map();
     prices.rows.forEach((row) => {
+      const rowLat = Number(row.lat);
+      const rowLon = Number(row.lon);
+      const canMeasureDistance = hasGeo && Number.isFinite(rowLat) && Number.isFinite(rowLon);
+      const distanceKm = canMeasureDistance
+        ? calculateDistance(lat, lon, rowLat, rowLon)
+        : null;
       const list = pricesByProduct.get(row.product_id) || [];
       list.push({
         store_id: row.store_id,
         chain: row.chain,
         store_name: row.store_name,
         price: row.price == null ? null : Number(row.price),
+        distance_km: Number.isFinite(distanceKm) ? Number(distanceKm.toFixed(2)) : null,
         verified: Boolean(row.verified_any),
         updated_at: row.updated_at
       });
@@ -493,14 +506,20 @@ app.get('/products/compare', async (req, res) => {
     });
 
     const payload = products.rows.map((product) => {
-      const storePrices = (pricesByProduct.get(product.id) || []).sort((a, b) => (a.price || 0) - (b.price || 0));
+      const allStorePrices = (pricesByProduct.get(product.id) || []).sort((a, b) => (a.price || 0) - (b.price || 0));
+      const nearbyStorePrices = hasGeo
+        ? allStorePrices.filter((row) => row.distance_km != null && row.distance_km <= radiusKm)
+        : allStorePrices;
+      const bestNearby = nearbyStorePrices.length ? nearbyStorePrices[0] : null;
       return {
         product_id: product.id,
         name: product.name,
         brand: product.brand || null,
         ean: product.ean || null,
-        best_price: storePrices.length ? storePrices[0].price : null,
-        store_prices: storePrices
+        best_price: allStorePrices.length ? allStorePrices[0].price : null,
+        best_nearby_price: bestNearby ? bestNearby.price : null,
+        radius_km: hasGeo ? radiusKm : null,
+        store_prices: nearbyStorePrices
       };
     });
 
