@@ -45,6 +45,13 @@
       mockup_alt_store: 'Cheapest store: Lidl',
       mockup_basket: 'Basket plan',
       mockup_ready: 'Ready',
+      social_proof_text: 'We are building a tool that will help Baltic families save every week.',
+      waitlist_title: 'Get early access',
+      waitlist_close: 'Close',
+      waitlist_text: 'The app launches soon. Leave your email to get an invite and one free Plus week.',
+      waitlist_email_placeholder: 'email@example.com',
+      waitlist_submit: 'Get invite',
+      waitlist_success: 'Thanks! You are on the early-access list.',
       landing_problem_eyebrow: 'Problem',
       landing_problem_title: '“Could I buy this cheaper elsewhere?” costs money every single week.',
       landing_problem_text: 'Most people discover overpaying only after they get home. PRICELIO connects real receipt prices, flyer deals, and online offers so your next shopping trip is cheaper.',
@@ -288,6 +295,13 @@
       mockup_alt_store: 'Pigiausia: Lidl',
       mockup_basket: 'Krepšelio planas',
       mockup_ready: 'Paruoštas',
+      social_proof_text: 'Jau dabar kuriame įrankį, kuris padės Lietuvos šeimoms sutaupyti kiekvieną savaitę.',
+      waitlist_title: 'Gauk ankstyvą prieigą',
+      waitlist_close: 'Uždaryti',
+      waitlist_text: 'Programėlė netrukus startuoja. Palik el. paštą ir gausi kvietimą bei Plus savaitę nemokamai.',
+      waitlist_email_placeholder: 'el.pastas@example.com',
+      waitlist_submit: 'Gauti kvietimą',
+      waitlist_success: 'Ačiū! Įtraukėme jus į ankstyvos prieigos sąrašą.',
       landing_problem_eyebrow: 'Problema',
       landing_problem_title: '„Ar kitur nebuvo pigiau?“ šis klausimas kainuoja pinigus kas savaitę.',
       landing_problem_text: 'Dauguma žmonių supranta, kad permokėjo, tik grįžę namo. PRICELIO sujungia realias čekių kainas, akcijų leidinius ir internetines kainas.',
@@ -891,6 +905,58 @@
     }
   }
 
+  function setupWaitlistModal() {
+    const modal = $('waitlistModal');
+    const emailInput = $('waitlistEmail');
+    const form = $('waitlistForm');
+    const closeBtn = $('waitlistCloseBtn');
+    if (!modal || !emailInput || !form || !closeBtn) return;
+
+    const open = () => {
+      modal.classList.add('active');
+      modal.setAttribute('aria-hidden', 'false');
+      setTimeout(() => emailInput.focus(), 30);
+    };
+    const close = () => {
+      modal.classList.remove('active');
+      modal.setAttribute('aria-hidden', 'true');
+    };
+
+    $('storeGoogleBtn')?.addEventListener('click', (event) => {
+      event.preventDefault();
+      open();
+    });
+    $('storeAppleBtn')?.addEventListener('click', (event) => {
+      event.preventDefault();
+      open();
+    });
+    closeBtn.addEventListener('click', () => close());
+    modal.addEventListener('click', (event) => {
+      if (event.target === modal) close();
+    });
+    window.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && modal.classList.contains('active')) {
+        close();
+      }
+    });
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const email = emailInput.value.trim();
+      if (!email) return;
+      showToast(t('waitlist_success'), 'success');
+      try {
+        const history = JSON.parse(localStorage.getItem('pricelio_waitlist_emails') || '[]');
+        history.push({ email, at: new Date().toISOString() });
+        localStorage.setItem('pricelio_waitlist_emails', JSON.stringify(history.slice(-50)));
+      } catch (error) {
+        // Non-blocking.
+      }
+      form.reset();
+      close();
+    });
+  }
+
   function setupExperienceEntry() {
     const openTry = (focusAuth = false) => {
       startAppExperience({ focusAuth }).catch((error) => {
@@ -902,14 +968,6 @@
     $('startExperienceSecondaryBtn')?.addEventListener('click', () => openTry(true));
     $('startExperienceLoginBtn')?.addEventListener('click', () => openTry(true));
     $('startExperienceFinalBtn')?.addEventListener('click', () => openTry(true));
-    $('storeGoogleBtn')?.addEventListener('click', (event) => {
-      event.preventDefault();
-      openTry(true);
-    });
-    $('storeAppleBtn')?.addEventListener('click', (event) => {
-      event.preventDefault();
-      openTry(true);
-    });
     $('backToLandingBtn')?.addEventListener('click', () => returnToLanding());
     setExperienceMode('landing');
   }
@@ -2857,6 +2915,7 @@
     bindNavigation();
     setupLanguage();
     setupExperienceEntry();
+    setupWaitlistModal();
     applyDeviceNotice();
     setupDeviceWatcher();
     bindControls();

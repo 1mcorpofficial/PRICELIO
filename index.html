@@ -43,6 +43,15 @@
             <a href="#" id="storeGoogleBtn" class="store-badge" data-i18n="store_google_badge">Get it on Google Play</a>
             <a href="#" id="storeAppleBtn" class="store-badge" data-i18n="store_apple_badge">Download on the App Store</a>
           </div>
+          <div class="social-proof-row">
+            <div class="avatar-stack" aria-hidden="true">
+              <span>A</span>
+              <span>M</span>
+              <span>J</span>
+              <span>R</span>
+            </div>
+            <p data-i18n="social_proof_text">Jau dabar kuriame įrankį, kuris padės Lietuvos šeimoms sutaupyti kiekvieną savaitę.</p>
+          </div>
           <p id="deviceHintText" class="muted" data-i18n="landing_device_hint">Telefonu gausi pilną patirtį: greitesnis čekio skenavimas, lokacija, misijos.</p>
         </div>
         <div class="landing-visual">
@@ -115,33 +124,33 @@
         </div>
       </section>
 
-      <section class="landing-feature-grid">
-        <article class="panel-surface">
+      <section class="landing-feature-grid bento-grid">
+        <article class="panel-surface bento-item bento-tall">
           <div class="icon-badge" aria-hidden="true">🧾</div>
           <h4 data-i18n="landing_feat1_title">Po pirkimo analizė</h4>
           <p data-i18n="landing_feat1_text">Permokėjimo ataskaita, „ouch“ suma ir aiškios alternatyvos kitam kartui.</p>
         </article>
-        <article class="panel-surface">
+        <article class="panel-surface bento-item">
           <div class="icon-badge" aria-hidden="true">📍</div>
           <h4 data-i18n="landing_feat2_title">Prieš pirkimą paieška</h4>
           <p data-i18n="landing_feat2_text">Vienos prekės palyginimas daugelyje parduotuvių pagal realią vartotojo vietą.</p>
         </article>
-        <article class="panel-surface">
+        <article class="panel-surface bento-item bento-wide">
           <div class="icon-badge" aria-hidden="true">👨‍👩‍👧‍👦</div>
           <h4 data-i18n="landing_feat3_title">Šeimos režimas</h4>
           <p data-i18n="landing_feat3_text">Bendri sąrašai, pakvietimai ir realaus laiko atnaujinimai visiems šeimos nariams.</p>
         </article>
-        <article class="panel-surface">
+        <article class="panel-surface bento-item">
           <div class="icon-badge" aria-hidden="true">✅</div>
           <h4 data-i18n="landing_feat4_title">Misijos ir duomenų kokybė</h4>
           <p data-i18n="landing_feat4_text">Bendruomenė tikrina kainas, o sistema naudoja konsensusą ir pasitikėjimo balą.</p>
         </article>
-        <article class="panel-surface">
+        <article class="panel-surface bento-item">
           <div class="icon-badge" aria-hidden="true">🛡️</div>
           <h4 data-i18n="landing_feat5_title">Vaikų režimas</h4>
           <p data-i18n="landing_feat5_text">Tėvų valdomas režimas su PIN ir amžiaus grupėms pritaikytomis užduotimis.</p>
         </article>
-        <article class="panel-surface">
+        <article class="panel-surface bento-item">
           <div class="icon-badge" aria-hidden="true">🔒</div>
           <h4 data-i18n="landing_feat6_title">Privatumas pirmoje vietoje</h4>
           <p data-i18n="landing_feat6_text">Tik tai, kas reikalinga kainų analizei. Mokėjimo duomenys nerodomi ir nesaugomi atvirai.</p>
@@ -163,6 +172,20 @@
         <p data-i18n="landing_final_text">Spausk „Noriu išbandyti“, susikurk paskyrą ir pradėk nuo pirmo čekio ar prekės paieškos.</p>
         <button id="startExperienceFinalBtn" class="btn cta-primary" type="button" data-i18n="try_now">Noriu išbandyti</button>
       </section>
+    </section>
+
+    <section id="waitlistModal" class="waitlist-modal" aria-hidden="true">
+      <div class="waitlist-card">
+        <div class="waitlist-head">
+          <h3 data-i18n="waitlist_title">Gauk ankstyvą prieigą</h3>
+          <button id="waitlistCloseBtn" class="btn btn-ghost btn-small" type="button" data-i18n="waitlist_close">Uždaryti</button>
+        </div>
+        <p data-i18n="waitlist_text">Programėlė netrukus startuoja. Palik el. paštą ir gausi kvietimą bei Plus savaitę nemokamai.</p>
+        <form id="waitlistForm" class="waitlist-form">
+          <input id="waitlistEmail" type="email" autocomplete="email" data-i18n-placeholder="waitlist_email_placeholder" placeholder="email@example.com" required />
+          <button class="btn cta-primary" type="submit" data-i18n="waitlist_submit">Gauti kvietimą</button>
+        </form>
+      </div>
     </section>
 
     <div id="appShell" class="app-shell">
