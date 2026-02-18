@@ -547,6 +547,7 @@ body.js-reveal .reveal.visible { opacity: 1; transform: none; }
               box-shadow 0.3s cubic-bezier(0.22,1,0.36,1);
   cursor: default;
   position: relative; overflow: hidden;
+  contain: layout style; /* GPU isolation for smoother transitions */
 }
 /* Each card gets a unique colored top-bar on hover */
 .bento-item::before {
