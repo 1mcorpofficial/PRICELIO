@@ -116,8 +116,11 @@
       optimize_btn: 'Optimize',
       best_plan_title: 'Best plan',
       upload_receipt_title: 'Upload receipt',
-      scan_preview_text: 'Select a receipt photo to start.',
+      scan_preview_text: 'Tap here or choose below to select a receipt photo.',
       analyze_receipt_btn: 'Analyze Receipt',
+      take_photo_btn: 'Take Photo',
+      choose_gallery_btn: 'Gallery',
+      select_receipt_first: 'Please select a receipt image first.',
       overpaid_report_title: 'Overpaid report',
       family_household_title: 'Family household',
       create_family_btn: 'Create Family',
@@ -366,8 +369,11 @@
       optimize_btn: 'Optimizuoti',
       best_plan_title: 'Geriausias planas',
       upload_receipt_title: 'Įkelti čekį',
-      scan_preview_text: 'Pasirink čekio nuotrauką.',
+      scan_preview_text: 'Palieskite čia arba pasirinkite nuotrauką žemiau.',
       analyze_receipt_btn: 'Analizuoti čekį',
+      take_photo_btn: 'Fotografuoti',
+      choose_gallery_btn: 'Galerija',
+      select_receipt_first: 'Pirmiausia pasirinkite čekio nuotrauką.',
       overpaid_report_title: 'Permokėjimo ataskaita',
       family_household_title: 'Šeimos namų ūkis',
       create_family_btn: 'Sukurti šeimą',
@@ -691,6 +697,12 @@
 
     if (isHttp && (hostname === 'localhost' || hostname === '127.0.0.1')) {
       return 'http://localhost:3000';
+    }
+
+    // VPS or bare IP without explicit port → API runs on :3000
+    if (isHttp && !port && hostname !== 'pricelio.app') {
+      const scheme = protocol === 'https:' ? 'https' : 'http';
+      return `${scheme}://${hostname}:3000`;
     }
 
     return origin;
@@ -1958,20 +1970,34 @@
 
   function bindReceiptPreview() {
     const input = $('scanInput');
+    const inputCamera = $('scanInputCamera');
     const preview = $('scanPreview');
+    const analyzeBtn = $('scanBtn');
     if (!input || !preview) return;
 
-    input.addEventListener('change', () => {
-      const file = input.files?.[0];
-      if (!file) {
-        preview.textContent = t('scan_preview_text');
-        return;
+    function onFileSelected(source) {
+      const file = source.files?.[0];
+      if (!file) return;
+      // Sync file to main input if selected via camera input
+      if (source === inputCamera && input) {
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        input.files = dt.files;
       }
       const url = URL.createObjectURL(file);
       preview.innerHTML = `<img src="${url}" alt="Receipt preview" class="preview-img" />`;
+      if (analyzeBtn) analyzeBtn.disabled = false;
       $('scanStatus').textContent = t('scan_ready', { file: file.name });
       setTimeout(() => URL.revokeObjectURL(url), 60000);
-    });
+    }
+
+    input.addEventListener('change', () => onFileSelected(input));
+    if (inputCamera) inputCamera.addEventListener('change', () => onFileSelected(inputCamera));
+
+    // Camera button → open camera input
+    $('scanCameraBtn')?.addEventListener('click', () => inputCamera?.click());
+    // Gallery button → open gallery input
+    $('scanGalleryBtn')?.addEventListener('click', () => input?.click());
   }
 
   async function pollReceiptUntilComplete(receiptId, maxAttempts = 14) {
@@ -2035,9 +2061,12 @@
   async function analyzeReceipt() {
     const fileInput = $('scanInput');
     if (!fileInput || !fileInput.files || !fileInput.files[0]) {
-      showToast('Select receipt image first.', 'warning');
+      showToast(t('select_receipt_first'), 'warning');
       return;
     }
+
+    const analyzeBtn = $('scanBtn');
+    if (analyzeBtn) analyzeBtn.disabled = true;
 
     const file = fileInput.files[0];
     const formData = new FormData();
@@ -2064,6 +2093,7 @@
     } catch (error) {
       showToast(`Receipt failed: ${toApiErrorLabel(error)}`, 'error');
       $('scanStatus').textContent = `Failed: ${toApiErrorLabel(error)}`;
+      if (analyzeBtn) analyzeBtn.disabled = false;
     }
   }
 

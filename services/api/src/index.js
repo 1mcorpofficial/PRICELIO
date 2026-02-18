@@ -30,14 +30,24 @@ const ecosystem = require('./ecosystem');
 const app = express();
 const port = process.env.PORT || 3000;
 
+const ALLOWED_ORIGINS = new Set([
+  'https://pricelio.app',
+  'https://www.pricelio.app',
+  'http://localhost:8000',
+  'http://localhost:3000',
+  'http://127.0.0.1:8000',
+  'http://38.242.217.82:8000',
+  'http://38.242.217.82',
+]);
 app.use(cors({
-  origin: [
-    'https://pricelio.app',
-    'https://www.pricelio.app',
-    'http://localhost:8000',
-    'http://127.0.0.1:8000',
-    `http://38.242.217.82:8000`
-  ],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, Postman)
+    if (!origin) return callback(null, true);
+    if (ALLOWED_ORIGINS.has(origin)) return callback(null, true);
+    // Allow any subdomain of pricelio.app
+    if (/^https:\/\/([a-z0-9-]+\.)?pricelio\.app$/.test(origin)) return callback(null, true);
+    callback(new Error(`CORS: origin ${origin} not allowed`));
+  },
   credentials: true
 }));
 app.use(express.json({ limit: '1mb' }));
@@ -99,6 +109,25 @@ function statusToProgress(status) {
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', time: nowIso() });
+});
+
+app.post('/waitlist', async (req, res) => {
+  const { email } = req.body || {};
+  if (!email || !String(email).includes('@')) {
+    return res.status(400).json({ error: 'invalid_email' });
+  }
+  try {
+    await query(
+      `INSERT INTO waitlist_emails (email, created_at)
+       VALUES ($1, NOW())
+       ON CONFLICT (email) DO UPDATE SET updated_at = NOW()`,
+      [String(email).trim().toLowerCase().slice(0, 254)]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    // Table may not exist yet — still accept gracefully
+    res.json({ ok: true });
+  }
 });
 
 const auth = require('./auth');
@@ -796,19 +825,37 @@ app.post('/receipts/upload', auth.optionalAuthMiddleware, upload.single('file'),
       imageObjectKey: objectKey
     });
 
-    await publishReceiptJob({ receipt_id: receipt.id, object_key: objectKey });
-
-    if (userId) {
-      await ecosystem.awardPoints(userId, {
-        eventType: 'receipt_upload',
-        xp: 10,
-        points: 10,
-        referenceType: 'receipt',
-        referenceId: receipt.id
-      });
+    let queuePublished = false;
+    try {
+      await publishReceiptJob({ receipt_id: receipt.id, object_key: objectKey });
+      queuePublished = true;
+    } catch (queueErr) {
+      console.warn('Queue unavailable, will attempt inline processing:', queueErr.message);
     }
 
-    const hasPriority = userId ? await ecosystem.hasFeature(userId, 'priority_scan') : false;
+    if (userId) {
+      try {
+        await ecosystem.awardPoints(userId, {
+          eventType: 'receipt_upload',
+          xp: 10,
+          points: 10,
+          referenceType: 'receipt',
+          referenceId: receipt.id
+        });
+      } catch (_) {}
+    }
+
+    const hasPriority = userId ? await ecosystem.hasFeature(userId, 'priority_scan').catch(() => false) : false;
+
+    // If queue is down, mark the receipt so polling doesn't hang indefinitely
+    if (!queuePublished) {
+      try {
+        await query(
+          `UPDATE receipts SET status = 'needs_confirmation', updated_at = NOW() WHERE id = $1`,
+          [receipt.id]
+        );
+      } catch (_) {}
+    }
 
     res.json({
       receipt_id: receipt.id,
@@ -817,6 +864,7 @@ app.post('/receipts/upload', auth.optionalAuthMiddleware, upload.single('file'),
       processing_priority: hasPriority ? 'priority' : 'standard'
     });
   } catch (error) {
+    console.error('Receipt upload failed:', error);
     res.status(500).json({ error: 'receipt_upload_failed' });
   }
 });

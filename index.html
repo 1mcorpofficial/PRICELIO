@@ -2,22 +2,35 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0c1220" />
-    <title>PRICELIO</title>
-    <link rel="manifest" href="manifest.webmanifest?v=20260218-1" />
+    <meta name="description" content="PRICELIO – Smart grocery price intelligence. Compare prices, scan receipts, save money on every shopping trip." />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>PRICELIO – Smart Grocery Price Intelligence</title>
+    <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
     <link rel="shortcut icon" href="favicon.ico" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-    <link rel="stylesheet" href="styles.css?v=20260218-1" />
+    <link rel="stylesheet" href="styles.css" />
   </head>
   <body data-view="overview" data-mode="landing" data-device="desktop">
+
+    <!-- Scroll progress bar -->
+    <div id="scrollProgress" role="progressbar" aria-hidden="true"></div>
     <div class="bg-layer"></div>
+
+    <!-- ═══════════════════════════════
+         LANDING SHELL
+    ═══════════════════════════════ -->
     <section id="landingShell" class="landing-shell">
-      <header class="landing-top">
+
+      <!-- Top nav -->
+      <header class="landing-top reveal">
         <div class="brand-block">
           <div class="brand-logo">PL</div>
           <div>
@@ -31,163 +44,216 @@
         </div>
       </header>
 
+      <!-- Hero -->
       <div class="landing-hero">
-        <div class="landing-copy">
+        <div class="landing-copy reveal">
           <h2 data-i18n="landing_headline">Nustok permokėti už maistą ir kasdienes prekes.</h2>
           <p data-i18n="landing_subline">Įkelk čekį, palygink kainas aplink save ir per kelias sekundes sužinok, kur pirkti pigiau.</p>
+
           <div class="landing-cta-row">
             <button id="startExperienceSecondaryBtn" class="btn cta-primary" type="button" data-i18n="try_now">Noriu išbandyti</button>
             <button id="startExperienceLoginBtn" class="btn btn-ghost" type="button" data-i18n="go_login">Prisijungti</button>
           </div>
+
           <div class="store-badge-row">
-            <a href="#" id="storeGoogleBtn" class="store-badge" data-i18n="store_google_badge">Get it on Google Play</a>
-            <a href="#" id="storeAppleBtn" class="store-badge" data-i18n="store_apple_badge">Download on the App Store</a>
+            <a href="#" id="storeGoogleBtn" class="store-badge" aria-label="Google Play">
+              <span style="margin-right:0.4rem">▶</span> <span data-i18n="store_google_badge">Get it on Google Play</span>
+            </a>
+            <a href="#" id="storeAppleBtn" class="store-badge" aria-label="App Store">
+              <span style="margin-right:0.4rem">🍎</span> <span data-i18n="store_apple_badge">Download on the App Store</span>
+            </a>
           </div>
+
           <div class="social-proof-row">
             <div class="avatar-stack" aria-hidden="true">
-              <span>A</span>
-              <span>M</span>
-              <span>J</span>
-              <span>R</span>
+              <span>A</span><span>M</span><span>J</span><span>R</span>
             </div>
             <p data-i18n="social_proof_text">Jau dabar kuriame įrankį, kuris padės Lietuvos šeimoms sutaupyti kiekvieną savaitę.</p>
           </div>
-          <p id="deviceHintText" class="muted" data-i18n="landing_device_hint">Telefonu gausi pilną patirtį: greitesnis čekio skenavimas, lokacija, misijos.</p>
+
+          <p id="deviceHintText" class="muted" data-i18n="landing_device_hint">
+            📱 Telefonu gausi pilną patirtį: greitesnis čekio skenavimas, lokacija, misijos.
+          </p>
         </div>
+
         <div class="landing-visual">
+          <!-- Phone mockup -->
           <div class="phone-mockup" aria-hidden="true">
             <div class="phone-notch"></div>
             <div class="phone-screen">
               <p class="phone-caption" data-i18n="mockup_caption">Šiandien būtum sutaupęs</p>
-              <h3>€6.40</h3>
-              <div class="phone-item">
-                <span>Twix</span>
-                <strong>€0.89</strong>
+              <h3 id="savingsCounter">€0.00</h3>
+              <div class="phone-item highlight">
+                <span>🧴 Dove šampūnas</span>
+                <strong class="positive">-28%</strong>
               </div>
               <div class="phone-item">
                 <span data-i18n="mockup_alt_store">Pigiausia: Lidl</span>
-                <strong class="positive">-31%</strong>
+                <strong>€1.29</strong>
+              </div>
+              <div class="phone-ticker">
+                <span data-i18n="mockup_basket">Krepšelio planas</span>
+                <strong style="color:#059669" data-i18n="mockup_ready">✓ Paruoštas</strong>
               </div>
               <div class="phone-item">
-                <span data-i18n="mockup_basket">Krepšelio planas</span>
-                <strong data-i18n="mockup_ready">Paruoštas</strong>
+                <span>🥛 Pienas 1L</span>
+                <strong>€0.79</strong>
+              </div>
+              <div class="phone-item">
+                <span>🍞 Duona</span>
+                <strong>€0.99</strong>
               </div>
             </div>
           </div>
+
+          <!-- Stat cards -->
           <div class="landing-stats">
-            <article class="landing-stat-card">
+            <article class="landing-stat-card reveal reveal-delay-1">
               <h3 data-i18n="landing_card1_title">Po pirkimo</h3>
               <p data-i18n="landing_card1_text">Rodo kur permokėjai ir kiek galėjai sutaupyti.</p>
             </article>
-            <article class="landing-stat-card">
+            <article class="landing-stat-card reveal reveal-delay-2">
               <h3 data-i18n="landing_card2_title">Prieš pirkimą</h3>
-              <p data-i18n="landing_card2_text">„Twix“ paieška parodo kainas skirtingose parduotuvėse aplink tave.</p>
+              <p data-i18n="landing_card2_text">„Twix" paieška parodo kainas skirtingose parduotuvėse.</p>
             </article>
-            <article class="landing-stat-card">
+            <article class="landing-stat-card reveal reveal-delay-3">
               <h3 data-i18n="landing_card3_title">Šeimai</h3>
-              <p data-i18n="landing_card3_text">Bendri sąrašai, pakvietimai ir pirkinių koordinacija vienoje vietoje.</p>
+              <p data-i18n="landing_card3_text">Bendri sąrašai ir pirkinių koordinacija vienoje vietoje.</p>
             </article>
           </div>
         </div>
       </div>
 
-      <section class="landing-problem panel-surface">
+      <!-- Problem -->
+      <section class="landing-problem panel-surface reveal" data-step="1">
         <p class="eyebrow" data-i18n="landing_problem_eyebrow">Problema</p>
-        <h3 data-i18n="landing_problem_title">„Ar kitur nebuvo pigiau?“ šis klausimas kainuoja pinigus kas savaitę.</h3>
+        <h3 data-i18n="landing_problem_title">„Ar kitur nebuvo pigiau?" šis klausimas kainuoja pinigus kas savaitę.</h3>
         <p data-i18n="landing_problem_text">
-          Dauguma žmonių sužino, kad permokėjo, tik grįžę namo. PRICELIO sujungia čekių realybę, akcijų leidinius ir internetines kainas,
-          kad kitą kartą tiksliai žinotumėte, kur verta pirkti.
+          Dauguma žmonių sužino, kad permokėjo, tik grįžę namo. PRICELIO sujungia čekių realybę,
+          akcijų leidinius ir internetines kainas, kad kitą kartą tiksliai žinotumėte, kur verta pirkti.
         </p>
       </section>
 
-      <section class="landing-flow panel-surface">
+      <!-- How it works -->
+      <section class="landing-flow panel-surface reveal">
         <p class="eyebrow" data-i18n="landing_flow_eyebrow">Kaip veikia</p>
         <div class="landing-flow-grid">
-          <article>
+          <article data-step="1" class="reveal reveal-delay-1">
             <div class="icon-badge" aria-hidden="true">📷</div>
             <span>1</span>
             <h4 data-i18n="landing_step1_title">Nufotografuok čekį</h4>
             <p data-i18n="landing_step1_text">AI ištraukia prekes, kiekius ir kainas, o jautri informacija užmaskuojama.</p>
           </article>
-          <article>
+          <article data-step="2" class="reveal reveal-delay-2">
             <div class="icon-badge" aria-hidden="true">🔎</div>
             <span>2</span>
             <h4 data-i18n="landing_step2_title">Palygink kainas aplink</h4>
-            <p data-i18n="landing_step2_text">Ieškai „Twix“ ir iškart matai, kur šalia tavęs pigiausia.</p>
+            <p data-i18n="landing_step2_text">Ieškai „Twix" ir iškart matai, kur šalia tavęs pigiausia.</p>
           </article>
-          <article>
+          <article data-step="3" class="reveal reveal-delay-3">
             <div class="icon-badge" aria-hidden="true">💶</div>
             <span>3</span>
             <h4 data-i18n="landing_step3_title">Kitą kartą sutaupyk</h4>
-            <p data-i18n="landing_step3_text">Sistema parodo, kur pirkinių krepšelis kainuos mažiau ir ką verta pirkti kitoje parduotuvėje.</p>
+            <p data-i18n="landing_step3_text">Sistema parodo, kur pirkinių krepšelis kainuos mažiau.</p>
           </article>
         </div>
       </section>
 
-      <section class="landing-feature-grid bento-grid">
-        <article class="panel-surface bento-item bento-tall">
+      <!-- Feature bento grid -->
+      <section class="landing-feature-grid bento-grid" aria-label="Funkcijos">
+        <article class="panel-surface bento-item bento-tall reveal reveal-delay-1">
           <div class="icon-badge" aria-hidden="true">🧾</div>
           <h4 data-i18n="landing_feat1_title">Po pirkimo analizė</h4>
-          <p data-i18n="landing_feat1_text">Permokėjimo ataskaita, „ouch“ suma ir aiškios alternatyvos kitam kartui.</p>
+          <p data-i18n="landing_feat1_text">Permokėjimo ataskaita, „ouch" suma ir aiškios alternatyvos kitam kartui.</p>
         </article>
-        <article class="panel-surface bento-item">
+        <article class="panel-surface bento-item reveal reveal-delay-2">
           <div class="icon-badge" aria-hidden="true">📍</div>
           <h4 data-i18n="landing_feat2_title">Prieš pirkimą paieška</h4>
-          <p data-i18n="landing_feat2_text">Vienos prekės palyginimas daugelyje parduotuvių pagal realią vartotojo vietą.</p>
+          <p data-i18n="landing_feat2_text">Vienos prekės palyginimas daugelyje parduotuvių pagal realią vietą.</p>
         </article>
-        <article class="panel-surface bento-item bento-wide">
+        <article class="panel-surface bento-item bento-wide reveal reveal-delay-3">
           <div class="icon-badge" aria-hidden="true">👨‍👩‍👧‍👦</div>
           <h4 data-i18n="landing_feat3_title">Šeimos režimas</h4>
           <p data-i18n="landing_feat3_text">Bendri sąrašai, pakvietimai ir realaus laiko atnaujinimai visiems šeimos nariams.</p>
         </article>
-        <article class="panel-surface bento-item">
+        <article class="panel-surface bento-item reveal reveal-delay-1">
           <div class="icon-badge" aria-hidden="true">✅</div>
           <h4 data-i18n="landing_feat4_title">Misijos ir duomenų kokybė</h4>
-          <p data-i18n="landing_feat4_text">Bendruomenė tikrina kainas, o sistema naudoja konsensusą ir pasitikėjimo balą.</p>
+          <p data-i18n="landing_feat4_text">Bendruomenė tikrina kainas naudodama pasitikėjimo balą.</p>
         </article>
-        <article class="panel-surface bento-item">
-          <div class="icon-badge" aria-hidden="true">🛡️</div>
+        <article class="panel-surface bento-item reveal reveal-delay-2">
+          <div class="icon-badge" aria-hidden="true">👶</div>
           <h4 data-i18n="landing_feat5_title">Vaikų režimas</h4>
           <p data-i18n="landing_feat5_text">Tėvų valdomas režimas su PIN ir amžiaus grupėms pritaikytomis užduotimis.</p>
         </article>
-        <article class="panel-surface bento-item">
+        <article class="panel-surface bento-item reveal reveal-delay-3">
           <div class="icon-badge" aria-hidden="true">🔒</div>
           <h4 data-i18n="landing_feat6_title">Privatumas pirmoje vietoje</h4>
-          <p data-i18n="landing_feat6_text">Tik tai, kas reikalinga kainų analizei. Mokėjimo duomenys nerodomi ir nesaugomi atvirai.</p>
+          <p data-i18n="landing_feat6_text">Tik tai, kas reikalinga kainų analizei. Mokėjimo duomenys nerodomi.</p>
         </article>
       </section>
 
-      <section class="landing-trust panel-surface">
+      <!-- Trust metrics -->
+      <section class="landing-trust panel-surface reveal">
         <p class="eyebrow" data-i18n="landing_trust_eyebrow">Ką jau turime</p>
         <div class="landing-trust-metrics">
-          <div><strong>21</strong><span data-i18n="landing_metric1">parduotuvių tinklas</span></div>
-          <div><strong>90+</strong><span data-i18n="landing_metric2">fizinių parduotuvių taškų</span></div>
-          <div><strong>AI</strong><span data-i18n="landing_metric3">čekių OCR + validacija</span></div>
-          <div><strong>LT/EUR</strong><span data-i18n="landing_metric4">lokalus paleidimas</span></div>
+          <div class="reveal reveal-delay-1">
+            <strong data-count="21">0</strong>
+            <span data-i18n="landing_metric1">parduotuvių tinklas</span>
+          </div>
+          <div class="reveal reveal-delay-2">
+            <strong data-count="90">0</strong>
+            <span data-i18n="landing_metric2">+ fizinių parduotuvių</span>
+          </div>
+          <div class="reveal reveal-delay-3">
+            <strong>AI</strong>
+            <span data-i18n="landing_metric3">čekių OCR + validacija</span>
+          </div>
+          <div class="reveal reveal-delay-4">
+            <strong>LT/EUR</strong>
+            <span data-i18n="landing_metric4">lokalus paleidimas</span>
+          </div>
         </div>
       </section>
 
-      <section class="landing-final-cta panel-surface">
+      <!-- Final CTA -->
+      <section class="landing-final-cta panel-surface reveal">
         <h3 data-i18n="landing_final_title">Pradėk testuoti dabar</h3>
-        <p data-i18n="landing_final_text">Spausk „Noriu išbandyti“, susikurk paskyrą ir pradėk nuo pirmo čekio ar prekės paieškos.</p>
+        <p data-i18n="landing_final_text">Spausk „Noriu išbandyti", susikurk paskyrą ir pradėk nuo pirmo čekio ar prekės paieškos.</p>
         <button id="startExperienceFinalBtn" class="btn cta-primary" type="button" data-i18n="try_now">Noriu išbandyti</button>
       </section>
-    </section>
 
-    <section id="waitlistModal" class="waitlist-modal" aria-hidden="true">
+    </section><!-- /landingShell -->
+
+    <!-- ═══════════════════════════════
+         WAITLIST MODAL
+    ═══════════════════════════════ -->
+    <section id="waitlistModal" class="waitlist-modal" aria-hidden="true" role="dialog" aria-labelledby="waitlistTitle">
       <div class="waitlist-card">
         <div class="waitlist-head">
-          <h3 data-i18n="waitlist_title">Gauk ankstyvą prieigą</h3>
+          <h3 id="waitlistTitle" data-i18n="waitlist_title">Gauk ankstyvą prieigą</h3>
           <button id="waitlistCloseBtn" class="btn btn-ghost btn-small" type="button" data-i18n="waitlist_close">Uždaryti</button>
         </div>
         <p data-i18n="waitlist_text">Programėlė netrukus startuoja. Palik el. paštą ir gausi kvietimą bei Plus savaitę nemokamai.</p>
-        <form id="waitlistForm" class="waitlist-form">
-          <input id="waitlistEmail" type="email" autocomplete="email" data-i18n-placeholder="waitlist_email_placeholder" placeholder="email@example.com" required />
+        <form id="waitlistForm" class="waitlist-form" novalidate>
+          <input id="waitlistEmail" type="email" autocomplete="email"
+            data-i18n-placeholder="waitlist_email_placeholder" placeholder="email@example.com" required />
           <button class="btn cta-primary" type="submit" data-i18n="waitlist_submit">Gauti kvietimą</button>
         </form>
       </div>
     </section>
 
+    <!-- ═══════════════════════════════
+         MOBILE STICKY CTA BAR
+    ═══════════════════════════════ -->
+    <div class="mobile-cta-bar" id="mobileCTABar" role="navigation" aria-label="Mobile CTA">
+      <button id="mobileTryBtn" class="btn cta-primary" type="button" data-i18n="try_now">Noriu išbandyti</button>
+      <button id="mobileLoginBtn" class="btn btn-ghost" type="button" data-i18n="go_login">Prisijungti</button>
+    </div>
+
+    <!-- ═══════════════════════════════
+         APP SHELL
+    ═══════════════════════════════ -->
     <div id="appShell" class="app-shell">
       <header class="topbar">
         <div class="brand-block">
@@ -208,35 +274,41 @@
       <section id="deviceCapabilityNotice" class="device-notice"></section>
 
       <nav class="view-nav" aria-label="Views">
-        <button class="nav-btn active" data-view="overview" data-i18n="nav_overview">Overview</button>
-        <button class="nav-btn" data-view="market" data-i18n="nav_market">Market</button>
-        <button class="nav-btn" data-view="basket" data-i18n="nav_basket">Basket</button>
-        <button class="nav-btn" data-view="receipts" data-i18n="nav_receipts">Receipts</button>
-        <button class="nav-btn" data-view="family" data-i18n="nav_family">Family</button>
-        <button class="nav-btn" data-view="missions" data-i18n="nav_missions">Missions</button>
-        <button class="nav-btn" data-view="leaderboard" data-i18n="nav_leaderboard">Leaderboard</button>
-        <button class="nav-btn" data-view="plus" data-i18n="nav_plus">Plus</button>
-        <button class="nav-btn" data-view="kids" data-i18n="nav_kids">Kids</button>
-        <button class="nav-btn" data-view="profile" data-i18n="nav_profile">Profile</button>
+        <button class="nav-btn active" data-view="overview"    data-i18n="nav_overview">Overview</button>
+        <button class="nav-btn"        data-view="market"      data-i18n="nav_market">Market</button>
+        <button class="nav-btn"        data-view="basket"      data-i18n="nav_basket">Basket</button>
+        <button class="nav-btn"        data-view="receipts"    data-i18n="nav_receipts">Receipts</button>
+        <button class="nav-btn"        data-view="family"      data-i18n="nav_family">Family</button>
+        <button class="nav-btn"        data-view="missions"    data-i18n="nav_missions">Missions</button>
+        <button class="nav-btn"        data-view="leaderboard" data-i18n="nav_leaderboard">Leaderboard</button>
+        <button class="nav-btn"        data-view="plus"        data-i18n="nav_plus">Plus</button>
+        <button class="nav-btn"        data-view="kids"        data-i18n="nav_kids">Kids</button>
+        <button class="nav-btn"        data-view="profile"     data-i18n="nav_profile">Profile</button>
       </nav>
 
       <main class="content">
+
+        <!-- Overview -->
         <section class="view active" id="view-overview">
           <div class="grid two">
-            <article class="panel">
+            <article class="panel fade-up">
               <h2 data-i18n="auth_title">Auth</h2>
               <p class="muted" data-i18n="auth_subtitle">Login to unlock points, family, missions and kids mode.</p>
               <div class="auth-grid">
                 <form id="registerForm" class="stack">
                   <h3 data-i18n="register_title">Create account</h3>
-                  <input type="email" id="registerEmail" placeholder="email@example.com" data-i18n-placeholder="email_placeholder" autocomplete="email" required />
-                  <input type="password" id="registerPassword" placeholder="password (min 8)" data-i18n-placeholder="password_new_placeholder" autocomplete="new-password" required />
+                  <input type="email" id="registerEmail" placeholder="email@example.com"
+                    data-i18n-placeholder="email_placeholder" autocomplete="email" required />
+                  <input type="password" id="registerPassword" placeholder="password (min 8)"
+                    data-i18n-placeholder="password_new_placeholder" autocomplete="new-password" required />
                   <button class="btn" type="submit" data-i18n="register_btn">Register</button>
                 </form>
                 <form id="loginForm" class="stack">
                   <h3 data-i18n="login_title">Login</h3>
-                  <input type="email" id="loginEmail" placeholder="email@example.com" data-i18n-placeholder="email_placeholder" autocomplete="email" required />
-                  <input type="password" id="loginPassword" placeholder="password" data-i18n-placeholder="password_current_placeholder" autocomplete="current-password" required />
+                  <input type="email" id="loginEmail" placeholder="email@example.com"
+                    data-i18n-placeholder="email_placeholder" autocomplete="email" required />
+                  <input type="password" id="loginPassword" placeholder="password"
+                    data-i18n-placeholder="password_current_placeholder" autocomplete="current-password" required />
                   <div class="row">
                     <button class="btn" type="submit" data-i18n="login_btn">Login</button>
                     <button class="btn btn-ghost" id="logoutBtn" type="button" data-i18n="logout_btn">Logout</button>
@@ -244,7 +316,7 @@
                 </form>
               </div>
             </article>
-            <article class="panel">
+            <article class="panel fade-up">
               <h2 data-i18n="gamification_title">Gamification</h2>
               <div class="kpi-grid">
                 <div class="kpi"><span data-i18n="kpi_rank">Rank</span><strong id="kpiRank">-</strong></div>
@@ -258,6 +330,7 @@
           </div>
         </section>
 
+        <!-- Market -->
         <section class="view" id="view-market">
           <div class="grid two">
             <article class="panel">
@@ -275,7 +348,9 @@
             <article class="panel">
               <h2 data-i18n="search_compare_title">Search and compare</h2>
               <div class="row">
-                <input type="search" id="searchInput" placeholder="Pvz: Twix - rodys pigiausia aplink jus" data-i18n-placeholder="search_placeholder" />
+                <input type="search" id="searchInput"
+                  placeholder="Pvz: Twix - rodys pigiausia aplink jus"
+                  data-i18n-placeholder="search_placeholder" />
                 <button id="searchBtn" class="btn" data-i18n="search_btn">Search</button>
               </div>
               <div class="row">
@@ -291,6 +366,7 @@
           </div>
         </section>
 
+        <!-- Basket -->
         <section class="view" id="view-basket">
           <div class="grid two">
             <article class="panel">
@@ -310,14 +386,20 @@
           </div>
         </section>
 
+        <!-- Receipts -->
         <section class="view" id="view-receipts">
           <div class="grid two">
             <article class="panel">
               <h2 data-i18n="upload_receipt_title">Upload receipt</h2>
-              <div class="dropzone" id="scanPreview" data-i18n="scan_preview_text">Select a receipt photo to start.</div>
-              <input type="file" id="scanInput" accept="image/*" />
-              <div class="row">
-                <button id="scanBtn" class="btn mobile-primary-action" data-i18n="analyze_receipt_btn">Analyze Receipt</button>
+              <!-- Hidden file inputs -->
+              <input type="file" id="scanInput" accept="image/*" style="display:none" />
+              <input type="file" id="scanInputCamera" accept="image/*" capture="environment" style="display:none" />
+              <!-- Tappable dropzone -->
+              <label for="scanInput" class="dropzone" id="scanPreview" data-i18n="scan_preview_text" style="cursor:pointer">Select a receipt photo to start.</label>
+              <div class="row" style="gap:0.5rem;flex-wrap:wrap">
+                <button id="scanCameraBtn" class="btn btn-outline" data-i18n="take_photo_btn">📷 Take Photo</button>
+                <button id="scanGalleryBtn" class="btn btn-outline" data-i18n="choose_gallery_btn">🖼 Gallery</button>
+                <button id="scanBtn" class="btn mobile-primary-action" data-i18n="analyze_receipt_btn" disabled>Analyze Receipt</button>
               </div>
               <p id="scanStatus" class="muted" data-i18n="awaiting_upload">Laukiama įkėlimo.</p>
             </article>
@@ -328,6 +410,7 @@
           </div>
         </section>
 
+        <!-- Family -->
         <section class="view" id="view-family">
           <div class="grid two">
             <article class="panel">
@@ -339,7 +422,7 @@
               <hr />
               <div class="stack">
                 <input id="familyIdInput" placeholder="Household ID" data-i18n-placeholder="household_id_placeholder" />
-                <input id="familyInviteEmail" placeholder="Invite email (optional for token-only invite)" data-i18n-placeholder="invite_email_placeholder" />
+                <input id="familyInviteEmail" placeholder="Invite email (optional)" data-i18n-placeholder="invite_email_placeholder" />
                 <select id="familyInviteRole">
                   <option value="planner">Planner</option>
                   <option value="runner">Runner</option>
@@ -347,8 +430,8 @@
                 </select>
                 <button id="inviteFamilyBtn" class="btn btn-ghost" data-i18n="create_invite_btn">Create Invite</button>
                 <div class="row">
-                  <input id="familyInviteTokenOutput" placeholder="Generated invite token will appear here" data-i18n-placeholder="invite_token_output_placeholder" readonly />
-                  <button id="copyFamilyInviteTokenBtn" class="btn btn-ghost" type="button" data-i18n="copy_token_btn">Copy Token</button>
+                  <input id="familyInviteTokenOutput" placeholder="Generated invite token" data-i18n-placeholder="invite_token_output_placeholder" readonly />
+                  <button id="copyFamilyInviteTokenBtn" class="btn btn-ghost" type="button" data-i18n="copy_token_btn">Copy</button>
                 </div>
               </div>
               <hr />
@@ -367,7 +450,7 @@
                   <input id="familyListItem" placeholder="New list item" data-i18n-placeholder="new_list_item_placeholder" />
                   <button id="addFamilyItemBtn" class="btn" data-i18n="add_btn">Add</button>
                 </div>
-                <button id="pollFamilyBtn" class="btn btn-ghost" data-i18n="poll_family_events_btn">Poll Family Events</button>
+                <button id="pollFamilyBtn" class="btn btn-ghost" data-i18n="poll_family_events_btn">Poll Events</button>
               </div>
               <div id="familyLists" class="list"></div>
               <div id="familyEvents" class="list compact"></div>
@@ -375,6 +458,7 @@
           </div>
         </section>
 
+        <!-- Missions -->
         <section class="view" id="view-missions">
           <div class="grid two">
             <article class="panel">
@@ -394,7 +478,8 @@
                 <input id="missionBarcode" placeholder="Barcode" data-i18n-placeholder="barcode_placeholder" />
                 <input id="missionStoreChain" placeholder="Store chain" data-i18n-placeholder="store_chain_placeholder" />
                 <input id="missionMediaHash" placeholder="Media hash" data-i18n-placeholder="media_hash_placeholder" />
-                <label><input type="checkbox" id="missionForeground" checked /> <span data-i18n="app_foreground_label">App was foreground</span></label>
+                <label><input type="checkbox" id="missionForeground" checked />
+                  <span data-i18n="app_foreground_label">App was foreground</span></label>
                 <button id="submitMissionBtn" class="btn mobile-primary-action" data-i18n="submit_mission_btn">Submit Mission</button>
               </div>
               <hr />
@@ -402,7 +487,7 @@
                 <input id="verifySubmissionId" placeholder="Submission ID" data-i18n-placeholder="submission_id_placeholder" />
                 <select id="verifyVote">
                   <option value="confirm" data-i18n="confirm_option">Confirm</option>
-                  <option value="reject" data-i18n="reject_option">Reject</option>
+                  <option value="reject"  data-i18n="reject_option">Reject</option>
                 </select>
                 <button id="verifyMissionBtn" class="btn btn-ghost" data-i18n="verify_btn">Verify</button>
               </div>
@@ -415,6 +500,7 @@
           </div>
         </section>
 
+        <!-- Leaderboard -->
         <section class="view" id="view-leaderboard">
           <div class="grid two">
             <article class="panel">
@@ -430,6 +516,7 @@
           </div>
         </section>
 
+        <!-- Plus -->
         <section class="view" id="view-plus">
           <div class="grid two">
             <article class="panel">
@@ -455,6 +542,7 @@
           </div>
         </section>
 
+        <!-- Kids -->
         <section class="view" id="view-kids">
           <div class="grid two">
             <article class="panel">
@@ -462,13 +550,15 @@
               <form id="kidsActivateForm" class="stack">
                 <input id="kidDisplayName" placeholder="Kid display name" data-i18n-placeholder="kid_name_placeholder" />
                 <select id="kidAgeGroup">
-                  <option value="4-8">4-8</option>
-                  <option value="9-12">9-12</option>
+                  <option value="4-8">4–8 m.</option>
+                  <option value="9-12">9–12 m.</option>
                 </select>
-                <input id="kidParentPin" placeholder="Parent PIN" type="password" data-i18n-placeholder="parent_pin_placeholder" autocomplete="current-password" />
-                <button id="activateKidsBtn" class="btn mobile-primary-action" type="submit" data-i18n="activate_kids_btn">Activate Kids Mode</button>
+                <input id="kidParentPin" placeholder="Parent PIN" type="password"
+                  data-i18n-placeholder="parent_pin_placeholder" autocomplete="current-password" />
+                <button id="activateKidsBtn" class="btn mobile-primary-action" type="submit"
+                  data-i18n="activate_kids_btn">Activate Kids Mode</button>
               </form>
-              <form id="kidsDeactivateForm" class="row">
+              <form id="kidsDeactivateForm" class="row" style="margin-top:0.75rem">
                 <input id="kidsSessionId" placeholder="Kids session ID" data-i18n-placeholder="kids_session_placeholder" />
                 <button id="deactivateKidsBtn" class="btn btn-ghost" type="submit" data-i18n="deactivate_btn">Deactivate</button>
               </form>
@@ -479,7 +569,7 @@
                 <input id="kidsMissionSessionId" placeholder="Session ID" data-i18n-placeholder="session_id_placeholder" />
                 <button id="loadKidsMissionsBtn" class="btn btn-ghost" data-i18n="load_btn">Load</button>
               </div>
-              <div class="stack">
+              <div class="stack" style="margin-top:0.6rem">
                 <input id="kidsMissionId" placeholder="Mission ID" data-i18n-placeholder="mission_id_placeholder" />
                 <input id="kidsMissionProduct" placeholder="Canonical product name" data-i18n-placeholder="canonical_product_placeholder" />
                 <input id="kidsMissionBarcode" placeholder="Barcode" data-i18n-placeholder="barcode_placeholder" />
@@ -491,6 +581,7 @@
           </div>
         </section>
 
+        <!-- Profile -->
         <section class="view" id="view-profile">
           <div class="grid two">
             <article class="panel">
@@ -504,12 +595,13 @@
             </article>
           </div>
         </section>
-      </main>
-    </div>
 
-    <div id="toastRoot" class="toast-root"></div>
+      </main>
+    </div><!-- /appShell -->
+
+    <div id="toastRoot" class="toast-root" role="region" aria-live="polite" aria-label="Notifications"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <script src="app.js?v=20260218-1"></script>
+    <script src="app.js"></script>
   </body>
 </html>

@@ -31,9 +31,19 @@ lib/
 │   └── utils/        # Router (go_router)
 └── features/
     ├── auth/         # Login, Register
-    ├── home/         # Store list, feed
+    ├── home/         # Store list, feed (+ receipt scan banner)
+    ├── receipts/     # Receipt scan (camera/gallery → AI analysis)
+    ├── scanner/      # Barcode EAN scanner
     ├── search/       # Product search
     ├── map/          # Store map
     ├── basket/       # Shopping basket optimizer
     └── profile/      # User profile, rank, points
+```
+
+## Android permissions (add to AndroidManifest.xml)
+
+```xml
+<uses-permission android:name="android.permission.CAMERA" />
+<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+<uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
 ```

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  static const primary    = Color(0xFF2563EB);
+  static const primary    = Color(0xFFFF6B35);  // PRICELIO orange
   static const secondary  = Color(0xFF10B981);
   static const background = Color(0xFFF8FAFC);
   static const surface    = Color(0xFFFFFFFF);
