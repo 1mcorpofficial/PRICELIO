@@ -7,14 +7,14 @@
   const STORAGE_LANG_KEY = 'pricelio_lang';
   const SUPPORTED_LANGS = ['lt', 'en', 'lv', 'et', 'ru', 'pl', 'be', 'uk'];
   const LANG_LABELS = {
-    lt: 'Lietuviu',
+    lt: 'Lietuvių',
     en: 'English',
-    lv: 'Latviesu',
+    lv: 'Latviešu',
     et: 'Eesti',
-    ru: 'Russkiy',
+    ru: 'Русский',
     pl: 'Polski',
-    be: 'Belaruskaya',
-    uk: 'Ukrayinska'
+    be: 'Беларуская',
+    uk: 'Українська'
   };
 
   const TRANSLATIONS = {
@@ -27,6 +27,7 @@
       guide: 'Guide',
       try_now: 'Try now',
       go_login: 'Login',
+      register_required_to_continue: 'Create an account or login to continue.',
       landing_headline: 'Shop smarter. Know exactly where you overpay.',
       landing_subline: 'Upload receipts, compare nearby prices, and choose the cheapest store next time.',
       landing_device_hint: 'Best full experience on phone: receipt scan, location-aware prices, missions.',
@@ -38,6 +39,35 @@
       landing_card2_text: 'Search “Twix” and see prices in nearby stores.',
       landing_card3_title: 'For family',
       landing_card3_text: 'Shared lists, invites and shopping coordination in one place.',
+      landing_problem_eyebrow: 'Problem',
+      landing_problem_title: '“Could I buy this cheaper elsewhere?” costs money every single week.',
+      landing_problem_text: 'Most people discover overpaying only after they get home. PRICELIO connects real receipt prices, flyer deals, and online offers so your next shopping trip is cheaper.',
+      landing_flow_eyebrow: 'How it works',
+      landing_step1_title: 'Scan your receipt',
+      landing_step1_text: 'AI extracts products, quantities, and prices while sensitive fields are masked.',
+      landing_step2_title: 'Compare nearby prices',
+      landing_step2_text: 'Search “Twix” and instantly see where it is cheaper around you.',
+      landing_step3_title: 'Save on the next trip',
+      landing_step3_text: 'Get a clear basket plan with store suggestions and savings impact.',
+      landing_feat1_title: 'Post-purchase intelligence',
+      landing_feat1_text: 'Overpay report, “ouch” score, and item-level alternatives.',
+      landing_feat2_title: 'Pre-purchase search',
+      landing_feat2_text: 'Single product comparison across nearby stores based on your location.',
+      landing_feat3_title: 'Family workflows',
+      landing_feat3_text: 'Shared lists, invite flow, and collaborative shopping execution.',
+      landing_feat4_title: 'Missions + consensus',
+      landing_feat4_text: 'Community verification with trust scores and anti-cheat checks.',
+      landing_feat5_title: 'Kids mode',
+      landing_feat5_text: 'Parent-controlled sessions with safe age-specific missions.',
+      landing_feat6_title: 'Privacy first',
+      landing_feat6_text: 'Only pricing-relevant data is used. Sensitive payment fragments are masked.',
+      landing_trust_eyebrow: 'Current scope',
+      landing_metric1: 'store chains',
+      landing_metric2: 'physical store points',
+      landing_metric3: 'OCR + validation stack',
+      landing_metric4: 'launch market and currency',
+      landing_final_title: 'Start testing now',
+      landing_final_text: 'Click “Try now”, register, and start from your first receipt or product search.',
       nav_overview: 'Overview',
       nav_market: 'Market',
       nav_basket: 'Basket',
@@ -160,157 +190,298 @@
       tip_kids_cta: 'Load Kids Missions',
       tip_profile_title: 'Profile and rank catalog',
       tip_profile_text: 'Review account info and inspect all 20 launch ranks with XP thresholds.',
-      tip_profile_cta: 'Load Ranks'
+      tip_profile_cta: 'Load Ranks',
+      tip_more: 'More',
+      tip_less: 'Less'
     },
     lt: {
       brand_name: 'PRICELIO',
-      brand_tagline: 'Ismanus apsipirkimo kainu asistentas Baltijos salims.',
-      guest_mode: 'Svecio rezimas',
-      home_btn: 'Pradzia',
+      brand_tagline: 'Išmanus apsipirkimo kainų asistentas Baltijos šalims.',
+      guest_mode: 'Svečio režimas',
+      home_btn: 'Pradžia',
       refresh: 'Atnaujinti',
       guide: 'Gidas',
-      try_now: 'Noriu isbandyti',
+      try_now: 'Noriu išbandyti',
       go_login: 'Prisijungti',
-      landing_headline: 'Pirk protingiau. Zinok kur permoki.',
-      landing_subline: 'Ikelk cekius, palygink kainas aplink tave ir kita karta pirk pigiausiai.',
-      landing_device_hint: 'Pilna patirtis telefone: cekio skenavimas, lokacija, misijos.',
-      landing_device_hint_desktop: 'Kompiuteris tinka perziurai. Cekiu skenavimui ir misijoms naudok telefona.',
-      landing_device_hint_mobile: 'Naudoji telefona, pilna PRICELIO patirtis pasiekiama.',
+      register_required_to_continue: 'Norėdami tęsti, susikurkite paskyrą arba prisijunkite.',
+      landing_headline: 'Pirk protingiau. Žinok, kur permoki.',
+      landing_subline: 'Įkelk čekius, palygink kainas aplink tave ir kitą kartą pirk pigiausiai.',
+      landing_device_hint: 'Pilna patirtis telefone: čekių skenavimas, lokacija, misijos.',
+      landing_device_hint_desktop: 'Kompiuteris puikiai tinka peržiūrai. Čekių skenavimui ir misijoms naudok telefoną.',
+      landing_device_hint_mobile: 'Naudoji telefoną, pilna PRICELIO patirtis pasiekiama.',
       landing_card1_title: 'Po pirkimo',
-      landing_card1_text: 'Parodo kur permokejai ir kiek galejai sutaupyti.',
-      landing_card2_title: 'Pries pirkima',
-      landing_card2_text: 'Ivesk „Twix“ ir matysi kainas aplinkinėse parduotuvese.',
-      landing_card3_title: 'Seimai',
-      landing_card3_text: 'Bendri sarasai, pakvietimai ir pirkiniu koordinacija vienoje vietoje.',
-      nav_overview: 'Apzvalga',
+      landing_card1_text: 'Parodo, kur permokėjai ir kiek galėjai sutaupyti.',
+      landing_card2_title: 'Prieš pirkimą',
+      landing_card2_text: 'Įvesk „Twix“ ir matysi kainas aplinkinėse parduotuvėse.',
+      landing_card3_title: 'Šeimai',
+      landing_card3_text: 'Bendri sąrašai, pakvietimai ir pirkinių koordinacija vienoje vietoje.',
+      landing_problem_eyebrow: 'Problema',
+      landing_problem_title: '„Ar kitur nebuvo pigiau?“ šis klausimas kainuoja pinigus kas savaitę.',
+      landing_problem_text: 'Dauguma žmonių supranta, kad permokėjo, tik grįžę namo. PRICELIO sujungia realias čekių kainas, akcijų leidinius ir internetines kainas.',
+      landing_flow_eyebrow: 'Kaip veikia',
+      landing_step1_title: 'Nufotografuok čekį',
+      landing_step1_text: 'AI atpažįsta prekes, kiekius ir kainas, o jautri informacija užmaskuojama.',
+      landing_step2_title: 'Palygink kainas aplink',
+      landing_step2_text: 'Ieškai „Twix“ ir iškart matai, kur aplink tave pigiau.',
+      landing_step3_title: 'Sutaupyk kitą kartą',
+      landing_step3_text: 'Sistema pateikia aiškų krepšelio planą su parduotuvėmis ir taupymo suma.',
+      landing_feat1_title: 'Po pirkimo analizė',
+      landing_feat1_text: 'Permokėjimo ataskaita, „ouch“ suma ir aiškios alternatyvos.',
+      landing_feat2_title: 'Prieš pirkimą paieška',
+      landing_feat2_text: 'Vienos prekės palyginimas daugelyje parduotuvių pagal tavo vietą.',
+      landing_feat3_title: 'Šeimos režimas',
+      landing_feat3_text: 'Bendri sąrašai, pakvietimai ir koordinuotas apsipirkimas.',
+      landing_feat4_title: 'Misijos ir konsensusas',
+      landing_feat4_text: 'Kainų tikrinimas per bendruomenę su pasitikėjimo balais.',
+      landing_feat5_title: 'Vaikų režimas',
+      landing_feat5_text: 'Tėvų valdomos sesijos su saugiomis amžiaus grupių misijomis.',
+      landing_feat6_title: 'Privatumas pirmoje vietoje',
+      landing_feat6_text: 'Naudojami tik kainų analizei reikalingi duomenys, jautrūs laukai maskuojami.',
+      landing_trust_eyebrow: 'Esama apimtis',
+      landing_metric1: 'parduotuvių tinklas',
+      landing_metric2: 'fizinių parduotuvių taškų',
+      landing_metric3: 'OCR + validacijos sistema',
+      landing_metric4: 'paleidimo rinka ir valiuta',
+      landing_final_title: 'Pradėk testuoti dabar',
+      landing_final_text: 'Spausk „Noriu išbandyti“, susikurk paskyrą ir pradėk nuo pirmo čekio ar prekės paieškos.',
+      nav_overview: 'Apžvalga',
       nav_market: 'Rinka',
-      nav_basket: 'Krepselis',
-      nav_receipts: 'Cekiai',
-      nav_family: 'Seima',
+      nav_basket: 'Krepšelis',
+      nav_receipts: 'Čekiai',
+      nav_family: 'Šeima',
       nav_missions: 'Misijos',
       nav_leaderboard: 'Reitingas',
       nav_plus: 'Plus',
       nav_kids: 'Vaikai',
       nav_profile: 'Profilis',
       auth_title: 'Paskyra',
-      auth_subtitle: 'Prisijunk ir atrakink taskus, seima, misijas ir vaiku rezima.',
-      register_title: 'Sukurti paskyra',
+      auth_subtitle: 'Prisijunk ir atrakink taškus, šeimą, misijas ir vaikų režimą.',
+      register_title: 'Sukurti paskyrą',
       login_title: 'Prisijungimas',
       register_btn: 'Registruotis',
       login_btn: 'Prisijungti',
       logout_btn: 'Atsijungti',
-      gamification_title: 'Taskai ir lygiai',
+      gamification_title: 'Taškai ir lygiai',
       kpi_rank: 'Rangas',
       kpi_level: 'Lygis',
       kpi_lifetime_xp: 'Viso XP',
-      kpi_spendable: 'Taskai',
-      recent_points: 'Naujausi taskai',
-      store_map_title: 'Parduotuviu zemelapis',
-      search_compare_title: 'Paieska ir palyginimas',
-      search_btn: 'Ieskoti',
+      kpi_spendable: 'Taškai',
+      recent_points: 'Naujausi taškai',
+      store_map_title: 'Parduotuvių žemėlapis',
+      search_compare_title: 'Paieška ir palyginimas',
+      search_btn: 'Ieškoti',
       chip_all: 'Visos',
       chip_verified: 'Patikrintos',
       radius_label: 'Spindulys (km)',
-      basket_builder_title: 'Krepselio sudarymas',
-      basket_builder_subtitle: 'Viena eilute vienai prekei. Pvz: pienas x2.',
-      build_basket_btn: 'Sudaryti krepseli',
+      basket_builder_title: 'Krepšelio sudarymas',
+      basket_builder_subtitle: 'Viena eilutė vienai prekei. Pvz: pienas x2.',
+      build_basket_btn: 'Sudaryti krepšelį',
       optimize_btn: 'Optimizuoti',
       best_plan_title: 'Geriausias planas',
-      upload_receipt_title: 'Ikelti ceki',
-      scan_preview_text: 'Pasirink cekio nuotrauka.',
-      analyze_receipt_btn: 'Analizuoti ceki',
-      overpaid_report_title: 'Permokejimo ataskaita',
-      family_household_title: 'Seimos namu ūkis',
-      create_family_btn: 'Sukurti seima',
-      create_invite_btn: 'Sukurti pakvietima',
-      copy_token_btn: 'Kopijuoti koda',
-      join_family_btn: 'Prisijungti prie seimos',
-      shared_lists_title: 'Bendri sarasai',
-      load_lists_btn: 'Ikelti sarasus',
-      add_btn: 'Prideti',
-      poll_family_events_btn: 'Atnaujinti seimos ivykius',
+      upload_receipt_title: 'Įkelti čekį',
+      scan_preview_text: 'Pasirink čekio nuotrauką.',
+      analyze_receipt_btn: 'Analizuoti čekį',
+      overpaid_report_title: 'Permokėjimo ataskaita',
+      family_household_title: 'Šeimos namų ūkis',
+      create_family_btn: 'Sukurti šeimą',
+      create_invite_btn: 'Sukurti pakvietimą',
+      copy_token_btn: 'Kopijuoti kodą',
+      join_family_btn: 'Prisijungti prie šeimos',
+      shared_lists_title: 'Bendri sąrašai',
+      load_lists_btn: 'Įkelti sąrašus',
+      add_btn: 'Pridėti',
+      poll_family_events_btn: 'Atnaujinti šeimos įvykius',
       bounty_missions_title: 'Misijos',
       nearby_btn: 'Aplink',
       submit_verify_title: 'Pateikimas / patvirtinimas',
-      submit_mission_btn: 'Pateikti misija',
+      submit_mission_btn: 'Pateikti misiją',
       verify_btn: 'Patvirtinti',
-      status_btn: 'Busena',
+      status_btn: 'Būsena',
       global_leaderboard_title: 'Globalus reitingas',
-      friends_leaderboard_title: 'Draugu reitingas',
-      refresh_global_btn: 'Atnaujinti globalu',
+      friends_leaderboard_title: 'Draugų reitingas',
+      refresh_global_btn: 'Atnaujinti globalų',
       refresh_friends_btn: 'Atnaujinti draugus',
       plus_title: 'PRICELIO Plus',
-      plus_subtitle: '2.99 EUR/mėn. arba 3000 tasku uz 30 dienu.',
-      load_features_btn: 'Uzkrauti funkcijas',
+      plus_subtitle: '2.99 EUR/mėn. arba 3000 taškų už 30 dienų.',
+      load_features_btn: 'Įkelti funkcijas',
       subscribe_btn: 'Prenumeruoti',
-      unlock_points_btn: 'Atrakinti taskais',
-      premium_insights_title: 'Premium izvalgos',
+      unlock_points_btn: 'Atrakinti taškais',
+      premium_insights_title: 'Premium įžvalgos',
       run_time_machine_btn: 'Paleisti Time Machine',
-      load_spending_btn: 'Rodyti islaidu analitika',
-      kids_mode_title: 'Vaiku rezimas (tevu kontrole)',
-      kids_missions_title: 'Vaiku misijos',
-      load_btn: 'Uzkrauti',
-      submit_kids_mission_btn: 'Pateikti vaiko misija',
-      activate_kids_btn: 'Aktyvuoti vaiku rezima',
-      deactivate_btn: 'Isjungti',
+      load_spending_btn: 'Rodyti išlaidų analitiką',
+      kids_mode_title: 'Vaikų režimas (tėvų kontrolė)',
+      kids_missions_title: 'Vaikų misijos',
+      load_btn: 'Įkelti',
+      submit_kids_mission_btn: 'Pateikti vaiko misiją',
+      activate_kids_btn: 'Aktyvuoti vaikų režimą',
+      deactivate_btn: 'Išjungti',
       profile_title: 'Profilis',
-      rank_catalog_title: 'Lygiu katalogas',
-      load_ranks_btn: 'Ikelti lygius',
+      rank_catalog_title: 'Lygių katalogas',
+      load_ranks_btn: 'Įkelti lygius',
       email_placeholder: 'el.pastas@example.com',
-      password_new_placeholder: 'slaptazodis (min 8)',
-      password_current_placeholder: 'slaptazodis',
-      search_placeholder: 'Pvz: Twix - rodyk pigiausia aplink mane',
-      basket_empty: 'Krepselis tuscias.',
-      family_name_placeholder: 'Seimos pavadinimas',
-      household_id_placeholder: 'Seimos ID',
-      invite_email_placeholder: 'Pakvietimo el. pastas (nebūtinas)',
-      invite_token_output_placeholder: 'Sugeneruotas pakvietimo kodas bus cia',
+      password_new_placeholder: 'slaptažodis (min 8)',
+      password_current_placeholder: 'slaptažodis',
+      search_placeholder: 'Pvz: Twix - rodyk pigiausią aplink mane',
+      basket_empty: 'Krepšelis tuščias.',
+      family_name_placeholder: 'Šeimos pavadinimas',
+      household_id_placeholder: 'Šeimos ID',
+      invite_email_placeholder: 'Pakvietimo el. paštas (nebūtinas)',
+      invite_token_output_placeholder: 'Sugeneruotas pakvietimo kodas bus čia',
       invite_token_placeholder: 'Pakvietimo kodas',
-      new_list_item_placeholder: 'Naujas saraso irasas',
+      new_list_item_placeholder: 'Naujas sąrašo įrašas',
       kid_name_placeholder: 'Vaiko vardas',
-      parent_pin_placeholder: 'Tevu PIN',
+      parent_pin_placeholder: 'Tėvų PIN',
       kids_session_placeholder: 'Vaiko sesijos ID',
-      device_notice_title_mobile: 'Telefono rezimas',
-      device_notice_text_mobile: 'Aktyvios visos PRICELIO funkcijos: cekiai, lokacija, misijos.',
-      device_notice_title_desktop: 'Kompiuterio rezimas',
-      device_notice_text_desktop: 'Dalis veiksmu skirti telefonui. Pilnam cekiu/misiju naudojimui atsidaryk PRICELIO telefone.',
+      device_notice_title_mobile: 'Telefono režimas',
+      device_notice_text_mobile: 'Aktyvios visos PRICELIO funkcijos: čekiai, lokacija, misijos.',
+      device_notice_title_desktop: 'Kompiuterio režimas',
+      device_notice_text_desktop: 'Dalis veiksmų skirti telefonui. Pilnam čekių/misijų naudojimui atsidaryk PRICELIO telefone.',
       signed_in_as: 'Prisijungta: {email}',
-      tip_overview_title: 'Greita pradzia',
-      tip_overview_text: 'Pirmiausia registruokis arba prisijunk, kad atrakintum taskus, seima ir misijas.',
-      tip_overview_cta: 'I autorizacija',
-      tip_market_title: 'Zemelapio eiga',
-      tip_market_text: 'Naudok filtrus pagal atstuma ir patvirtintas kainas, tada ieskok prekes.',
+      tip_overview_title: 'Greita pradžia',
+      tip_overview_text: 'Pirmiausia registruokis arba prisijunk, kad atrakintum taškus, šeimą ir misijas.',
+      tip_overview_cta: 'Į autorizaciją',
+      tip_market_title: 'Žemėlapio eiga',
+      tip_market_text: 'Naudok filtrus pagal atstumą ir patvirtintas kainas, tada ieškok prekės.',
       tip_market_cta: 'Atnaujinti parduotuves',
-      tip_basket_title: 'Krepselio optimizacija',
-      tip_basket_text: 'Viena eilute vienai prekei, pvz. "pienas x2", tada sudaryk ir optimizuok.',
-      tip_basket_cta: 'Sudaryti krepseli',
-      tip_receipts_title: 'Cekio analize',
-      tip_receipts_text: 'Ikelk ceki ir pamatysi kur permokejai bei ka pirkti pigiau kita karta.',
-      tip_receipts_cta: 'Analizuoti ceki',
-      tip_family_title: 'Seimos sinchronizacija',
-      tip_family_text: 'Sukurk namu uki, pakviesk narius ir valdyk bendra sarasa su ivykiu atnaujinimu.',
-      tip_family_cta: 'Ikelti sarasus',
+      tip_basket_title: 'Krepšelio optimizacija',
+      tip_basket_text: 'Viena eilutė vienai prekei, pvz. "pienas x2", tada sudaryk ir optimizuok.',
+      tip_basket_cta: 'Sudaryti krepšelį',
+      tip_receipts_title: 'Čekio analizė',
+      tip_receipts_text: 'Įkelk čekį ir pamatysi, kur permokėjai bei ką pirkti pigiau kitą kartą.',
+      tip_receipts_cta: 'Analizuoti čekį',
+      tip_family_title: 'Šeimos sinchronizacija',
+      tip_family_text: 'Sukurk namų ūkį, pakviesk narius ir valdyk bendrą sąrašą su įvykių atnaujinimu.',
+      tip_family_cta: 'Įkelti sąrašus',
       tip_missions_title: 'Misijos',
-      tip_missions_text: 'Gauk misijas aplink save, pateik irodymus ir tikrink kitu pateikimus.',
-      tip_missions_cta: 'Ikelti misijas',
+      tip_missions_text: 'Gauk misijas aplink save, pateik įrodymus ir tikrink kitų pateikimus.',
+      tip_missions_cta: 'Įkelti misijas',
       tip_leaderboard_title: 'Reitingas',
-      tip_leaderboard_text: 'Stebek rangu augima pagal XP. Draugu lentele naudoja aktyvius seimos narius.',
-      tip_leaderboard_cta: 'Atnaujinti globalu',
-      tip_plus_title: 'Plus atrakynimas',
-      tip_plus_text: 'Branduolys lieka nemokamas. Premium izvalgas atrakink prenumerata arba taskais.',
-      tip_plus_cta: 'Ikelti Plus busena',
-      tip_kids_title: 'Vaiku rezimas',
-      tip_kids_text: 'Tik tevu valdomos misijos. Aktyvuok sesija su PIN ir saugiai pateik vaiko misijas.',
-      tip_kids_cta: 'Ikelti vaiku misijas',
-      tip_profile_title: 'Profilis ir rangu katalogas',
-      tip_profile_text: 'Perziurek paskyros informacija ir visus 20 starto rangu su XP slenksciais.',
-      tip_profile_cta: 'Ikelti rangus'
+      tip_leaderboard_text: 'Stebėk rangų augimą pagal XP. Draugų lentelė naudoja aktyvius šeimos narius.',
+      tip_leaderboard_cta: 'Atnaujinti globalų',
+      tip_plus_title: 'Plus atrakinimas',
+      tip_plus_text: 'Branduolys lieka nemokamas. Premium įžvalgas atrakink prenumerata arba taškais.',
+      tip_plus_cta: 'Įkelti Plus būseną',
+      tip_kids_title: 'Vaikų režimas',
+      tip_kids_text: 'Tik tėvų valdomos misijos. Aktyvuok sesiją su PIN ir saugiai pateik vaiko misijas.',
+      tip_kids_cta: 'Įkelti vaikų misijas',
+      tip_profile_title: 'Profilis ir rangų katalogas',
+      tip_profile_text: 'Peržiūrėk paskyros informaciją ir visus 20 starto rangų su XP slenksčiais.',
+      tip_profile_cta: 'Įkelti rangus',
+      tip_more: 'Daugiau',
+      tip_less: 'Mažiau'
+    }
+  };
+  const EXTRA_LANG_OVERRIDES = {
+    lv: {
+      brand_tagline: 'Gudrs pārtikas cenu asistents Baltijas pircējiem.',
+      try_now: 'Izmēģināt',
+      go_login: 'Pieteikties',
+      home_btn: 'Sākums',
+      register_required_to_continue: 'Lai turpinātu, reģistrējies vai pieslēdzies.',
+      landing_headline: 'Iepērcies gudrāk. Zini, kur pārmaksā.',
+      landing_subline: 'Augšupielādē čekus, salīdzini cenas sev apkārt un nākamreiz pērc lētāk.',
+      nav_overview: 'Pārskats',
+      nav_market: 'Tirgus',
+      nav_basket: 'Grozs',
+      nav_receipts: 'Čeki',
+      nav_family: 'Ģimene',
+      nav_missions: 'Misijas',
+      nav_leaderboard: 'Reitings',
+      nav_profile: 'Profils'
+    },
+    et: {
+      brand_tagline: 'Nutikas toiduhindade assistent Balti ostjatele.',
+      try_now: 'Proovi',
+      go_login: 'Logi sisse',
+      home_btn: 'Avaleht',
+      register_required_to_continue: 'Jätkamiseks loo konto või logi sisse.',
+      landing_headline: 'Osta targemalt. Tea, kus maksad üle.',
+      landing_subline: 'Laadi tšekid üles, võrdle hindu enda ümber ja osta järgmisel korral soodsamalt.',
+      nav_overview: 'Ülevaade',
+      nav_market: 'Turg',
+      nav_basket: 'Korv',
+      nav_receipts: 'Tšekid',
+      nav_family: 'Pere',
+      nav_missions: 'Missioonid',
+      nav_leaderboard: 'Edetabel',
+      nav_profile: 'Profiil'
+    },
+    ru: {
+      brand_tagline: 'Умный помощник по ценам для покупателей Балтии.',
+      try_now: 'Попробовать',
+      go_login: 'Войти',
+      home_btn: 'Главная',
+      register_required_to_continue: 'Чтобы продолжить, зарегистрируйтесь или войдите.',
+      landing_headline: 'Покупай умнее. Знай, где переплачиваешь.',
+      landing_subline: 'Загружай чеки, сравнивай цены рядом и в следующий раз покупай дешевле.',
+      nav_overview: 'Обзор',
+      nav_market: 'Рынок',
+      nav_basket: 'Корзина',
+      nav_receipts: 'Чеки',
+      nav_family: 'Семья',
+      nav_missions: 'Миссии',
+      nav_leaderboard: 'Рейтинг',
+      nav_profile: 'Профиль'
+    },
+    pl: {
+      brand_tagline: 'Inteligentny asystent cenowy dla kupujących w krajach bałtyckich.',
+      try_now: 'Wypróbuj',
+      go_login: 'Zaloguj',
+      home_btn: 'Start',
+      register_required_to_continue: 'Aby kontynuować, zarejestruj się lub zaloguj.',
+      landing_headline: 'Kupuj mądrzej. Wiedz, gdzie przepłacasz.',
+      landing_subline: 'Wgraj paragony, porównaj ceny w pobliżu i następnym razem kupuj taniej.',
+      nav_overview: 'Przegląd',
+      nav_market: 'Rynek',
+      nav_basket: 'Koszyk',
+      nav_receipts: 'Paragony',
+      nav_family: 'Rodzina',
+      nav_missions: 'Misje',
+      nav_leaderboard: 'Ranking',
+      nav_profile: 'Profil'
+    },
+    be: {
+      brand_tagline: 'Разумны цэнавы асістэнт для пакупнікоў Балтыі.',
+      try_now: 'Паспрабаваць',
+      go_login: 'Увайсці',
+      home_btn: 'Галоўная',
+      register_required_to_continue: 'Каб працягнуць, зарэгіструйцеся або ўвайдзіце.',
+      landing_headline: 'Купляй разумней. Ведай, дзе пераплочваеш.',
+      landing_subline: 'Загружай чэкі, параўноўвай цэны побач і наступны раз купляй танней.',
+      nav_overview: 'Агляд',
+      nav_market: 'Рынак',
+      nav_basket: 'Кошык',
+      nav_receipts: 'Чэкі',
+      nav_family: 'Сямʼя',
+      nav_missions: 'Місіі',
+      nav_leaderboard: 'Рэйтынг',
+      nav_profile: 'Профіль'
+    },
+    uk: {
+      brand_tagline: 'Розумний ціновий асистент для покупців Балтії.',
+      try_now: 'Спробувати',
+      go_login: 'Увійти',
+      home_btn: 'Головна',
+      register_required_to_continue: 'Щоб продовжити, зареєструйтесь або увійдіть.',
+      landing_headline: 'Купуй розумніше. Знай, де переплачуєш.',
+      landing_subline: 'Завантажуй чеки, порівнюй ціни поруч і наступного разу купуй дешевше.',
+      nav_overview: 'Огляд',
+      nav_market: 'Ринок',
+      nav_basket: 'Кошик',
+      nav_receipts: 'Чеки',
+      nav_family: 'Сімʼя',
+      nav_missions: 'Місії',
+      nav_leaderboard: 'Рейтинг',
+      nav_profile: 'Профіль'
     }
   };
   for (const lang of SUPPORTED_LANGS) {
     if (!TRANSLATIONS[lang]) {
       TRANSLATIONS[lang] = { ...TRANSLATIONS.en };
     }
+  }
+  for (const [lang, overrides] of Object.entries(EXTRA_LANG_OVERRIDES)) {
+    TRANSLATIONS[lang] = { ...TRANSLATIONS.en, ...overrides };
   }
 
   const state = {
@@ -459,7 +630,11 @@
     if (langSelect) langSelect.value = state.language;
     if (landingLangSelect) landingLangSelect.value = state.language;
     const helpTourBtn = $('helpTourBtn');
-    if (helpTourBtn) helpTourBtn.textContent = t('guide');
+    if (helpTourBtn) {
+      helpTourBtn.textContent = '?';
+      helpTourBtn.title = t('guide');
+      helpTourBtn.setAttribute('aria-label', t('guide'));
+    }
     renderAuthState();
     if (typeof state.setView === 'function') {
       updateContextTip(state.currentView);
@@ -564,6 +739,9 @@
     if (focusAuth) {
       state.setView?.('overview');
       $('registerEmail')?.focus();
+      if (!state.token) {
+        showToast(t('register_required_to_continue'), 'info');
+      }
     }
   }
 
@@ -581,9 +759,10 @@
       });
     };
 
-    $('startExperienceBtn')?.addEventListener('click', () => openTry(false));
-    $('startExperienceSecondaryBtn')?.addEventListener('click', () => openTry(false));
+    $('startExperienceBtn')?.addEventListener('click', () => openTry(true));
+    $('startExperienceSecondaryBtn')?.addEventListener('click', () => openTry(true));
     $('startExperienceLoginBtn')?.addEventListener('click', () => openTry(true));
+    $('startExperienceFinalBtn')?.addEventListener('click', () => openTry(true));
     $('backToLandingBtn')?.addEventListener('click', () => returnToLanding());
     setExperienceMode('landing');
   }
@@ -727,6 +906,7 @@
       authStatus.textContent = t('guest_mode');
       authStatus.classList.remove('signed-in');
     }
+    state.updateAuthGateUi?.();
   }
 
   function showToast(message, type = 'info') {
@@ -813,17 +993,21 @@
   }
 
   function ensureContextTip() {
-    let tip = document.querySelector('.context-tip');
+    let tip = $('viewContextTip');
     if (tip) return tip;
 
     tip = document.createElement('section');
+    tip.id = 'viewContextTip';
     tip.className = 'context-tip';
     tip.innerHTML = `
       <div class="context-tip-main">
         <h3 id="contextTipTitle"></h3>
         <p id="contextTipText"></p>
       </div>
-      <button id="contextTipAction" class="btn btn-ghost btn-small" type="button">Action</button>
+      <div class="context-tip-actions">
+        <button id="contextTipToggle" class="btn btn-ghost btn-small context-mini-btn" type="button">More</button>
+        <button id="contextTipAction" class="btn btn-ghost btn-small" type="button">Action</button>
+      </div>
     `;
 
     const nav = document.querySelector('.view-nav');
@@ -841,6 +1025,7 @@
     const titleEl = $('contextTipTitle');
     const textEl = $('contextTipText');
     const actionBtn = $('contextTipAction');
+    const toggleBtn = $('contextTipToggle');
     const tipData = getViewTip(viewName);
 
     if (titleEl) titleEl.textContent = t(tipData.titleKey);
@@ -848,6 +1033,13 @@
     if (actionBtn) {
       actionBtn.textContent = t(tipData.ctaKey);
       actionBtn.onclick = () => tipData.ctaAction();
+    }
+    if (toggleBtn) {
+      toggleBtn.textContent = tip.classList.contains('expanded') ? t('tip_less') : t('tip_more');
+      toggleBtn.onclick = () => {
+        tip.classList.toggle('expanded');
+        toggleBtn.textContent = tip.classList.contains('expanded') ? t('tip_less') : t('tip_more');
+      };
     }
   }
 
@@ -888,7 +1080,21 @@
     const navButtons = Array.from(document.querySelectorAll('.nav-btn'));
     const views = Array.from(document.querySelectorAll('.view'));
 
+    function updateAuthGateUi() {
+      const isAuthed = Boolean(state.token);
+      navButtons.forEach((button) => {
+        const locked = !isAuthed && button.dataset.view !== 'overview';
+        button.classList.toggle('locked', locked);
+        button.setAttribute('aria-disabled', locked ? 'true' : 'false');
+        button.title = locked ? t('register_required_to_continue') : '';
+      });
+    }
+
     function setView(viewName) {
+      if (!state.token && viewName !== 'overview') {
+        showToast(t('register_required_to_continue'), 'warning');
+        viewName = 'overview';
+      }
       state.currentView = viewName;
       document.body.dataset.view = viewName;
 
@@ -905,6 +1111,7 @@
       if (viewName === 'market' && state.map) {
         state.map.invalidateSize();
       }
+      updateAuthGateUi();
       updateContextTip(viewName);
       animateView(viewName);
     }
@@ -916,6 +1123,8 @@
     });
 
     state.setView = setView;
+    state.updateAuthGateUi = updateAuthGateUi;
+    updateAuthGateUi();
     setView(state.currentView);
   }
 
@@ -926,9 +1135,11 @@
     if (!topbarActions) return null;
     const button = document.createElement('button');
     button.id = 'helpTourBtn';
-    button.className = 'btn btn-ghost';
+    button.className = 'btn btn-ghost btn-small guide-btn';
     button.type = 'button';
-    button.textContent = t('guide');
+    button.textContent = '?';
+    button.title = t('guide');
+    button.setAttribute('aria-label', t('guide'));
     topbarActions.appendChild(button);
     return button;
   }
