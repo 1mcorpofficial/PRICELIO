@@ -11,7 +11,7 @@
 const axios = require('axios');
 const pdfParse = require('pdf-parse');
 const FormData = require('form-data');
-const { getClient } = require('./db');
+const { pool } = require('./db');
 
 const AI_GATEWAY_URL = process.env.AI_GATEWAY_URL || 'http://localhost:3001';
 
@@ -167,7 +167,8 @@ function normalizeAiOffer(offer, storeChain, sourceUrl) {
  * @returns {Promise<{published: number, errors: number}>}
  */
 async function publishOffers(offers, storeChain, sourceUrl) {
-  const client = await getClient();
+  // pool.connect() gives a dedicated connection that supports BEGIN/COMMIT/ROLLBACK
+  const client = await pool.connect();
   let published = 0;
   let errors = 0;
 
@@ -242,6 +243,8 @@ async function publishOffers(offers, storeChain, sourceUrl) {
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
+  } finally {
+    client.release(); // always return connection to pool
   }
 }
 
