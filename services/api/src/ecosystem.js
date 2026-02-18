@@ -18,6 +18,33 @@ const PLUS_FEATURES = [
 
 const REDEEM_COST_POINTS = 3000;
 const REDEEM_DURATION_DAYS = 30;
+const DEFAULT_RANK_LEVELS = [
+  'Window Shopper',
+  'Receipt Rookie',
+  'Smart Saver',
+  'Deal Finder',
+  'Local Scout',
+  'Price Watcher',
+  'Basket Balancer',
+  'Discount Detective',
+  'Market Mapper',
+  'Bounty Hunter',
+  'Data Dealer',
+  'Inflation Buster',
+  'Catalog Captain',
+  'Price Prophet',
+  'Market Tycoon',
+  'Economy Hacker',
+  'Oracle of Savings',
+  'Grand Auditor',
+  'PRICELIO Titan',
+  'The Sovereign'
+].map((rank_name, idx) => ({
+  level: idx + 1,
+  rank_name,
+  tier: idx < 5 ? 'bronze' : idx < 10 ? 'silver' : idx < 15 ? 'gold' : 'diamond',
+  min_xp: idx * 500
+}));
 
 function isMissingRelationError(error) {
   return error && (error.code === '42P01' || /does not exist/i.test(error.message || ''));
@@ -93,9 +120,9 @@ async function getRankLevels() {
        FROM rank_levels
        ORDER BY level ASC`
     );
-    return result.rows;
+    return result.rows.length ? result.rows : DEFAULT_RANK_LEVELS;
   } catch (error) {
-    if (isMissingRelationError(error)) return [];
+    if (isMissingRelationError(error)) return DEFAULT_RANK_LEVELS;
     throw error;
   }
 }
@@ -269,81 +296,96 @@ async function getGamification(userId) {
 }
 
 async function getLeaderboardGlobal(limit = 50) {
-  const result = await query(
-    `SELECT u.id AS user_id,
-            u.email,
-            rs.current_level,
-            rs.current_rank_name,
-            rs.lifetime_xp,
-            w.spendable_points
-     FROM user_rank_snapshot rs
-     JOIN users u ON u.id = rs.user_id
-     JOIN user_points_wallet w ON w.user_id = rs.user_id
-     ORDER BY rs.lifetime_xp DESC, rs.updated_at ASC
-     LIMIT $1`,
-    [Math.min(200, Math.max(1, Number(limit || 50)))]
-  );
-  return result.rows.map((r, idx) => ({
-    position: idx + 1,
-    user_id: r.user_id,
-    email_masked: String(r.email || '').replace(/(.{2}).+(@.*)/, '$1***$2'),
-    level: Number(r.current_level || 1),
-    rank_name: r.current_rank_name,
-    lifetime_xp: Number(r.lifetime_xp || 0),
-    spendable_points: Number(r.spendable_points || 0)
-  }));
+  try {
+    const result = await query(
+      `SELECT u.id AS user_id,
+              u.email,
+              rs.current_level,
+              rs.current_rank_name,
+              rs.lifetime_xp,
+              w.spendable_points
+       FROM user_rank_snapshot rs
+       JOIN users u ON u.id = rs.user_id
+       JOIN user_points_wallet w ON w.user_id = rs.user_id
+       ORDER BY rs.lifetime_xp DESC, rs.updated_at ASC
+       LIMIT $1`,
+      [Math.min(200, Math.max(1, Number(limit || 50)))]
+    );
+    return result.rows.map((r, idx) => ({
+      position: idx + 1,
+      user_id: r.user_id,
+      email_masked: String(r.email || '').replace(/(.{2}).+(@.*)/, '$1***$2'),
+      level: Number(r.current_level || 1),
+      rank_name: r.current_rank_name,
+      lifetime_xp: Number(r.lifetime_xp || 0),
+      spendable_points: Number(r.spendable_points || 0)
+    }));
+  } catch (error) {
+    if (isMissingRelationError(error)) return [];
+    throw error;
+  }
 }
 
 async function getLeaderboardFriends(userId, limit = 50) {
-  const members = await query(
-    `SELECT DISTINCT hm2.user_id
-     FROM household_members hm1
-     JOIN household_members hm2 ON hm2.household_id = hm1.household_id
-     WHERE hm1.user_id = $1
-       AND hm1.status = 'active'
-       AND hm2.status = 'active'`,
-    [userId]
-  );
-  const ids = members.rows.map((r) => r.user_id);
-  if (!ids.length) {
-    return [];
+  try {
+    const members = await query(
+      `SELECT DISTINCT hm2.user_id
+       FROM household_members hm1
+       JOIN household_members hm2 ON hm2.household_id = hm1.household_id
+       WHERE hm1.user_id = $1
+         AND hm1.status = 'active'
+         AND hm2.status = 'active'`,
+      [userId]
+    );
+    const ids = members.rows.map((r) => r.user_id);
+    if (!ids.length) {
+      return [];
+    }
+    const result = await query(
+      `SELECT u.id AS user_id,
+              u.email,
+              rs.current_level,
+              rs.current_rank_name,
+              rs.lifetime_xp,
+              w.spendable_points
+       FROM user_rank_snapshot rs
+       JOIN users u ON u.id = rs.user_id
+       JOIN user_points_wallet w ON w.user_id = rs.user_id
+       WHERE rs.user_id = ANY($1::uuid[])
+       ORDER BY rs.lifetime_xp DESC, rs.updated_at ASC
+       LIMIT $2`,
+      [ids, Math.min(200, Math.max(1, Number(limit || 50)))]
+    );
+    return result.rows.map((r, idx) => ({
+      position: idx + 1,
+      user_id: r.user_id,
+      email_masked: String(r.email || '').replace(/(.{2}).+(@.*)/, '$1***$2'),
+      level: Number(r.current_level || 1),
+      rank_name: r.current_rank_name,
+      lifetime_xp: Number(r.lifetime_xp || 0),
+      spendable_points: Number(r.spendable_points || 0)
+    }));
+  } catch (error) {
+    if (isMissingRelationError(error) || error.code === '22P02') return [];
+    throw error;
   }
-  const result = await query(
-    `SELECT u.id AS user_id,
-            u.email,
-            rs.current_level,
-            rs.current_rank_name,
-            rs.lifetime_xp,
-            w.spendable_points
-     FROM user_rank_snapshot rs
-     JOIN users u ON u.id = rs.user_id
-     JOIN user_points_wallet w ON w.user_id = rs.user_id
-     WHERE rs.user_id = ANY($1::uuid[])
-     ORDER BY rs.lifetime_xp DESC, rs.updated_at ASC
-     LIMIT $2`,
-    [ids, Math.min(200, Math.max(1, Number(limit || 50)))]
-  );
-  return result.rows.map((r, idx) => ({
-    position: idx + 1,
-    user_id: r.user_id,
-    email_masked: String(r.email || '').replace(/(.{2}).+(@.*)/, '$1***$2'),
-    level: Number(r.current_level || 1),
-    rank_name: r.current_rank_name,
-    lifetime_xp: Number(r.lifetime_xp || 0),
-    spendable_points: Number(r.spendable_points || 0)
-  }));
 }
 
 async function getPointsLedger(userId, limit = 100) {
-  const result = await query(
-    `SELECT id, event_type, xp_delta, points_delta, reference_type, reference_id, metadata, created_at
-     FROM points_ledger
-     WHERE user_id = $1
-     ORDER BY created_at DESC
-     LIMIT $2`,
-    [userId, Math.min(500, Math.max(1, Number(limit || 100)))]
-  );
-  return result.rows;
+  try {
+    const result = await query(
+      `SELECT id, event_type, xp_delta, points_delta, reference_type, reference_id, metadata, created_at
+       FROM points_ledger
+       WHERE user_id = $1
+       ORDER BY created_at DESC
+       LIMIT $2`,
+      [userId, Math.min(500, Math.max(1, Number(limit || 100)))]
+    );
+    return result.rows;
+  } catch (error) {
+    if (isMissingRelationError(error)) return [];
+    throw error;
+  }
 }
 
 async function getRedeemOptions() {
@@ -410,60 +452,95 @@ async function unlockPlusWithPoints(userId) {
     return spend;
   }
 
-  const redemption = await query(
-    `INSERT INTO point_redemptions (user_id, points_spent, reward_key, reward_value, created_at)
-     VALUES ($1, $2, $3, $4, NOW())
-     RETURNING id`,
-    [
-      userId,
-      REDEEM_COST_POINTS,
-      'plus_30d',
-      JSON.stringify({ duration_days: REDEEM_DURATION_DAYS })
-    ]
-  );
+  try {
+    const redemption = await query(
+      `INSERT INTO point_redemptions (user_id, points_spent, reward_key, reward_value, created_at)
+       VALUES ($1, $2, $3, $4, NOW())
+       RETURNING id`,
+      [
+        userId,
+        REDEEM_COST_POINTS,
+        'plus_30d',
+        JSON.stringify({ duration_days: REDEEM_DURATION_DAYS })
+      ]
+    );
 
-  await grantPlusEntitlements(userId, 'points_redeem', redemption.rows[0].id, REDEEM_DURATION_DAYS);
-  return { ok: true, redemption_id: redemption.rows[0].id };
+    await grantPlusEntitlements(userId, 'points_redeem', redemption.rows[0].id, REDEEM_DURATION_DAYS);
+    return { ok: true, redemption_id: redemption.rows[0].id };
+  } catch (error) {
+    if (isMissingRelationError(error)) {
+      return { ok: false, reason: 'premium_tables_missing' };
+    }
+    throw error;
+  }
 }
 
 async function subscribePlus(userId) {
-  const plan = await query(
-    `SELECT id, billing_days
-     FROM plans
-     WHERE code = 'plus_monthly' AND is_active = true
-     LIMIT 1`
-  );
-  if (!plan.rows.length) {
-    return { ok: false, reason: 'plan_not_found' };
-  }
+  try {
+    const plan = await query(
+      `SELECT id, billing_days
+       FROM plans
+       WHERE code = 'plus_monthly' AND is_active = true
+       LIMIT 1`
+    );
+    if (!plan.rows.length) {
+      return { ok: false, reason: 'plan_not_found' };
+    }
 
-  await grantPlusEntitlements(userId, 'subscription', plan.rows[0].id, Number(plan.rows[0].billing_days || 30));
-  return { ok: true };
+    await grantPlusEntitlements(userId, 'subscription', plan.rows[0].id, Number(plan.rows[0].billing_days || 30));
+    return { ok: true };
+  } catch (error) {
+    if (isMissingRelationError(error)) {
+      return { ok: false, reason: 'premium_tables_missing' };
+    }
+    throw error;
+  }
 }
 
 async function getPlusFeatures() {
-  const result = await query(
-    `SELECT p.code AS plan_code, p.name AS plan_name, p.price_eur, p.billing_days, pf.feature_key
-     FROM plans p
-     JOIN plan_features pf ON pf.plan_id = p.id
-     WHERE p.code = 'plus_monthly' AND p.is_active = true
-     ORDER BY pf.feature_key ASC`
-  );
-  return result.rows;
+  try {
+    const result = await query(
+      `SELECT p.code AS plan_code, p.name AS plan_name, p.price_eur, p.billing_days, pf.feature_key
+       FROM plans p
+       JOIN plan_features pf ON pf.plan_id = p.id
+       WHERE p.code = 'plus_monthly' AND p.is_active = true
+       ORDER BY pf.feature_key ASC`
+    );
+    if (result.rows.length) {
+      return result.rows;
+    }
+  } catch (error) {
+    if (!isMissingRelationError(error)) {
+      throw error;
+    }
+  }
+
+  return PLUS_FEATURES.map((feature_key) => ({
+    plan_code: 'plus_monthly',
+    plan_name: 'PRICELIO Plus',
+    price_eur: 2.99,
+    billing_days: 30,
+    feature_key
+  }));
 }
 
 async function getPlusStatus(userId) {
-  const result = await query(
-    `SELECT feature_key, starts_at, ends_at, source_type
-     FROM user_entitlements
-     WHERE user_id = $1
-       AND is_active = true
-       AND starts_at <= NOW()
-       AND ends_at > NOW()
-     ORDER BY ends_at DESC`,
-    [userId]
-  );
-  return result.rows;
+  try {
+    const result = await query(
+      `SELECT feature_key, starts_at, ends_at, source_type
+       FROM user_entitlements
+       WHERE user_id = $1
+         AND is_active = true
+         AND starts_at <= NOW()
+         AND ends_at > NOW()
+       ORDER BY ends_at DESC`,
+      [userId]
+    );
+    return result.rows;
+  } catch (error) {
+    if (isMissingRelationError(error)) return [];
+    throw error;
+  }
 }
 
 async function requireFamilyMember(householdId, userId) {

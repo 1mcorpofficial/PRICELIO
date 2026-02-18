@@ -1,11 +1,20 @@
 const { Pool } = require('pg');
 
+function firstDefined(...values) {
+  for (const value of values) {
+    if (value !== undefined && value !== null && String(value).length > 0) {
+      return value;
+    }
+  }
+  return undefined;
+}
+
 const pool = new Pool({
-  host: process.env.PGHOST || 'localhost',
-  port: Number(process.env.PGPORT || 5432),
-  user: process.env.PGUSER || 'receiptradar',
-  password: process.env.PGPASSWORD || 'receiptradar_dev',
-  database: process.env.PGDATABASE || 'receiptradar'
+  host: firstDefined(process.env.PGHOST, process.env.POSTGRES_HOST, 'localhost'),
+  port: Number(firstDefined(process.env.PGPORT, process.env.POSTGRES_PORT, 5432)),
+  user: firstDefined(process.env.PGUSER, process.env.POSTGRES_USER, 'receiptradar'),
+  password: firstDefined(process.env.PGPASSWORD, process.env.POSTGRES_PASSWORD, 'receiptradar'),
+  database: firstDefined(process.env.PGDATABASE, process.env.POSTGRES_DB, 'receiptradar')
 });
 
 async function query(text, params) {
