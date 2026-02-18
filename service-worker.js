@@ -1,11 +1,25 @@
-const CACHE_NAME = 'pricelio-pwa-v5';
+const CACHE_NAME = 'pricelio-pwa-v6';
 const ASSETS = [
   '.',
   'index.html',
   'styles.css',
   'app.js',
   'manifest.webmanifest',
-  'assets/icon.svg'
+  'assets/icon.svg',
+  'assets/fonts/fonts.css',
+  'assets/fonts/manrope-latin.woff2',
+  'assets/fonts/manrope-latin-ext.woff2',
+  'assets/fonts/manrope-cyrillic.woff2',
+  'assets/fonts/manrope-cyrillic-ext.woff2',
+  'assets/fonts/sora-latin.woff2',
+  'assets/fonts/sora-latin-ext.woff2',
+  'assets/vendor/leaflet.css',
+  'assets/vendor/leaflet.js',
+  'assets/vendor/images/marker-icon.png',
+  'assets/vendor/images/marker-icon-2x.png',
+  'assets/vendor/images/marker-shadow.png',
+  'assets/vendor/images/layers.png',
+  'assets/vendor/images/layers-2x.png'
 ];
 
 self.addEventListener('install', (event) => {
@@ -42,7 +56,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   const isHtmlNavigation = req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html');
-  const isStaticAsset = /\.(?:css|js|svg|png|jpg|jpeg|webp|gif|ico)$/.test(url.pathname);
+  const isStaticAsset = /\.(?:css|js|svg|png|jpg|jpeg|webp|gif|ico|woff2|woff|ttf)$/.test(url.pathname);
 
   if (isHtmlNavigation) {
     // Network-first for HTML to reduce stale app shells; fallback to cache offline.

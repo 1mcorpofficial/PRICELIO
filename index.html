@@ -15,10 +15,8 @@
     <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
     <link rel="shortcut icon" href="favicon.ico" />
     <link rel="apple-touch-icon" href="assets/icon.svg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <link rel="stylesheet" href="assets/fonts/fonts.css" />
+    <link rel="stylesheet" href="assets/vendor/leaflet.css" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body data-view="overview" data-mode="landing" data-device="desktop">
@@ -299,48 +297,61 @@
 
         <!-- ━━━ OVERVIEW ━━━ -->
         <section class="view active" id="view-overview">
+
+          <!-- Welcome hero — spans full width -->
+          <div class="ov-hero panel fade-up">
+            <div class="ov-hero-left">
+              <div class="ov-hero-icon">PL</div>
+              <div>
+                <h2 class="ov-hero-title" data-i18n="ov_hero_title">Smart Grocery Intelligence</h2>
+                <p class="ov-hero-sub muted small" data-i18n="ov_hero_sub">Scan receipts · compare prices · save every week</p>
+              </div>
+            </div>
+            <div class="ov-quick-chips">
+              <button class="ov-chip nav-btn" data-view="market" type="button">🗺️ <span data-i18n="ov_chip_map">Explore Map</span></button>
+              <button class="ov-chip nav-btn" data-view="leaderboard" type="button">🏆 <span data-i18n="ov_chip_rank">Rankings</span></button>
+              <button class="ov-chip nav-btn" data-view="plus" type="button">⭐ <span data-i18n="ov_chip_plus">Plus</span></button>
+            </div>
+          </div>
+
           <div class="v-grid">
-            <div class="panel fade-up">
-              <div class="view-panel-head">
-                <div class="vph-icon" style="background:#dbeafe;color:#1d4ed8">🔐</div>
-                <div>
-                  <h2 data-i18n="auth_title">Account Access</h2>
-                  <p class="muted small" data-i18n="auth_subtitle">Sign in to unlock all features</p>
+            <!-- Auth panel with tab toggle -->
+            <div class="panel fade-up ov-auth-panel">
+              <div class="auth-tab-bar" id="authTabBar">
+                <button class="auth-tab active" id="tabRegister" type="button" data-i18n="register_title">Create account</button>
+                <button class="auth-tab" id="tabLogin" type="button" data-i18n="login_title">Sign in</button>
+              </div>
+
+              <form id="registerForm" class="stack auth-form active">
+                <div class="field-group">
+                  <label class="field-label">Email</label>
+                  <input type="email" id="registerEmail" placeholder="email@example.com"
+                    data-i18n-placeholder="email_placeholder" autocomplete="email" required />
                 </div>
-              </div>
-              <div class="auth-grid">
-                <form id="registerForm" class="stack">
-                  <h3 data-i18n="register_title">Create account</h3>
-                  <div class="field-group">
-                    <label class="field-label">Email</label>
-                    <input type="email" id="registerEmail" placeholder="email@example.com"
-                      data-i18n-placeholder="email_placeholder" autocomplete="email" required />
-                  </div>
-                  <div class="field-group">
-                    <label class="field-label">Password</label>
-                    <input type="password" id="registerPassword" placeholder="min 8 chars"
-                      data-i18n-placeholder="password_new_placeholder" autocomplete="new-password" required />
-                  </div>
-                  <button class="btn" type="submit" data-i18n="register_btn">Create Account →</button>
-                </form>
-                <form id="loginForm" class="stack">
-                  <h3 data-i18n="login_title">Sign in</h3>
-                  <div class="field-group">
-                    <label class="field-label">Email</label>
-                    <input type="email" id="loginEmail" placeholder="email@example.com"
-                      data-i18n-placeholder="email_placeholder" autocomplete="email" required />
-                  </div>
-                  <div class="field-group">
-                    <label class="field-label">Password</label>
-                    <input type="password" id="loginPassword" placeholder="your password"
-                      data-i18n-placeholder="password_current_placeholder" autocomplete="current-password" required />
-                  </div>
-                  <div class="row">
-                    <button class="btn" type="submit" data-i18n="login_btn">Sign In →</button>
-                    <button class="btn btn-ghost" id="logoutBtn" type="button" data-i18n="logout_btn">Logout</button>
-                  </div>
-                </form>
-              </div>
+                <div class="field-group">
+                  <label class="field-label">Password</label>
+                  <input type="password" id="registerPassword" placeholder="min 8 chars"
+                    data-i18n-placeholder="password_new_placeholder" autocomplete="new-password" required />
+                </div>
+                <button class="btn cta-primary" type="submit" data-i18n="register_btn">Create Account →</button>
+              </form>
+
+              <form id="loginForm" class="stack auth-form">
+                <div class="field-group">
+                  <label class="field-label">Email</label>
+                  <input type="email" id="loginEmail" placeholder="email@example.com"
+                    data-i18n-placeholder="email_placeholder" autocomplete="email" required />
+                </div>
+                <div class="field-group">
+                  <label class="field-label">Password</label>
+                  <input type="password" id="loginPassword" placeholder="your password"
+                    data-i18n-placeholder="password_current_placeholder" autocomplete="current-password" required />
+                </div>
+                <div class="row">
+                  <button class="btn cta-primary" type="submit" data-i18n="login_btn">Sign In →</button>
+                  <button class="btn btn-ghost" id="logoutBtn" type="button" data-i18n="logout_btn">Logout</button>
+                </div>
+              </form>
             </div>
 
             <div class="panel fade-up gamif-panel">
@@ -887,7 +898,7 @@
 
     <div id="toastRoot" class="toast-root" role="region" aria-live="polite" aria-label="Notifications"></div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="assets/vendor/leaflet.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

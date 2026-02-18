@@ -4,7 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const { extractReceipt } = require('./extractor');
-const { healthCheck } = require('./providers');
+const { healthCheck, extractFlyerWithOpenAI, extractFlyerWithAnthropic } = require('./providers');
 const aiHelper = require('./ai-helper');
 
 const app = express();
@@ -71,6 +71,57 @@ app.post('/extract/batch', async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: 'batch_failed', message: error.message });
+  }
+});
+
+// Flyer extraction endpoint (image or text body)
+// POST /extract/flyer  — multipart image OR JSON { text, store_name }
+app.post('/extract/flyer', upload.single('image'), async (req, res) => {
+  try {
+    const storeName = req.body.store_name || 'Unknown';
+    const provider = req.body.provider || process.env.DEFAULT_PROVIDER || 'openai';
+
+    let input;
+    if (req.file) {
+      // Image-based (PDF page converted to image, or flyer photo)
+      input = req.file.buffer;
+    } else if (req.body.text) {
+      // Text extracted from PDF (pdf-parse output)
+      input = req.body.text;
+    } else {
+      return res.status(400).json({ error: 'image_or_text_required' });
+    }
+
+    let result;
+    try {
+      if (provider === 'anthropic') {
+        result = await extractFlyerWithAnthropic(input, storeName);
+      } else {
+        result = await extractFlyerWithOpenAI(input, storeName);
+      }
+    } catch (primaryError) {
+      console.warn(`Primary provider (${provider}) failed, trying fallback:`, primaryError.message);
+      // Try opposite provider as fallback
+      result = provider === 'anthropic'
+        ? await extractFlyerWithOpenAI(input, storeName)
+        : await extractFlyerWithAnthropic(input, storeName);
+    }
+
+    res.json({
+      success: true,
+      provider: result.provider,
+      store: storeName,
+      offers: result.data.offers || [],
+      confidence: result.confidence,
+      processing_time_ms: result.processingTime
+    });
+  } catch (error) {
+    console.error('Flyer extraction failed:', error);
+    res.status(500).json({
+      success: false,
+      error: 'extraction_failed',
+      message: error.message
+    });
   }
 });
 

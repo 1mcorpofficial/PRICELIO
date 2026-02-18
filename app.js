@@ -22,6 +22,11 @@
       brand_name: 'PRICELIO',
       brand_tagline: 'Don't know if it's cheaper elsewhere? PRICELIO shows it instantly.',
       hero_launch_badge: '🇱🇹 Lithuania · Launching 2026',
+      ov_hero_title: 'Smart Grocery Intelligence',
+      ov_hero_sub: 'Scan receipts · compare prices · save every week',
+      ov_chip_map: 'Explore Map',
+      ov_chip_rank: 'Rankings',
+      ov_chip_plus: 'Plus',
       guest_mode: 'Guest mode',
       home_btn: 'Home',
       refresh: 'Refresh',
@@ -291,6 +296,11 @@
       brand_name: 'PRICELIO',
       brand_tagline: 'Nežinai, ar kitur pigiau? PRICELIO parodo iškart.',
       hero_launch_badge: '🇱🇹 Lietuva · Startuojame 2026',
+      ov_hero_title: 'Išmanus kainų palyginimas',
+      ov_hero_sub: 'Skenuok čekius · lygink kainas · taupyk kas savaitę',
+      ov_chip_map: 'Žemėlapis',
+      ov_chip_rank: 'Reitingai',
+      ov_chip_plus: 'Plus',
       guest_mode: 'Svečio režimas',
       home_btn: 'Pradžia',
       refresh: 'Atnaujinti',
@@ -1005,6 +1015,24 @@
     });
   }
 
+  function setupAuthTabs() {
+    const tabRegister = $('tabRegister');
+    const tabLogin = $('tabLogin');
+    const formRegister = $('registerForm');
+    const formLogin = $('loginForm');
+    if (!tabRegister || !tabLogin) return;
+
+    function showTab(which) {
+      tabRegister.classList.toggle('active', which === 'register');
+      tabLogin.classList.toggle('active', which === 'login');
+      formRegister?.classList.toggle('active', which === 'register');
+      formLogin?.classList.toggle('active', which === 'login');
+    }
+
+    tabRegister.addEventListener('click', () => showTab('register'));
+    tabLogin.addEventListener('click', () => showTab('login'));
+  }
+
   function setupExperienceEntry() {
     const openTry = (focusAuth = false) => {
       startAppExperience({ focusAuth }).catch((error) => {
@@ -1359,10 +1387,14 @@
     const navButtons = Array.from(document.querySelectorAll('.nav-btn'));
     const views = Array.from(document.querySelectorAll('.view'));
 
+    // Views that are always accessible, even without an account.
+    const GUEST_VIEWS = new Set(['overview', 'market', 'leaderboard', 'plus']);
+
     function updateAuthGateUi() {
       const isAuthed = Boolean(state.token);
       navButtons.forEach((button) => {
-        const locked = !isAuthed && button.dataset.view !== 'overview';
+        // Guests can browse public views; write-actions inside are guarded separately.
+        const locked = !isAuthed && !GUEST_VIEWS.has(button.dataset.view);
         button.classList.toggle('locked', locked);
         button.setAttribute('aria-disabled', locked ? 'true' : 'false');
         button.title = locked ? t('register_required_to_continue') : '';
@@ -1370,7 +1402,8 @@
     }
 
     function setView(viewName) {
-      if (!state.token && viewName !== 'overview') {
+      // Only redirect guests away from truly private views (write-heavy views).
+      if (!state.token && !GUEST_VIEWS.has(viewName)) {
         showToast(t('register_required_to_continue'), 'warning');
         viewName = 'overview';
       }
@@ -3229,6 +3262,7 @@
     state.device = detectDevice();
     bindNavigation();
     setupLanguage();
+    setupAuthTabs();
     setupExperienceEntry();
     setupWaitlistModal();
     applyDeviceNotice();
@@ -3256,7 +3290,7 @@
     renderGamification(null);
 
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js?v=20260218-2').catch(() => {});
+      navigator.serviceWorker.register('service-worker.js?v=20260218-3').catch(() => {});
     }
   }
 

@@ -40,6 +40,9 @@ dependencies:
   # Image picking (receipt scan, gallery/camera)
   image_picker: ^1.1.2
 
+  # Receive shared files from other apps (Lidl Plus PDF, Rimi flyers, etc.)
+  receive_sharing_intent: ^2.0.5
+
   # Utils
   intl: ^0.19.0
   url_launcher: ^6.2.4
@@ -52,6 +55,7 @@ dev_dependencies:
   build_runner: ^2.4.8
   retrofit_generator: ^8.1.0
   json_serializable: ^6.7.1
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true

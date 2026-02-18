@@ -1,108 +1,147 @@
+/**
+ * Iki Lithuania Connector
+ * Scrapes promotional offers from iki.lt/pasiulymai/akcijos
+ * Iki is owned by Maxima Group (since 2019). Their promos are published on iki.lt.
+ * Falls back to AI gateway text extraction when structured parsing yields nothing.
+ */
+
 const axios = require('axios');
-const { getClient } = require('../db');
-const { normalizePrice } = require('../normalizer');
+const cheerio = require('cheerio');
+const { publishOffers, callGatewayText } = require('../vision-flyer');
 
-const IKI_FLYER_URL = 'https://www.iki.lt/akcijos';
+const IKI_URL = 'https://www.iki.lt/pasiulymai/akcijos';
+const IKI_ALT_URL = 'https://www.iki.lt/akcijos';
+const STORE_CHAIN = 'Iki';
 
-async function fetch() {
-  console.log('Fetching Iki offers...');
-  
-  // Mock - real implementation would scrape or use API
-  return {
-    offers: [
-      {
-        name: 'Fresh salmon 300g',
-        price: 4.99,
-        old_price: 6.49,
-        valid_from: '2026-01-20',
-        valid_to: '2026-01-26'
-      }
-    ],
-    fetched_at: new Date().toISOString()
-  };
+const HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+  'Accept-Language': 'lt-LT,lt;q=0.9'
+};
+
+function todayStr() { return new Date().toISOString().split('T')[0]; }
+function nextWeekStr() { return new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; }
+
+function parsePrice(raw) {
+  if (!raw) return null;
+  const cleaned = raw.replace(/[^\d,.]/g, '').replace(',', '.');
+  const val = parseFloat(cleaned);
+  return isNaN(val) || val <= 0 ? null : val;
 }
 
-async function normalize(raw) {
-  return raw.offers.map(offer => ({
-    product_name: offer.name,
-    price_value: normalizePrice(offer.price),
-    old_price_value: offer.old_price ? normalizePrice(offer.old_price) : null,
-    discount_percent: offer.old_price 
-      ? Math.round(((offer.old_price - offer.price) / offer.old_price) * 100)
-      : null,
-    valid_from: offer.valid_from,
-    valid_to: offer.valid_to,
-    source_url: IKI_FLYER_URL
-  }));
-}
+function parseIkiHtml(html) {
+  const $ = cheerio.load(html);
+  const offers = [];
 
-async function publish(offers) {
-  console.log(`Publishing ${offers.length} Iki offers...`);
-  
-  const client = await getClient();
-  let count = 0;
+  // Iki uses various product card structures across redesigns
+  const selectors = [
+    '.product-item',
+    '.product-card',
+    '.offer-item',
+    '.akcija-item',
+    'article[class*="product"]',
+    '.item-card'
+  ];
 
-  try {
-    await client.query('BEGIN');
+  for (const sel of selectors) {
+    $(sel).each((_, elem) => {
+      const $e = $(elem);
 
-    const storesResult = await client.query(
-      `SELECT id, city_id FROM stores WHERE chain = 'Iki' AND is_active = true`
-    );
+      const name = (
+        $e.find('.product-name, .item-title, [class*="name"], h3, h4').first().text() ||
+        $e.find('a').first().attr('title') ||
+        ''
+      ).trim();
 
-    for (const offer of offers) {
-      let productResult = await client.query(
-        `SELECT id FROM products WHERE LOWER(name) = LOWER($1) LIMIT 1`,
-        [offer.product_name]
-      );
+      const priceRaw =
+        $e.find('.price, .product-price, .current-price, [class*="price-main"]').first().text() ||
+        $e.find('[data-price]').first().attr('data-price') ||
+        '';
 
-      let productId;
-      if (productResult.rows.length > 0) {
-        productId = productResult.rows[0].id;
-      } else {
-        const insertResult = await client.query(
-          `INSERT INTO products (name, is_active) VALUES ($1, true) RETURNING id`,
-          [offer.product_name]
-        );
-        productId = insertResult.rows[0].id;
-      }
+      const oldPriceRaw =
+        $e.find('.old-price, .original-price, .price-old, s').first().text() || '';
 
-      for (const store of storesResult.rows) {
-        await client.query(
-          `INSERT INTO offers (
-            product_id, source_type, store_id, store_chain, city_id,
-            price_value, old_price_value, discount_percent,
-            valid_from, valid_to, source_url, status, fetched_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
-          ON CONFLICT DO NOTHING`,
-          [
-            productId, 'flyer', store.id, 'Iki', store.city_id,
-            offer.price_value, offer.old_price_value, offer.discount_percent,
-            offer.valid_from, offer.valid_to, offer.source_url, 'active'
-          ]
-        );
-      }
+      const price = parsePrice(priceRaw);
+      if (!name || price === null) return;
 
-      count++;
-    }
+      const oldPrice = parsePrice(oldPriceRaw);
 
-    await client.query('COMMIT');
-    return { published: count, errors: 0 };
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error;
+      offers.push({
+        product_name: name,
+        price,
+        old_price: oldPrice,
+        discount_percent: oldPrice ? Math.round(((oldPrice - price) / oldPrice) * 100) : null,
+        valid_from: todayStr(),
+        valid_to: nextWeekStr(),
+        category: null
+      });
+    });
+
+    if (offers.length > 0) break;
   }
+
+  return offers;
+}
+
+async function fetchHtml(url) {
+  const resp = await axios.get(url, { headers: HEADERS, timeout: 20000 });
+  return resp.data;
 }
 
 async function run() {
-  const raw = await fetch();
-  const normalized = await normalize(raw);
-  const result = await publish(normalized);
-  
+  let html;
+  try {
+    html = await fetchHtml(IKI_URL);
+  } catch (err) {
+    console.warn(`⚠️  Primary Iki URL failed (${err.message}), trying alt URL`);
+    try {
+      html = await fetchHtml(IKI_ALT_URL);
+    } catch (err2) {
+      console.error('❌ Iki: both URLs failed:', err2.message);
+      throw err2;
+    }
+  }
+
+  let offers = parseIkiHtml(html);
+
+  if (offers.length === 0) {
+    console.log('⚠️  Iki CSS parse yielded 0 offers — trying AI text extraction');
+    const $ = cheerio.load(html);
+    $('script, style, nav, header, footer').remove();
+    const text = $.text().replace(/\s{3,}/g, '\n').trim().slice(0, 12000);
+
+    if (text.length > 200) {
+      try {
+        const aiOffers = await callGatewayText(text, STORE_CHAIN);
+        offers = aiOffers.map(o => ({
+          product_name: [o.product_name, o.quantity].filter(Boolean).join(' '),
+          price: o.price,
+          old_price: o.old_price || null,
+          discount_percent: o.discount_percent || null,
+          valid_from: o.valid_from || todayStr(),
+          valid_to: o.valid_to || nextWeekStr(),
+          category: o.category || null
+        }));
+      } catch (err) {
+        console.warn('AI gateway fallback failed:', err.message);
+      }
+    }
+  }
+
+  console.log(`✅ Iki: ${offers.length} offers extracted`);
+
+  if (offers.length === 0) {
+    return { offers_found: 0, offers_published: 0, errors: 0 };
+  }
+
+  const result = await publishOffers(offers, STORE_CHAIN, IKI_URL);
+  console.log(`📦 Iki published ${result.published} offers (${result.errors} errors)`);
+
   return {
-    offers_found: raw.offers.length,
+    offers_found: offers.length,
     offers_published: result.published,
     errors: result.errors
   };
 }
 
-module.exports = { fetch, normalize, publish, run };
+module.exports = { run, storeName: STORE_CHAIN };
