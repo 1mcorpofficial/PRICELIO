@@ -2939,7 +2939,7 @@
     renderGamification(null);
 
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js').catch(() => {});
+      navigator.serviceWorker.register('service-worker.js?v=20260218-1').catch(() => {});
     }
   }
 
