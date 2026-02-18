@@ -11,6 +11,7 @@ import '../../features/profile/presentation/profile_page.dart';
 import '../../features/scanner/presentation/scanner_page.dart';
 import '../../features/kids/presentation/kids_page.dart';
 import '../../features/receipts/presentation/receipt_scan_page.dart';
+import '../../features/missions/presentation/missions_page.dart';
 import '../api/api_client.dart';
 
 final _storage = const FlutterSecureStorage();
@@ -31,20 +32,24 @@ final appRouter = GoRouter(
     GoRoute(path: '/login',    builder: (_, __) => const LoginPage()),
     GoRoute(path: '/register', builder: (_, __) => const RegisterPage()),
     GoRoute(path: '/scanner',  builder: (_, __) => const ScannerPage()),
-    GoRoute(path: '/receipts', builder: (_, __) => const ReceiptScanPage()),
     GoRoute(path: '/kids',     builder: (_, __) => const KidsPage()),
+    GoRoute(path: '/map',      builder: (_, __) => const MapPage()),
     ShellRoute(
       builder: (context, state, child) => MainShell(child: child),
       routes: [
-        GoRoute(path: '/home',    builder: (_, __) => const HomePage()),
-        GoRoute(path: '/search',  builder: (_, __) => const SearchPage()),
-        GoRoute(path: '/map',     builder: (_, __) => const MapPage()),
-        GoRoute(path: '/basket',  builder: (_, __) => const BasketPage()),
-        GoRoute(path: '/profile', builder: (_, __) => const ProfilePage()),
+        GoRoute(path: '/home',     builder: (_, __) => const HomePage()),
+        GoRoute(path: '/search',   builder: (_, __) => const SearchPage()),
+        GoRoute(path: '/receipts', builder: (_, __) => const ReceiptScanPage()),
+        GoRoute(path: '/basket',   builder: (_, __) => const BasketPage()),
+        GoRoute(path: '/missions', builder: (_, __) => const MissionsPage()),
+        GoRoute(path: '/profile',  builder: (_, __) => const ProfilePage()),
       ],
     ),
   ],
 );
+
+// Bottom-nav routes (6 tabs)
+const _navRoutes = ['/home', '/search', '/receipts', '/basket', '/missions', '/profile'];
 
 class MainShell extends StatelessWidget {
   final Widget child;
@@ -53,23 +58,45 @@ class MainShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final location = GoRouterState.of(context).matchedLocation;
-    final idx = ['/home', '/search', '/map', '/basket', '/profile']
-        .indexOf(location);
+    final idx = _navRoutes.indexOf(location);
 
     return Scaffold(
       body: child,
       bottomNavigationBar: NavigationBar(
         selectedIndex: idx < 0 ? 0 : idx,
-        onDestinationSelected: (i) {
-          const routes = ['/home', '/search', '/map', '/basket', '/profile'];
-          context.go(routes[i]);
-        },
+        onDestinationSelected: (i) => context.go(_navRoutes[i]),
+        labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined),   selectedIcon: Icon(Icons.home),           label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.search_outlined),  selectedIcon: Icon(Icons.search),         label: 'Search'),
-          NavigationDestination(icon: Icon(Icons.map_outlined),     selectedIcon: Icon(Icons.map),            label: 'Map'),
-          NavigationDestination(icon: Icon(Icons.shopping_bag_outlined), selectedIcon: Icon(Icons.shopping_bag), label: 'Basket'),
-          NavigationDestination(icon: Icon(Icons.person_outlined),  selectedIcon: Icon(Icons.person),         label: 'Profile'),
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.search_outlined),
+            selectedIcon: Icon(Icons.search),
+            label: 'Search',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.receipt_long_outlined),
+            selectedIcon: Icon(Icons.receipt_long),
+            label: 'Receipts',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.shopping_bag_outlined),
+            selectedIcon: Icon(Icons.shopping_bag),
+            label: 'Basket',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.emoji_events_outlined),
+            selectedIcon: Icon(Icons.emoji_events),
+            label: 'Missions',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outlined),
+            selectedIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
         ],
       ),
     );

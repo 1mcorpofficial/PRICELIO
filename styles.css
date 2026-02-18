@@ -1624,3 +1624,307 @@ body[data-device="tablet"] .nav-btn { padding: 0.5rem 0.65rem; font-size: 0.82re
   }
   .phone-mockup { animation: none; }
 }
+
+/* ════════════════════════════════════════════════════════
+   APP VIEW REDESIGNS
+════════════════════════════════════════════════════════ */
+
+/* ── Responsive 2-col grid ───────────────────────────── */
+.v-grid {
+  display: grid;
+  gap: var(--gap-4);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 860px) {
+  .v-grid            { grid-template-columns: 1.1fr 1fr; }
+  .mk-grid           { grid-template-columns: 1.35fr 1fr; }
+}
+
+/* ── View panel header (icon + title + subtitle) ─────── */
+.view-panel-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1.1rem;
+}
+.vph-icon {
+  width: 44px; height: 44px;
+  flex-shrink: 0;
+  border-radius: 13px;
+  background: var(--accent-100);
+  color: var(--accent-700);
+  display: grid; place-items: center;
+  font-size: 1.25rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+.view-panel-head h2 { margin: 0; font-size: 1rem; line-height: 1.3; }
+.view-panel-head p  { margin: 0.15rem 0 0; }
+
+/* ── Auth view ───────────────────────────────────────── */
+.auth-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--gap-3);
+  margin-top: var(--gap-3);
+}
+@media (min-width: 520px) {
+  .auth-grid { grid-template-columns: 1fr 1fr; }
+}
+.auth-grid form h3 {
+  margin: 0 0 0.65rem;
+  font-size: 0.92rem;
+  color: var(--ink-800);
+  font-weight: 700;
+}
+.gamif-panel .kpi-grid { margin-top: 0; }
+.kpi-accent {
+  background: linear-gradient(135deg, var(--accent-100), #dbeafe);
+  border: 1px solid rgba(37,99,235,0.12);
+}
+.kpi-green {
+  background: linear-gradient(135deg, var(--success-100), #d1fae5);
+  border: 1px solid rgba(4,120,87,0.12);
+}
+
+/* ── Field group ─────────────────────────────────────── */
+.field-group { display: grid; gap: 0.28rem; }
+.field-label {
+  font-size: 0.71rem;
+  font-weight: 700;
+  color: var(--ink-500);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.field-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gap-2);
+}
+
+/* ── Market ──────────────────────────────────────────── */
+.mk-map-panel { display: flex; flex-direction: column; }
+.mk-map-panel .map { flex: 1; min-height: 320px; }
+.search-bar-row {
+  display: flex;
+  gap: var(--gap-2);
+  margin-bottom: 0.6rem;
+}
+.search-bar-row input { flex: 1; }
+.radius-row {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-2);
+  margin-bottom: 0.75rem;
+}
+.radius-row select { max-width: 110px; }
+
+/* ── Basket ──────────────────────────────────────────── */
+.bk-plan-panel .plan-box {
+  min-height: 200px;
+  border: 2px dashed var(--ink-200);
+  border-radius: var(--radius-sm);
+  padding: 2rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+/* ── Family steps ────────────────────────────────────── */
+.fm-steps { display: grid; gap: 0.55rem; margin-top: 0.75rem; }
+.fm-step {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+  background: rgba(248,250,255,0.85);
+  border: 1px solid var(--ink-100);
+  border-radius: var(--radius-sm);
+  padding: 0.9rem 1rem;
+}
+.fm-step-num {
+  width: 28px; height: 28px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-600), var(--brand-700));
+  color: #fff;
+  display: grid; place-items: center;
+  font-size: 0.78rem; font-weight: 800;
+}
+.fm-step-body { flex: 1; min-width: 0; }
+.fm-step-title {
+  margin: 0 0 0.55rem;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--ink-800);
+}
+.token-row {
+  display: flex;
+  gap: var(--gap-2);
+  align-items: center;
+}
+.token-row input { flex: 1; font-size: 0.77rem; }
+
+/* ── Missions ────────────────────────────────────────── */
+.loc-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-2);
+  align-items: flex-end;
+  margin-bottom: 0.85rem;
+}
+.loc-row .field-group { flex: 1; min-width: 100px; }
+.ms-nearby-btn { align-self: flex-end; flex-shrink: 0; }
+.check-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.84rem;
+  cursor: pointer;
+  user-select: none;
+}
+.check-label input[type="checkbox"] {
+  width: 17px; height: 17px;
+  border-radius: 5px;
+  flex-shrink: 0;
+  accent-color: var(--accent-600);
+}
+.ms-verify-block {
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--ink-100);
+  margin-top: 0.85rem;
+}
+
+/* ── Leaderboard ─────────────────────────────────────── */
+.lb-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1.3rem 1.5rem;
+  background: linear-gradient(125deg, #0a1540 0%, #1a3d8a 55%, #0e5e58 100%);
+  color: #f0f6ff;
+  margin-bottom: 1rem;
+}
+.lb-hero-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.lb-trophy-icon {
+  font-size: 1.5rem !important;
+  background: rgba(255,255,255,0.12) !important;
+  color: #ffd700 !important;
+  width: 52px !important; height: 52px !important;
+  border-radius: 16px !important;
+}
+.lb-hero h2 { color: #f0f6ff; margin: 0; font-size: 1.2rem; }
+.lb-hero .muted { color: rgba(240,246,255,0.65) !important; }
+.lb-hero-badges {
+  display: flex;
+  gap: 0.45rem;
+}
+.lb-place {
+  padding: 0.38rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: #f0f6ff;
+}
+.lb-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+/* ── Plus ────────────────────────────────────────────── */
+.pl-layout {
+  display: grid;
+  gap: var(--gap-4);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 860px) {
+  .pl-layout { grid-template-columns: 360px 1fr; }
+}
+.pl-pricing-card {
+  text-align: center;
+  padding: 2rem 1.5rem 1.5rem;
+  background: linear-gradient(145deg, #0b1c4a 0%, #1a3d8a 55%, #0e5e58 100%);
+  color: #f0f8ff;
+  border: none;
+}
+.pl-pricing-card h2,
+.pl-pricing-card p,
+.pl-pricing-card span { color: #f0f8ff; }
+.pl-badge-row { margin-bottom: 1.2rem; }
+.pl-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.22);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: #f0f8ff;
+}
+.pl-price {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.15rem;
+  margin: 0.5rem 0 0.15rem;
+}
+.pl-currency { font-size: 1.5rem; font-weight: 700; }
+.pl-amount   { font-size: 3.8rem; font-weight: 900; line-height: 1; }
+.pl-period   { font-size: 0.88rem; opacity: 0.65; }
+.pl-alt      { margin-bottom: 1.5rem; opacity: 0.62 !important; }
+.pl-cta-group {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.pl-sub-btn {
+  background: linear-gradient(135deg, #00c853, #00a843) !important;
+  box-shadow: 0 8px 24px rgba(0,168,67,0.38) !important;
+}
+.pl-load-btn { width: 100%; margin-bottom: 0.5rem; }
+
+/* ── Kids ────────────────────────────────────────────── */
+.kd-icon-bg {
+  background: linear-gradient(135deg, #fef3c7, #fde68a) !important;
+  color: #b45309 !important;
+}
+.kd-activate-btn {
+  background: linear-gradient(135deg, #7c3aed, #a855f7) !important;
+  box-shadow: 0 8px 20px rgba(124,58,237,0.3) !important;
+}
+
+/* ── Profile ─────────────────────────────────────────── */
+.pf-avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.1rem;
+  padding-bottom: 1.1rem;
+  border-bottom: 1px solid var(--ink-100);
+}
+.pf-avatar {
+  width: 58px; height: 58px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-100), #e0f2fe);
+  display: grid; place-items: center;
+  font-size: 1.7rem;
+  border: 3px solid rgba(255,255,255,0.85);
+  box-shadow: var(--shadow-soft);
+  flex-shrink: 0;
+}
+.pf-panel h2 { margin: 0; font-size: 1rem; }
+.pf-panel p  { margin: 0.1rem 0 0; }

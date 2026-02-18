@@ -288,73 +288,103 @@
 
       <main class="content">
 
-        <!-- Overview -->
+        <!-- ━━━ OVERVIEW ━━━ -->
         <section class="view active" id="view-overview">
-          <div class="grid two">
-            <article class="panel fade-up">
-              <h2 data-i18n="auth_title">Auth</h2>
-              <p class="muted" data-i18n="auth_subtitle">Login to unlock points, family, missions and kids mode.</p>
+          <div class="v-grid">
+            <div class="panel fade-up">
+              <div class="view-panel-head">
+                <div class="vph-icon" style="background:#dbeafe;color:#1d4ed8">🔐</div>
+                <div>
+                  <h2 data-i18n="auth_title">Account Access</h2>
+                  <p class="muted small" data-i18n="auth_subtitle">Sign in to unlock all features</p>
+                </div>
+              </div>
               <div class="auth-grid">
                 <form id="registerForm" class="stack">
                   <h3 data-i18n="register_title">Create account</h3>
-                  <input type="email" id="registerEmail" placeholder="email@example.com"
-                    data-i18n-placeholder="email_placeholder" autocomplete="email" required />
-                  <input type="password" id="registerPassword" placeholder="password (min 8)"
-                    data-i18n-placeholder="password_new_placeholder" autocomplete="new-password" required />
-                  <button class="btn" type="submit" data-i18n="register_btn">Register</button>
+                  <div class="field-group">
+                    <label class="field-label">Email</label>
+                    <input type="email" id="registerEmail" placeholder="email@example.com"
+                      data-i18n-placeholder="email_placeholder" autocomplete="email" required />
+                  </div>
+                  <div class="field-group">
+                    <label class="field-label">Password</label>
+                    <input type="password" id="registerPassword" placeholder="min 8 chars"
+                      data-i18n-placeholder="password_new_placeholder" autocomplete="new-password" required />
+                  </div>
+                  <button class="btn" type="submit" data-i18n="register_btn">Create Account →</button>
                 </form>
                 <form id="loginForm" class="stack">
-                  <h3 data-i18n="login_title">Login</h3>
-                  <input type="email" id="loginEmail" placeholder="email@example.com"
-                    data-i18n-placeholder="email_placeholder" autocomplete="email" required />
-                  <input type="password" id="loginPassword" placeholder="password"
-                    data-i18n-placeholder="password_current_placeholder" autocomplete="current-password" required />
+                  <h3 data-i18n="login_title">Sign in</h3>
+                  <div class="field-group">
+                    <label class="field-label">Email</label>
+                    <input type="email" id="loginEmail" placeholder="email@example.com"
+                      data-i18n-placeholder="email_placeholder" autocomplete="email" required />
+                  </div>
+                  <div class="field-group">
+                    <label class="field-label">Password</label>
+                    <input type="password" id="loginPassword" placeholder="your password"
+                      data-i18n-placeholder="password_current_placeholder" autocomplete="current-password" required />
+                  </div>
                   <div class="row">
-                    <button class="btn" type="submit" data-i18n="login_btn">Login</button>
+                    <button class="btn" type="submit" data-i18n="login_btn">Sign In →</button>
                     <button class="btn btn-ghost" id="logoutBtn" type="button" data-i18n="logout_btn">Logout</button>
                   </div>
                 </form>
               </div>
-            </article>
-            <article class="panel fade-up">
-              <h2 data-i18n="gamification_title">Gamification</h2>
+            </div>
+
+            <div class="panel fade-up gamif-panel">
+              <div class="view-panel-head">
+                <div class="vph-icon" style="background:#fef0c7;color:#b54708">🏆</div>
+                <div>
+                  <h2 data-i18n="gamification_title">Your Progress</h2>
+                  <p class="muted small">Earn XP scanning &amp; verifying prices</p>
+                </div>
+              </div>
               <div class="kpi-grid">
-                <div class="kpi"><span data-i18n="kpi_rank">Rank</span><strong id="kpiRank">-</strong></div>
+                <div class="kpi kpi-accent"><span data-i18n="kpi_rank">Rank</span><strong id="kpiRank">-</strong></div>
                 <div class="kpi"><span data-i18n="kpi_level">Level</span><strong id="kpiLevel">-</strong></div>
                 <div class="kpi"><span data-i18n="kpi_lifetime_xp">Lifetime XP</span><strong id="kpiXp">-</strong></div>
-                <div class="kpi"><span data-i18n="kpi_spendable">Spendable</span><strong id="kpiPoints">-</strong></div>
+                <div class="kpi kpi-green"><span data-i18n="kpi_spendable">Spendable</span><strong id="kpiPoints">-</strong></div>
               </div>
               <h3 class="subhead" data-i18n="recent_points">Recent Points</h3>
               <div id="ledgerPreview" class="list compact"></div>
-            </article>
+            </div>
           </div>
         </section>
 
-        <!-- Market -->
+        <!-- ━━━ MARKET ━━━ -->
         <section class="view" id="view-market">
-          <div class="grid two">
-            <article class="panel">
+          <div class="v-grid mk-grid">
+            <div class="panel mk-map-panel">
               <div class="panel-head">
-                <h2 data-i18n="store_map_title">Store map</h2>
+                <h2 data-i18n="store_map_title">Store Map</h2>
                 <div class="chips" id="mapChips">
                   <button class="chip active" data-filter="category" data-value="All" data-i18n="chip_all">All</button>
-                  <button class="chip" data-filter="verified" data-value="true" data-i18n="chip_verified">Verified</button>
-                  <button class="chip" data-filter="distance" data-value="2">&lt;2km</button>
-                  <button class="chip" data-filter="distance" data-value="5">&lt;5km</button>
+                  <button class="chip" data-filter="verified" data-value="true" data-i18n="chip_verified">✓ Verified</button>
+                  <button class="chip" data-filter="distance" data-value="2">&lt;2 km</button>
+                  <button class="chip" data-filter="distance" data-value="5">&lt;5 km</button>
                 </div>
               </div>
               <div id="map" class="map"></div>
-            </article>
-            <article class="panel">
-              <h2 data-i18n="search_compare_title">Search and compare</h2>
-              <div class="row">
+            </div>
+            <div class="panel mk-search-panel">
+              <div class="view-panel-head">
+                <div class="vph-icon" style="background:#d1fae5;color:#047857">🔎</div>
+                <div>
+                  <h2 data-i18n="search_compare_title">Search &amp; Compare</h2>
+                  <p class="muted small">Find the best price near you</p>
+                </div>
+              </div>
+              <div class="search-bar-row">
                 <input type="search" id="searchInput"
-                  placeholder="Pvz: Twix - rodys pigiausia aplink jus"
+                  placeholder="e.g. Twix – cheapest near you"
                   data-i18n-placeholder="search_placeholder" />
                 <button id="searchBtn" class="btn" data-i18n="search_btn">Search</button>
               </div>
-              <div class="row">
-                <label for="searchRadiusKm" class="muted small" data-i18n="radius_label">Spindulys (km)</label>
+              <div class="radius-row">
+                <label for="searchRadiusKm" class="muted small" data-i18n="radius_label">Radius</label>
                 <select id="searchRadiusKm">
                   <option value="2" selected>2 km</option>
                   <option value="5">5 km</option>
@@ -362,27 +392,39 @@
                 </select>
               </div>
               <div id="searchResults" class="list"></div>
-            </article>
+            </div>
           </div>
         </section>
 
-        <!-- Basket -->
+        <!-- ━━━ BASKET ━━━ -->
         <section class="view" id="view-basket">
-          <div class="grid two">
-            <article class="panel">
-              <h2 data-i18n="basket_builder_title">Basket builder</h2>
-              <p class="muted" data-i18n="basket_builder_subtitle">One line per item. Use format: <code>milk x2</code>.</p>
-              <textarea id="basketInput" rows="8" placeholder="Greek yogurt x1&#10;Arabica coffee x1&#10;Fresh salmon x1"></textarea>
-              <div class="row">
+          <div class="v-grid">
+            <div class="panel">
+              <div class="view-panel-head">
+                <div class="vph-icon" style="background:#ede9fe;color:#7c3aed">🛒</div>
+                <div>
+                  <h2 data-i18n="basket_builder_title">Basket Builder</h2>
+                  <p class="muted small" data-i18n="basket_builder_subtitle">One line per item · <code>milk x2</code></p>
+                </div>
+              </div>
+              <textarea id="basketInput" rows="8"
+                placeholder="Greek yogurt x1&#10;Arabica coffee x1&#10;Fresh salmon x1"></textarea>
+              <div class="row" style="margin-top:0.75rem">
                 <button id="buildBasketBtn" class="btn" data-i18n="build_basket_btn">Build Basket</button>
-                <button id="optimizeBasketBtn" class="btn btn-ghost" data-i18n="optimize_btn">Optimize</button>
+                <button id="optimizeBasketBtn" class="btn btn-ghost" data-i18n="optimize_btn">⚡ Optimize</button>
               </div>
               <div id="basketItems" class="list"></div>
-            </article>
-            <article class="panel">
-              <h2 data-i18n="best_plan_title">Best plan</h2>
-              <div id="basketPlan" class="plan-box muted">Create basket to see optimization plan.</div>
-            </article>
+            </div>
+            <div class="panel bk-plan-panel">
+              <div class="view-panel-head">
+                <div class="vph-icon" style="background:#d1fae5;color:#047857">💡</div>
+                <div>
+                  <h2 data-i18n="best_plan_title">Best Plan</h2>
+                  <p class="muted small">Cheapest store combination</p>
+                </div>
+              </div>
+              <div id="basketPlan" class="plan-box muted">Build a basket to see the optimized shopping plan.</div>
+            </div>
           </div>
         </section>
 
@@ -477,189 +519,334 @@
           </div>
         </section>
 
-        <!-- Family -->
+        <!-- ━━━ FAMILY ━━━ -->
         <section class="view" id="view-family">
-          <div class="grid two">
-            <article class="panel">
-              <h2 data-i18n="family_household_title">Family household</h2>
-              <div class="stack">
-                <input id="familyName" placeholder="Family name" data-i18n-placeholder="family_name_placeholder" />
-                <button id="createFamilyBtn" class="btn" data-i18n="create_family_btn">Create Family</button>
-              </div>
-              <hr />
-              <div class="stack">
-                <input id="familyIdInput" placeholder="Household ID" data-i18n-placeholder="household_id_placeholder" />
-                <input id="familyInviteEmail" placeholder="Invite email (optional)" data-i18n-placeholder="invite_email_placeholder" />
-                <select id="familyInviteRole">
-                  <option value="planner">Planner</option>
-                  <option value="runner">Runner</option>
-                  <option value="junior">Junior</option>
-                </select>
-                <button id="inviteFamilyBtn" class="btn btn-ghost" data-i18n="create_invite_btn">Create Invite</button>
-                <div class="row">
-                  <input id="familyInviteTokenOutput" placeholder="Generated invite token" data-i18n-placeholder="invite_token_output_placeholder" readonly />
-                  <button id="copyFamilyInviteTokenBtn" class="btn btn-ghost" type="button" data-i18n="copy_token_btn">Copy</button>
+          <div class="v-grid">
+            <div class="panel">
+              <div class="view-panel-head">
+                <div class="vph-icon" style="background:#ede9fe;color:#7c3aed">👨‍👩‍👧‍👦</div>
+                <div>
+                  <h2 data-i18n="family_household_title">Family Household</h2>
+                  <p class="muted small">Create, invite or join a household</p>
                 </div>
               </div>
-              <hr />
-              <div class="stack">
-                <input id="joinFamilyId" placeholder="Household ID" data-i18n-placeholder="household_id_placeholder" />
-                <input id="joinFamilyToken" placeholder="Invite token" data-i18n-placeholder="invite_token_placeholder" />
-                <button id="joinFamilyBtn" class="btn btn-ghost" data-i18n="join_family_btn">Join Family</button>
+              <div class="fm-steps">
+                <div class="fm-step">
+                  <div class="fm-step-num">1</div>
+                  <div class="fm-step-body">
+                    <p class="fm-step-title">Create household</p>
+                    <div class="stack">
+                      <input id="familyName" placeholder="Family name" data-i18n-placeholder="family_name_placeholder" />
+                      <button id="createFamilyBtn" class="btn" data-i18n="create_family_btn">Create Family</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="fm-step">
+                  <div class="fm-step-num">2</div>
+                  <div class="fm-step-body">
+                    <p class="fm-step-title">Invite a member</p>
+                    <div class="stack">
+                      <input id="familyIdInput" placeholder="Household ID" data-i18n-placeholder="household_id_placeholder" />
+                      <input id="familyInviteEmail" placeholder="Invite email (optional)" data-i18n-placeholder="invite_email_placeholder" />
+                      <select id="familyInviteRole">
+                        <option value="planner">👑 Planner</option>
+                        <option value="runner">🏃 Runner</option>
+                        <option value="junior">🌱 Junior</option>
+                      </select>
+                      <button id="inviteFamilyBtn" class="btn btn-ghost" data-i18n="create_invite_btn">Create Invite Link</button>
+                      <div class="token-row">
+                        <input id="familyInviteTokenOutput" placeholder="Generated invite token" data-i18n-placeholder="invite_token_output_placeholder" readonly />
+                        <button id="copyFamilyInviteTokenBtn" class="btn btn-ghost btn-small" type="button" data-i18n="copy_token_btn">Copy</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="fm-step">
+                  <div class="fm-step-num">3</div>
+                  <div class="fm-step-body">
+                    <p class="fm-step-title">Join a household</p>
+                    <div class="stack">
+                      <input id="joinFamilyId" placeholder="Household ID" data-i18n-placeholder="household_id_placeholder" />
+                      <input id="joinFamilyToken" placeholder="Invite token" data-i18n-placeholder="invite_token_placeholder" />
+                      <button id="joinFamilyBtn" class="btn btn-ghost" data-i18n="join_family_btn">Join Family</button>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </article>
-            <article class="panel">
-              <h2 data-i18n="shared_lists_title">Shared lists</h2>
+            </div>
+            <div class="panel">
+              <div class="view-panel-head">
+                <div class="vph-icon" style="background:#d1fae5;color:#047857">📋</div>
+                <div>
+                  <h2 data-i18n="shared_lists_title">Shared Lists</h2>
+                  <p class="muted small">Real-time lists for your household</p>
+                </div>
+              </div>
               <div class="stack">
-                <input id="familyListHouseholdId" placeholder="Household ID" data-i18n-placeholder="household_id_placeholder" />
-                <button id="loadFamilyListsBtn" class="btn btn-ghost" data-i18n="load_lists_btn">Load Lists</button>
+                <div class="row">
+                  <input id="familyListHouseholdId" placeholder="Household ID" data-i18n-placeholder="household_id_placeholder" />
+                  <button id="loadFamilyListsBtn" class="btn btn-ghost" data-i18n="load_lists_btn">Load</button>
+                </div>
                 <div class="row">
                   <input id="familyListItem" placeholder="New list item" data-i18n-placeholder="new_list_item_placeholder" />
-                  <button id="addFamilyItemBtn" class="btn" data-i18n="add_btn">Add</button>
+                  <button id="addFamilyItemBtn" class="btn" data-i18n="add_btn">+ Add</button>
                 </div>
-                <button id="pollFamilyBtn" class="btn btn-ghost" data-i18n="poll_family_events_btn">Poll Events</button>
+                <button id="pollFamilyBtn" class="btn btn-ghost btn-small" data-i18n="poll_family_events_btn">Poll Events</button>
               </div>
               <div id="familyLists" class="list"></div>
               <div id="familyEvents" class="list compact"></div>
-            </article>
+            </div>
           </div>
         </section>
 
-        <!-- Missions -->
+        <!-- ━━━ MISSIONS ━━━ -->
         <section class="view" id="view-missions">
-          <div class="grid two">
-            <article class="panel">
-              <h2 data-i18n="bounty_missions_title">Bounty missions</h2>
-              <div class="row">
-                <input id="missionLat" placeholder="Lat" data-i18n-placeholder="lat_placeholder" />
-                <input id="missionLon" placeholder="Lon" data-i18n-placeholder="lon_placeholder" />
-                <button id="loadMissionsBtn" class="btn" data-i18n="nearby_btn">Nearby</button>
+          <div class="v-grid">
+            <div class="panel">
+              <div class="view-panel-head">
+                <div class="vph-icon" style="background:#fee4e2;color:#d92d20">🎯</div>
+                <div>
+                  <h2 data-i18n="bounty_missions_title">Bounty Missions</h2>
+                  <p class="muted small">Earn XP by scanning prices near you</p>
+                </div>
+              </div>
+              <div class="loc-row">
+                <div class="field-group">
+                  <label class="field-label">Latitude</label>
+                  <input id="missionLat" placeholder="54.6872" data-i18n-placeholder="lat_placeholder" />
+                </div>
+                <div class="field-group">
+                  <label class="field-label">Longitude</label>
+                  <input id="missionLon" placeholder="25.2797" data-i18n-placeholder="lon_placeholder" />
+                </div>
+                <button id="loadMissionsBtn" class="btn ms-nearby-btn" data-i18n="nearby_btn">📍 Nearby</button>
               </div>
               <div id="missionsList" class="list"></div>
-            </article>
-            <article class="panel">
-              <h2 data-i18n="submit_verify_title">Submit / verify proof</h2>
+            </div>
+            <div class="panel">
+              <div class="view-panel-head">
+                <div class="vph-icon" style="background:#d1fae5;color:#047857">✅</div>
+                <div>
+                  <h2 data-i18n="submit_verify_title">Submit &amp; Verify</h2>
+                  <p class="muted small">Provide price evidence to earn XP</p>
+                </div>
+              </div>
               <div class="stack">
-                <input id="missionIdInput" placeholder="Mission ID" data-i18n-placeholder="mission_id_placeholder" />
-                <input id="missionProductName" placeholder="Canonical product name" data-i18n-placeholder="canonical_product_placeholder" />
-                <input id="missionBarcode" placeholder="Barcode" data-i18n-placeholder="barcode_placeholder" />
-                <input id="missionStoreChain" placeholder="Store chain" data-i18n-placeholder="store_chain_placeholder" />
-                <input id="missionMediaHash" placeholder="Media hash" data-i18n-placeholder="media_hash_placeholder" />
-                <label><input type="checkbox" id="missionForeground" checked />
-                  <span data-i18n="app_foreground_label">App was foreground</span></label>
+                <div class="field-group">
+                  <label class="field-label">Mission ID</label>
+                  <input id="missionIdInput" placeholder="Mission ID" data-i18n-placeholder="mission_id_placeholder" />
+                </div>
+                <div class="field-group">
+                  <label class="field-label">Product Name</label>
+                  <input id="missionProductName" placeholder="Canonical product name" data-i18n-placeholder="canonical_product_placeholder" />
+                </div>
+                <div class="field-row-2">
+                  <div class="field-group">
+                    <label class="field-label">Barcode</label>
+                    <input id="missionBarcode" placeholder="EAN-13" data-i18n-placeholder="barcode_placeholder" />
+                  </div>
+                  <div class="field-group">
+                    <label class="field-label">Store Chain</label>
+                    <input id="missionStoreChain" placeholder="Lidl, Maxima…" data-i18n-placeholder="store_chain_placeholder" />
+                  </div>
+                </div>
+                <div class="field-group">
+                  <label class="field-label">Media Hash</label>
+                  <input id="missionMediaHash" placeholder="Media hash" data-i18n-placeholder="media_hash_placeholder" />
+                </div>
+                <label class="check-label">
+                  <input type="checkbox" id="missionForeground" checked />
+                  <span data-i18n="app_foreground_label">App was in foreground</span>
+                </label>
                 <button id="submitMissionBtn" class="btn mobile-primary-action" data-i18n="submit_mission_btn">Submit Mission</button>
               </div>
-              <hr />
-              <div class="row">
-                <input id="verifySubmissionId" placeholder="Submission ID" data-i18n-placeholder="submission_id_placeholder" />
-                <select id="verifyVote">
-                  <option value="confirm" data-i18n="confirm_option">Confirm</option>
-                  <option value="reject"  data-i18n="reject_option">Reject</option>
-                </select>
-                <button id="verifyMissionBtn" class="btn btn-ghost" data-i18n="verify_btn">Verify</button>
+              <div class="ms-verify-block">
+                <h3 class="subhead" style="font-size:0.88rem;color:var(--ink-700)">Verify a Submission</h3>
+                <div class="row" style="margin-top:0.5rem">
+                  <input id="verifySubmissionId" placeholder="Submission ID" data-i18n-placeholder="submission_id_placeholder" />
+                  <select id="verifyVote">
+                    <option value="confirm" data-i18n="confirm_option">✅ Confirm</option>
+                    <option value="reject"  data-i18n="reject_option">❌ Reject</option>
+                  </select>
+                  <button id="verifyMissionBtn" class="btn btn-ghost" data-i18n="verify_btn">Verify</button>
+                </div>
+                <div class="row" style="margin-top:0.5rem">
+                  <input id="proofIdInput" placeholder="Proof ID" data-i18n-placeholder="proof_id_placeholder" />
+                  <button id="loadProofBtn" class="btn btn-ghost" data-i18n="status_btn">Status</button>
+                </div>
+                <div id="proofStatus" class="list compact"></div>
               </div>
-              <div class="row">
-                <input id="proofIdInput" placeholder="Proof ID" data-i18n-placeholder="proof_id_placeholder" />
-                <button id="loadProofBtn" class="btn btn-ghost" data-i18n="status_btn">Status</button>
-              </div>
-              <div id="proofStatus" class="list compact"></div>
-            </article>
+            </div>
           </div>
         </section>
 
-        <!-- Leaderboard -->
+        <!-- ━━━ LEADERBOARD ━━━ -->
         <section class="view" id="view-leaderboard">
-          <div class="grid two">
-            <article class="panel">
-              <h2 data-i18n="global_leaderboard_title">Global leaderboard</h2>
-              <button id="loadGlobalLeaderboardBtn" class="btn btn-ghost" data-i18n="refresh_global_btn">Refresh Global</button>
+          <div class="lb-hero panel fade-up">
+            <div class="lb-hero-left">
+              <div class="vph-icon lb-trophy-icon">🏆</div>
+              <div>
+                <h2>Leaderboard</h2>
+                <p class="muted small">Top price hunters this season</p>
+              </div>
+            </div>
+            <div class="lb-hero-badges">
+              <div class="lb-place lb-gold">🥇 1st</div>
+              <div class="lb-place lb-silver">🥈 2nd</div>
+              <div class="lb-place lb-bronze">🥉 3rd</div>
+            </div>
+          </div>
+          <div class="v-grid">
+            <div class="panel">
+              <div class="lb-panel-head">
+                <h3 data-i18n="global_leaderboard_title">🌍 Global Rankings</h3>
+                <button id="loadGlobalLeaderboardBtn" class="btn btn-ghost btn-small" data-i18n="refresh_global_btn">Refresh</button>
+              </div>
               <div id="globalLeaderboard" class="table-wrap"></div>
-            </article>
-            <article class="panel">
-              <h2 data-i18n="friends_leaderboard_title">Friends leaderboard</h2>
-              <button id="loadFriendsLeaderboardBtn" class="btn btn-ghost" data-i18n="refresh_friends_btn">Refresh Friends</button>
+            </div>
+            <div class="panel">
+              <div class="lb-panel-head">
+                <h3 data-i18n="friends_leaderboard_title">👥 Friends Rankings</h3>
+                <button id="loadFriendsLeaderboardBtn" class="btn btn-ghost btn-small" data-i18n="refresh_friends_btn">Refresh</button>
+              </div>
               <div id="friendsLeaderboard" class="table-wrap"></div>
-            </article>
+            </div>
           </div>
         </section>
 
-        <!-- Plus -->
+        <!-- ━━━ PLUS ━━━ -->
         <section class="view" id="view-plus">
-          <div class="grid two">
-            <article class="panel">
-              <h2 data-i18n="plus_title">PRICELIO Plus</h2>
-              <p class="muted" data-i18n="plus_subtitle">2.99 EUR/month or 3000 points for 30 days.</p>
-              <div class="row">
-                <button id="loadPlusFeaturesBtn" class="btn btn-ghost" data-i18n="load_features_btn">Load Features</button>
-                <button id="subscribePlusBtn" class="btn" data-i18n="subscribe_btn">Subscribe</button>
+          <div class="pl-layout">
+            <div class="pl-pricing-card panel fade-up">
+              <div class="pl-badge-row">
+                <span class="pl-badge">⭐ PRICELIO Plus</span>
+              </div>
+              <div class="pl-price">
+                <span class="pl-currency">€</span>
+                <span class="pl-amount">2.99</span>
+                <span class="pl-period">/month</span>
+              </div>
+              <p class="muted small pl-alt" data-i18n="plus_subtitle">or 3 000 points for 30 days</p>
+              <div class="pl-cta-group">
+                <button id="subscribePlusBtn" class="btn pl-sub-btn" data-i18n="subscribe_btn">Subscribe with €</button>
                 <button id="unlockPlusBtn" class="btn btn-ghost" data-i18n="unlock_points_btn">Unlock with Points</button>
               </div>
+              <button id="loadPlusFeaturesBtn" class="btn btn-ghost btn-small pl-load-btn" data-i18n="load_features_btn">Load Features</button>
               <div id="plusFeatures" class="list"></div>
               <div id="plusStatus" class="list compact"></div>
-            </article>
-            <article class="panel">
-              <h2 data-i18n="premium_insights_title">Premium insights</h2>
+            </div>
+            <div class="panel pl-insights-panel">
+              <div class="view-panel-head">
+                <div class="vph-icon" style="background:#dbeafe;color:#1d4ed8">📈</div>
+                <div>
+                  <h2 data-i18n="premium_insights_title">Premium Insights</h2>
+                  <p class="muted small">Price history &amp; spending analytics</p>
+                </div>
+              </div>
               <div class="stack">
-                <input id="timeMachineProductId" placeholder="Product ID for Time Machine" data-i18n-placeholder="time_machine_product_placeholder" />
-                <button id="runTimeMachineBtn" class="btn btn-ghost" data-i18n="run_time_machine_btn">Run Time Machine</button>
-                <button id="loadAdvancedAnalyticsBtn" class="btn btn-ghost" data-i18n="load_spending_btn">Load Spending Analytics</button>
+                <div class="field-group">
+                  <label class="field-label">Time Machine · Product ID</label>
+                  <input id="timeMachineProductId" placeholder="Product ID" data-i18n-placeholder="time_machine_product_placeholder" />
+                </div>
+                <div class="row">
+                  <button id="runTimeMachineBtn" class="btn btn-ghost" data-i18n="run_time_machine_btn">⏳ Time Machine</button>
+                  <button id="loadAdvancedAnalyticsBtn" class="btn btn-ghost" data-i18n="load_spending_btn">📊 Spending Analytics</button>
+                </div>
               </div>
               <div id="premiumInsights" class="list"></div>
-            </article>
+            </div>
           </div>
         </section>
 
-        <!-- Kids -->
+        <!-- ━━━ KIDS ━━━ -->
         <section class="view" id="view-kids">
-          <div class="grid two">
-            <article class="panel">
-              <h2 data-i18n="kids_mode_title">Kids mode (parent controlled)</h2>
+          <div class="v-grid">
+            <div class="panel kd-panel">
+              <div class="view-panel-head">
+                <div class="vph-icon kd-icon-bg">👶</div>
+                <div>
+                  <h2 data-i18n="kids_mode_title">Kids Mode</h2>
+                  <p class="muted small">Parent controlled · safe &amp; fun missions</p>
+                </div>
+              </div>
               <form id="kidsActivateForm" class="stack">
-                <input id="kidDisplayName" placeholder="Kid display name" data-i18n-placeholder="kid_name_placeholder" />
-                <select id="kidAgeGroup">
-                  <option value="4-8">4–8 m.</option>
-                  <option value="9-12">9–12 m.</option>
-                </select>
-                <input id="kidParentPin" placeholder="Parent PIN" type="password"
-                  data-i18n-placeholder="parent_pin_placeholder" autocomplete="current-password" />
-                <button id="activateKidsBtn" class="btn mobile-primary-action" type="submit"
-                  data-i18n="activate_kids_btn">Activate Kids Mode</button>
+                <div class="field-group">
+                  <label class="field-label">Kid's Display Name</label>
+                  <input id="kidDisplayName" placeholder="Kid display name" data-i18n-placeholder="kid_name_placeholder" />
+                </div>
+                <div class="field-group">
+                  <label class="field-label">Age Group</label>
+                  <select id="kidAgeGroup">
+                    <option value="4-8">🧒 4–8 years old</option>
+                    <option value="9-12">👦 9–12 years old</option>
+                  </select>
+                </div>
+                <div class="field-group">
+                  <label class="field-label">Parent PIN</label>
+                  <input id="kidParentPin" placeholder="••••••" type="password" maxlength="6"
+                    data-i18n-placeholder="parent_pin_placeholder" autocomplete="current-password" />
+                </div>
+                <button id="activateKidsBtn" class="btn kd-activate-btn mobile-primary-action" type="submit"
+                  data-i18n="activate_kids_btn">🔓 Activate Kids Mode</button>
               </form>
               <form id="kidsDeactivateForm" class="row" style="margin-top:0.75rem">
                 <input id="kidsSessionId" placeholder="Kids session ID" data-i18n-placeholder="kids_session_placeholder" />
                 <button id="deactivateKidsBtn" class="btn btn-ghost" type="submit" data-i18n="deactivate_btn">Deactivate</button>
               </form>
-            </article>
-            <article class="panel">
-              <h2 data-i18n="kids_missions_title">Kids missions</h2>
+            </div>
+            <div class="panel kd-missions-panel">
+              <div class="view-panel-head">
+                <div class="vph-icon" style="background:#ede9fe;color:#7c3aed">🌟</div>
+                <div>
+                  <h2 data-i18n="kids_missions_title">Kids Missions</h2>
+                  <p class="muted small">Fun price-checking tasks for young shoppers</p>
+                </div>
+              </div>
               <div class="row">
                 <input id="kidsMissionSessionId" placeholder="Session ID" data-i18n-placeholder="session_id_placeholder" />
                 <button id="loadKidsMissionsBtn" class="btn btn-ghost" data-i18n="load_btn">Load</button>
               </div>
-              <div class="stack" style="margin-top:0.6rem">
-                <input id="kidsMissionId" placeholder="Mission ID" data-i18n-placeholder="mission_id_placeholder" />
-                <input id="kidsMissionProduct" placeholder="Canonical product name" data-i18n-placeholder="canonical_product_placeholder" />
-                <input id="kidsMissionBarcode" placeholder="Barcode" data-i18n-placeholder="barcode_placeholder" />
-                <input id="kidsMissionStoreChain" placeholder="Store chain" data-i18n-placeholder="store_chain_placeholder" />
+              <div id="kidsMissions" class="list"></div>
+              <h3 class="subhead" style="margin-top:1rem;font-size:0.88rem">Submit Mission</h3>
+              <div class="stack" style="margin-top:0.5rem">
+                <div class="field-row-2">
+                  <input id="kidsMissionId" placeholder="Mission ID" data-i18n-placeholder="mission_id_placeholder" />
+                  <input id="kidsMissionProduct" placeholder="Product name" data-i18n-placeholder="canonical_product_placeholder" />
+                </div>
+                <div class="field-row-2">
+                  <input id="kidsMissionBarcode" placeholder="Barcode" data-i18n-placeholder="barcode_placeholder" />
+                  <input id="kidsMissionStoreChain" placeholder="Store chain" data-i18n-placeholder="store_chain_placeholder" />
+                </div>
                 <button id="submitKidsMissionBtn" class="btn mobile-primary-action" data-i18n="submit_kids_mission_btn">Submit Kids Mission</button>
               </div>
-              <div id="kidsMissions" class="list"></div>
-            </article>
+            </div>
           </div>
         </section>
 
-        <!-- Profile -->
+        <!-- ━━━ PROFILE ━━━ -->
         <section class="view" id="view-profile">
-          <div class="grid two">
-            <article class="panel">
-              <h2 data-i18n="profile_title">Profile</h2>
+          <div class="v-grid">
+            <div class="panel pf-panel">
+              <div class="pf-avatar-row">
+                <div class="pf-avatar">👤</div>
+                <div>
+                  <h2 data-i18n="profile_title">My Profile</h2>
+                  <p class="muted small">Account details &amp; statistics</p>
+                </div>
+              </div>
               <div id="profileData" class="list compact"></div>
-            </article>
-            <article class="panel">
-              <h2 data-i18n="rank_catalog_title">Rank catalog</h2>
-              <button id="loadRanksBtn" class="btn btn-ghost" data-i18n="load_ranks_btn">Load Ranks</button>
-              <div id="rankCatalog" class="list"></div>
-            </article>
+            </div>
+            <div class="panel">
+              <div class="view-panel-head">
+                <div class="vph-icon" style="background:#fef0c7;color:#b54708">🎖️</div>
+                <div>
+                  <h2 data-i18n="rank_catalog_title">Rank Catalog</h2>
+                  <p class="muted small">Earn XP to climb the ranks</p>
+                </div>
+              </div>
+              <button id="loadRanksBtn" class="btn btn-ghost" data-i18n="load_ranks_btn">↻ Load Ranks</button>
+              <div id="rankCatalog" class="list" style="margin-top:0.75rem"></div>
+            </div>
           </div>
         </section>
 
