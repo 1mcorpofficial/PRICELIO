@@ -565,6 +565,19 @@ async function emitHouseholdEvent(householdId, actorUserId, eventType, payload) 
   );
 }
 
+async function getUserFamilies(userId) {
+  const result = await query(
+    `SELECT h.id, h.name, h.owner_user_id, h.city_code, h.currency, h.created_at,
+            hm.role, hm.status, hm.joined_at
+     FROM households h
+     JOIN household_members hm ON hm.household_id = h.id
+     WHERE hm.user_id = $1 AND hm.status = 'active'
+     ORDER BY h.created_at DESC`,
+    [userId]
+  );
+  return result.rows;
+}
+
 async function createFamily(userId, name) {
   const household = await query(
     `INSERT INTO households (name, owner_user_id, city_code, currency, created_at)
@@ -1437,6 +1450,7 @@ module.exports = {
   subscribePlus,
   getPlusFeatures,
   getPlusStatus,
+  getUserFamilies,
   createFamily,
   inviteFamilyMember,
   joinFamilyByToken,

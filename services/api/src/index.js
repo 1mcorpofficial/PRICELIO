@@ -634,6 +634,15 @@ app.post('/baskets/:id/optimize', async (req, res) => {
 // Family / Household
 // =============================
 
+app.get('/families', auth.requireUser, async (req, res) => {
+  try {
+    const families = await ecosystem.getUserFamilies(req.user.id);
+    res.json(families);
+  } catch (error) {
+    res.status(500).json({ error: 'families_fetch_failed' });
+  }
+});
+
 app.post('/families', auth.requireUser, withFeatureFlag('family_core'), async (req, res) => {
   try {
     const family = await ecosystem.createFamily(req.user.id, req.body?.name);
