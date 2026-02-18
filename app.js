@@ -4,6 +4,314 @@
   const STORAGE_TOKEN_KEY = 'pricelio_access_token';
   const STORAGE_USER_KEY = 'pricelio_user_snapshot';
   const STORAGE_ONBOARDING_KEY = 'pricelio_onboarding_done_v1';
+  const STORAGE_LANG_KEY = 'pricelio_lang';
+  const SUPPORTED_LANGS = ['lt', 'en', 'lv', 'et', 'ru', 'pl', 'be', 'uk'];
+  const LANG_LABELS = {
+    lt: 'Lietuviu',
+    en: 'English',
+    lv: 'Latviesu',
+    et: 'Eesti',
+    ru: 'Russkiy',
+    pl: 'Polski',
+    be: 'Belaruskaya',
+    uk: 'Ukrayinska'
+  };
+
+  const TRANSLATIONS = {
+    en: {
+      brand_name: 'PRICELIO',
+      brand_tagline: 'Smart grocery price intelligence for Baltic shoppers.',
+      guest_mode: 'Guest mode',
+      home_btn: 'Home',
+      refresh: 'Refresh',
+      guide: 'Guide',
+      try_now: 'Try now',
+      go_login: 'Login',
+      landing_headline: 'Shop smarter. Know exactly where you overpay.',
+      landing_subline: 'Upload receipts, compare nearby prices, and choose the cheapest store next time.',
+      landing_device_hint: 'Best full experience on phone: receipt scan, location-aware prices, missions.',
+      landing_device_hint_desktop: 'Desktop is great for browsing. For scans and missions, use your phone.',
+      landing_device_hint_mobile: 'You are on mobile, full PRICELIO flow is available.',
+      landing_card1_title: 'After purchase',
+      landing_card1_text: 'See where you overpaid and how much you could have saved.',
+      landing_card2_title: 'Before purchase',
+      landing_card2_text: 'Search “Twix” and see prices in nearby stores.',
+      landing_card3_title: 'For family',
+      landing_card3_text: 'Shared lists, invites and shopping coordination in one place.',
+      nav_overview: 'Overview',
+      nav_market: 'Market',
+      nav_basket: 'Basket',
+      nav_receipts: 'Receipts',
+      nav_family: 'Family',
+      nav_missions: 'Missions',
+      nav_leaderboard: 'Leaderboard',
+      nav_plus: 'Plus',
+      nav_kids: 'Kids',
+      nav_profile: 'Profile',
+      auth_title: 'Auth',
+      auth_subtitle: 'Login to unlock points, family, missions and kids mode.',
+      register_title: 'Create account',
+      login_title: 'Login',
+      register_btn: 'Register',
+      login_btn: 'Login',
+      logout_btn: 'Logout',
+      gamification_title: 'Gamification',
+      kpi_rank: 'Rank',
+      kpi_level: 'Level',
+      kpi_lifetime_xp: 'Lifetime XP',
+      kpi_spendable: 'Spendable',
+      recent_points: 'Recent Points',
+      store_map_title: 'Store map',
+      search_compare_title: 'Search and compare',
+      search_btn: 'Search',
+      chip_all: 'All',
+      chip_verified: 'Verified',
+      radius_label: 'Radius (km)',
+      basket_builder_title: 'Basket builder',
+      basket_builder_subtitle: 'One line per item. Use format: milk x2.',
+      build_basket_btn: 'Build Basket',
+      optimize_btn: 'Optimize',
+      best_plan_title: 'Best plan',
+      upload_receipt_title: 'Upload receipt',
+      scan_preview_text: 'Select a receipt photo to start.',
+      analyze_receipt_btn: 'Analyze Receipt',
+      overpaid_report_title: 'Overpaid report',
+      family_household_title: 'Family household',
+      create_family_btn: 'Create Family',
+      create_invite_btn: 'Create Invite',
+      copy_token_btn: 'Copy Token',
+      join_family_btn: 'Join Family',
+      shared_lists_title: 'Shared lists',
+      load_lists_btn: 'Load Lists',
+      add_btn: 'Add',
+      poll_family_events_btn: 'Poll Family Events',
+      bounty_missions_title: 'Bounty missions',
+      nearby_btn: 'Nearby',
+      submit_verify_title: 'Submit / verify proof',
+      submit_mission_btn: 'Submit Mission',
+      verify_btn: 'Verify',
+      status_btn: 'Status',
+      global_leaderboard_title: 'Global leaderboard',
+      friends_leaderboard_title: 'Friends leaderboard',
+      refresh_global_btn: 'Refresh Global',
+      refresh_friends_btn: 'Refresh Friends',
+      plus_title: 'PRICELIO Plus',
+      plus_subtitle: '2.99 EUR/month or 3000 points for 30 days.',
+      load_features_btn: 'Load Features',
+      subscribe_btn: 'Subscribe',
+      unlock_points_btn: 'Unlock with Points',
+      premium_insights_title: 'Premium insights',
+      run_time_machine_btn: 'Run Time Machine',
+      load_spending_btn: 'Load Spending Analytics',
+      kids_mode_title: 'Kids mode (parent controlled)',
+      kids_missions_title: 'Kids missions',
+      load_btn: 'Load',
+      submit_kids_mission_btn: 'Submit Kids Mission',
+      activate_kids_btn: 'Activate Kids Mode',
+      deactivate_btn: 'Deactivate',
+      profile_title: 'Profile',
+      rank_catalog_title: 'Rank catalog',
+      load_ranks_btn: 'Load Ranks',
+      email_placeholder: 'email@example.com',
+      password_new_placeholder: 'password (min 8)',
+      password_current_placeholder: 'password',
+      search_placeholder: 'e.g. Twix - show cheapest nearby',
+      basket_empty: 'Basket is empty.',
+      family_name_placeholder: 'Family name',
+      household_id_placeholder: 'Household ID',
+      invite_email_placeholder: 'Invite email (optional for token-only invite)',
+      invite_token_output_placeholder: 'Generated invite token will appear here',
+      invite_token_placeholder: 'Invite token',
+      new_list_item_placeholder: 'New list item',
+      kid_name_placeholder: 'Kid display name',
+      parent_pin_placeholder: 'Parent PIN',
+      kids_session_placeholder: 'Kids session ID',
+      device_notice_title_mobile: 'Mobile mode',
+      device_notice_text_mobile: 'All PRICELIO features are available. You can scan receipts and run missions faster.',
+      device_notice_title_desktop: 'Desktop mode',
+      device_notice_text_desktop: 'Some actions are phone-first. To use full receipt/missions flow, open PRICELIO on your phone.',
+      signed_in_as: 'Signed in as {email}',
+      tip_overview_title: 'Quick start',
+      tip_overview_text: 'Register or login first to unlock points, ranks, family sync and missions.',
+      tip_overview_cta: 'Go to Auth',
+      tip_market_title: 'Map workflow',
+      tip_market_text: 'Use filters for verified prices and distance, then search by product to compare stores.',
+      tip_market_cta: 'Refresh Stores',
+      tip_basket_title: 'Basket optimization',
+      tip_basket_text: 'Enter one item per line using format like "milk x2", then build and optimize.',
+      tip_basket_cta: 'Build Basket',
+      tip_receipts_title: 'Receipt intelligence',
+      tip_receipts_text: 'Upload a receipt photo to get overpay breakdown and future savings suggestions.',
+      tip_receipts_cta: 'Analyze Receipt',
+      tip_family_title: 'Family sync',
+      tip_family_text: 'Create household, invite members, then manage shared list with event polling.',
+      tip_family_cta: 'Load Lists',
+      tip_missions_title: 'Bounty missions',
+      tip_missions_text: 'Load nearby missions, start one, submit proof, then verify submissions.',
+      tip_missions_cta: 'Load Missions',
+      tip_leaderboard_title: 'Competition',
+      tip_leaderboard_text: 'Track rank progression by lifetime XP. Friends board uses your active household members.',
+      tip_leaderboard_cta: 'Refresh Global',
+      tip_plus_title: 'Plus unlock',
+      tip_plus_text: 'Core remains free. Unlock premium insights by subscription or redeeming points.',
+      tip_plus_cta: 'Load Plus Status',
+      tip_kids_title: 'Kids mode',
+      tip_kids_text: 'Parent-controlled missions only. Activate session with PIN, then submit kid missions safely.',
+      tip_kids_cta: 'Load Kids Missions',
+      tip_profile_title: 'Profile and rank catalog',
+      tip_profile_text: 'Review account info and inspect all 20 launch ranks with XP thresholds.',
+      tip_profile_cta: 'Load Ranks'
+    },
+    lt: {
+      brand_name: 'PRICELIO',
+      brand_tagline: 'Ismanus apsipirkimo kainu asistentas Baltijos salims.',
+      guest_mode: 'Svecio rezimas',
+      home_btn: 'Pradzia',
+      refresh: 'Atnaujinti',
+      guide: 'Gidas',
+      try_now: 'Noriu isbandyti',
+      go_login: 'Prisijungti',
+      landing_headline: 'Pirk protingiau. Zinok kur permoki.',
+      landing_subline: 'Ikelk cekius, palygink kainas aplink tave ir kita karta pirk pigiausiai.',
+      landing_device_hint: 'Pilna patirtis telefone: cekio skenavimas, lokacija, misijos.',
+      landing_device_hint_desktop: 'Kompiuteris tinka perziurai. Cekiu skenavimui ir misijoms naudok telefona.',
+      landing_device_hint_mobile: 'Naudoji telefona, pilna PRICELIO patirtis pasiekiama.',
+      landing_card1_title: 'Po pirkimo',
+      landing_card1_text: 'Parodo kur permokejai ir kiek galejai sutaupyti.',
+      landing_card2_title: 'Pries pirkima',
+      landing_card2_text: 'Ivesk „Twix“ ir matysi kainas aplinkinėse parduotuvese.',
+      landing_card3_title: 'Seimai',
+      landing_card3_text: 'Bendri sarasai, pakvietimai ir pirkiniu koordinacija vienoje vietoje.',
+      nav_overview: 'Apzvalga',
+      nav_market: 'Rinka',
+      nav_basket: 'Krepselis',
+      nav_receipts: 'Cekiai',
+      nav_family: 'Seima',
+      nav_missions: 'Misijos',
+      nav_leaderboard: 'Reitingas',
+      nav_plus: 'Plus',
+      nav_kids: 'Vaikai',
+      nav_profile: 'Profilis',
+      auth_title: 'Paskyra',
+      auth_subtitle: 'Prisijunk ir atrakink taskus, seima, misijas ir vaiku rezima.',
+      register_title: 'Sukurti paskyra',
+      login_title: 'Prisijungimas',
+      register_btn: 'Registruotis',
+      login_btn: 'Prisijungti',
+      logout_btn: 'Atsijungti',
+      gamification_title: 'Taskai ir lygiai',
+      kpi_rank: 'Rangas',
+      kpi_level: 'Lygis',
+      kpi_lifetime_xp: 'Viso XP',
+      kpi_spendable: 'Taskai',
+      recent_points: 'Naujausi taskai',
+      store_map_title: 'Parduotuviu zemelapis',
+      search_compare_title: 'Paieska ir palyginimas',
+      search_btn: 'Ieskoti',
+      chip_all: 'Visos',
+      chip_verified: 'Patikrintos',
+      radius_label: 'Spindulys (km)',
+      basket_builder_title: 'Krepselio sudarymas',
+      basket_builder_subtitle: 'Viena eilute vienai prekei. Pvz: pienas x2.',
+      build_basket_btn: 'Sudaryti krepseli',
+      optimize_btn: 'Optimizuoti',
+      best_plan_title: 'Geriausias planas',
+      upload_receipt_title: 'Ikelti ceki',
+      scan_preview_text: 'Pasirink cekio nuotrauka.',
+      analyze_receipt_btn: 'Analizuoti ceki',
+      overpaid_report_title: 'Permokejimo ataskaita',
+      family_household_title: 'Seimos namu ūkis',
+      create_family_btn: 'Sukurti seima',
+      create_invite_btn: 'Sukurti pakvietima',
+      copy_token_btn: 'Kopijuoti koda',
+      join_family_btn: 'Prisijungti prie seimos',
+      shared_lists_title: 'Bendri sarasai',
+      load_lists_btn: 'Ikelti sarasus',
+      add_btn: 'Prideti',
+      poll_family_events_btn: 'Atnaujinti seimos ivykius',
+      bounty_missions_title: 'Misijos',
+      nearby_btn: 'Aplink',
+      submit_verify_title: 'Pateikimas / patvirtinimas',
+      submit_mission_btn: 'Pateikti misija',
+      verify_btn: 'Patvirtinti',
+      status_btn: 'Busena',
+      global_leaderboard_title: 'Globalus reitingas',
+      friends_leaderboard_title: 'Draugu reitingas',
+      refresh_global_btn: 'Atnaujinti globalu',
+      refresh_friends_btn: 'Atnaujinti draugus',
+      plus_title: 'PRICELIO Plus',
+      plus_subtitle: '2.99 EUR/mėn. arba 3000 tasku uz 30 dienu.',
+      load_features_btn: 'Uzkrauti funkcijas',
+      subscribe_btn: 'Prenumeruoti',
+      unlock_points_btn: 'Atrakinti taskais',
+      premium_insights_title: 'Premium izvalgos',
+      run_time_machine_btn: 'Paleisti Time Machine',
+      load_spending_btn: 'Rodyti islaidu analitika',
+      kids_mode_title: 'Vaiku rezimas (tevu kontrole)',
+      kids_missions_title: 'Vaiku misijos',
+      load_btn: 'Uzkrauti',
+      submit_kids_mission_btn: 'Pateikti vaiko misija',
+      activate_kids_btn: 'Aktyvuoti vaiku rezima',
+      deactivate_btn: 'Isjungti',
+      profile_title: 'Profilis',
+      rank_catalog_title: 'Lygiu katalogas',
+      load_ranks_btn: 'Ikelti lygius',
+      email_placeholder: 'el.pastas@example.com',
+      password_new_placeholder: 'slaptazodis (min 8)',
+      password_current_placeholder: 'slaptazodis',
+      search_placeholder: 'Pvz: Twix - rodyk pigiausia aplink mane',
+      basket_empty: 'Krepselis tuscias.',
+      family_name_placeholder: 'Seimos pavadinimas',
+      household_id_placeholder: 'Seimos ID',
+      invite_email_placeholder: 'Pakvietimo el. pastas (nebūtinas)',
+      invite_token_output_placeholder: 'Sugeneruotas pakvietimo kodas bus cia',
+      invite_token_placeholder: 'Pakvietimo kodas',
+      new_list_item_placeholder: 'Naujas saraso irasas',
+      kid_name_placeholder: 'Vaiko vardas',
+      parent_pin_placeholder: 'Tevu PIN',
+      kids_session_placeholder: 'Vaiko sesijos ID',
+      device_notice_title_mobile: 'Telefono rezimas',
+      device_notice_text_mobile: 'Aktyvios visos PRICELIO funkcijos: cekiai, lokacija, misijos.',
+      device_notice_title_desktop: 'Kompiuterio rezimas',
+      device_notice_text_desktop: 'Dalis veiksmu skirti telefonui. Pilnam cekiu/misiju naudojimui atsidaryk PRICELIO telefone.',
+      signed_in_as: 'Prisijungta: {email}',
+      tip_overview_title: 'Greita pradzia',
+      tip_overview_text: 'Pirmiausia registruokis arba prisijunk, kad atrakintum taskus, seima ir misijas.',
+      tip_overview_cta: 'I autorizacija',
+      tip_market_title: 'Zemelapio eiga',
+      tip_market_text: 'Naudok filtrus pagal atstuma ir patvirtintas kainas, tada ieskok prekes.',
+      tip_market_cta: 'Atnaujinti parduotuves',
+      tip_basket_title: 'Krepselio optimizacija',
+      tip_basket_text: 'Viena eilute vienai prekei, pvz. "pienas x2", tada sudaryk ir optimizuok.',
+      tip_basket_cta: 'Sudaryti krepseli',
+      tip_receipts_title: 'Cekio analize',
+      tip_receipts_text: 'Ikelk ceki ir pamatysi kur permokejai bei ka pirkti pigiau kita karta.',
+      tip_receipts_cta: 'Analizuoti ceki',
+      tip_family_title: 'Seimos sinchronizacija',
+      tip_family_text: 'Sukurk namu uki, pakviesk narius ir valdyk bendra sarasa su ivykiu atnaujinimu.',
+      tip_family_cta: 'Ikelti sarasus',
+      tip_missions_title: 'Misijos',
+      tip_missions_text: 'Gauk misijas aplink save, pateik irodymus ir tikrink kitu pateikimus.',
+      tip_missions_cta: 'Ikelti misijas',
+      tip_leaderboard_title: 'Reitingas',
+      tip_leaderboard_text: 'Stebek rangu augima pagal XP. Draugu lentele naudoja aktyvius seimos narius.',
+      tip_leaderboard_cta: 'Atnaujinti globalu',
+      tip_plus_title: 'Plus atrakynimas',
+      tip_plus_text: 'Branduolys lieka nemokamas. Premium izvalgas atrakink prenumerata arba taskais.',
+      tip_plus_cta: 'Ikelti Plus busena',
+      tip_kids_title: 'Vaiku rezimas',
+      tip_kids_text: 'Tik tevu valdomos misijos. Aktyvuok sesija su PIN ir saugiai pateik vaiko misijas.',
+      tip_kids_cta: 'Ikelti vaiku misijas',
+      tip_profile_title: 'Profilis ir rangu katalogas',
+      tip_profile_text: 'Perziurek paskyros informacija ir visus 20 starto rangu su XP slenksciais.',
+      tip_profile_cta: 'Ikelti rangus'
+    }
+  };
+  for (const lang of SUPPORTED_LANGS) {
+    if (!TRANSLATIONS[lang]) {
+      TRANSLATIONS[lang] = { ...TRANSLATIONS.en };
+    }
+  }
 
   const state = {
     token: localStorage.getItem(STORAGE_TOKEN_KEY) || '',
@@ -37,6 +345,11 @@
     kidsSessionId: '',
     currentLocation: null,
     currentLocationAt: 0,
+    device: 'desktop',
+    language: 'en',
+    experienceStarted: false,
+    appBootstrapped: false,
+    onboardingReady: false,
     setView: null
   };
 
@@ -79,6 +392,200 @@
       .replaceAll('>', '&gt;')
       .replaceAll('"', '&quot;')
       .replaceAll("'", '&#39;');
+  }
+
+  function normalizeLang(code) {
+    if (!code) return null;
+    const normalized = String(code).toLowerCase().replace('_', '-');
+    const base = normalized.split('-')[0];
+    return SUPPORTED_LANGS.includes(base) ? base : null;
+  }
+
+  function detectPreferredLanguage() {
+    const fromStorage = normalizeLang(localStorage.getItem(STORAGE_LANG_KEY));
+    if (fromStorage) return fromStorage;
+
+    const browserCandidates = [
+      ...(Array.isArray(navigator.languages) ? navigator.languages : []),
+      navigator.language
+    ].filter(Boolean);
+
+    for (const candidate of browserCandidates) {
+      const match = normalizeLang(candidate);
+      if (match) return match;
+    }
+
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    if (tz.includes('Vilnius')) return 'lt';
+    if (tz.includes('Riga')) return 'lv';
+    if (tz.includes('Tallinn')) return 'et';
+    if (tz.includes('Warsaw')) return 'pl';
+    if (tz.includes('Minsk')) return 'be';
+    if (tz.includes('Kyiv') || tz.includes('Kiev')) return 'uk';
+    if (tz.includes('Moscow')) return 'ru';
+    return 'en';
+  }
+
+  function detectDevice() {
+    const ua = navigator.userAgent || '';
+    const touch = window.matchMedia('(pointer:coarse)').matches || navigator.maxTouchPoints > 1;
+    const mobileUa = /android|iphone|ipad|ipod|mobile/i.test(ua);
+    const compactViewport = window.matchMedia('(max-width: 960px)').matches;
+    return mobileUa || (touch && compactViewport) ? 'mobile' : 'desktop';
+  }
+
+  function t(key, vars = {}) {
+    const lang = state.language || 'en';
+    const source = TRANSLATIONS[lang]?.[key] ?? TRANSLATIONS.en?.[key] ?? key;
+    return String(source).replace(/\{(\w+)\}/g, (_, token) => String(vars[token] ?? ''));
+  }
+
+  function applyTranslations() {
+    document.documentElement.lang = state.language;
+
+    document.querySelectorAll('[data-i18n]').forEach((element) => {
+      const key = element.getAttribute('data-i18n');
+      if (!key) return;
+      element.textContent = t(key);
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach((element) => {
+      const key = element.getAttribute('data-i18n-placeholder');
+      if (!key) return;
+      element.setAttribute('placeholder', t(key));
+    });
+
+    const langSelect = $('languageSelect');
+    const landingLangSelect = $('landingLanguageSelect');
+    if (langSelect) langSelect.value = state.language;
+    if (landingLangSelect) landingLangSelect.value = state.language;
+    const helpTourBtn = $('helpTourBtn');
+    if (helpTourBtn) helpTourBtn.textContent = t('guide');
+    renderAuthState();
+    if (typeof state.setView === 'function') {
+      updateContextTip(state.currentView);
+    }
+  }
+
+  function buildLanguageOptions(select) {
+    if (!select) return;
+    select.innerHTML = SUPPORTED_LANGS.map((lang) => `<option value="${lang}">${LANG_LABELS[lang] || lang.toUpperCase()}</option>`).join('');
+    select.value = state.language;
+  }
+
+  function setupLanguage() {
+    state.language = detectPreferredLanguage();
+    buildLanguageOptions($('languageSelect'));
+    buildLanguageOptions($('landingLanguageSelect'));
+    applyTranslations();
+
+    const handleChange = (event) => {
+      const next = normalizeLang(event.target.value) || 'en';
+      state.language = next;
+      localStorage.setItem(STORAGE_LANG_KEY, next);
+      applyTranslations();
+      applyDeviceNotice();
+    };
+    $('languageSelect')?.addEventListener('change', handleChange);
+    $('landingLanguageSelect')?.addEventListener('change', handleChange);
+  }
+
+  function applyDeviceNotice() {
+    const body = document.body;
+    body.dataset.device = state.device;
+
+    const hint = $('deviceHintText');
+    if (hint) {
+      hint.textContent = t(state.device === 'mobile' ? 'landing_device_hint_mobile' : 'landing_device_hint_desktop');
+    }
+
+    const notice = $('deviceCapabilityNotice');
+    if (notice) {
+      const title = t(state.device === 'mobile' ? 'device_notice_title_mobile' : 'device_notice_title_desktop');
+      const text = t(state.device === 'mobile' ? 'device_notice_text_mobile' : 'device_notice_text_desktop');
+      notice.innerHTML = `<div class="context-tip-main"><h3>${sanitize(title)}</h3><p>${sanitize(text)}</p></div>`;
+    }
+
+    const mobilePrimaryActions = document.querySelectorAll('.mobile-primary-action');
+    mobilePrimaryActions.forEach((button) => {
+      if (!(button instanceof HTMLButtonElement)) return;
+      if (state.device === 'desktop') {
+        button.disabled = true;
+        button.classList.add('is-mobile-disabled');
+        button.title = t('device_notice_text_desktop');
+      } else {
+        button.disabled = false;
+        button.classList.remove('is-mobile-disabled');
+        button.title = '';
+      }
+    });
+  }
+
+  function setupDeviceWatcher() {
+    let resizeTimer = null;
+    window.addEventListener('resize', () => {
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => {
+        const nextDevice = detectDevice();
+        if (nextDevice !== state.device) {
+          state.device = nextDevice;
+          applyDeviceNotice();
+        }
+      }, 120);
+    });
+  }
+
+  function setExperienceMode(mode) {
+    document.body.dataset.mode = mode;
+  }
+
+  async function startAppExperience({ focusAuth = false } = {}) {
+    state.experienceStarted = true;
+    setExperienceMode('app');
+
+    if (!state.appBootstrapped) {
+      initMap();
+      runEntranceAnimations();
+      if (!state.onboardingReady) {
+        setupOnboarding();
+        state.onboardingReady = true;
+      }
+      await Promise.allSettled([
+        refreshAuthedPanels(),
+        loadMapStores(),
+        loadGlobalLeaderboard(),
+        loadPlusFeatures(),
+        loadRankCatalog()
+      ]);
+      state.appBootstrapped = true;
+    } else if (state.map) {
+      state.map.invalidateSize();
+    }
+
+    if (focusAuth) {
+      state.setView?.('overview');
+      $('registerEmail')?.focus();
+    }
+  }
+
+  function returnToLanding() {
+    setExperienceMode('landing');
+    if (state.map) {
+      setTimeout(() => state.map.invalidateSize(), 120);
+    }
+  }
+
+  function setupExperienceEntry() {
+    const openTry = (focusAuth = false) => {
+      startAppExperience({ focusAuth }).catch((error) => {
+        showToast(`Initialization failed: ${error.message || error}`, 'error');
+      });
+    };
+
+    $('startExperienceBtn')?.addEventListener('click', () => openTry(false));
+    $('startExperienceSecondaryBtn')?.addEventListener('click', () => openTry(false));
+    $('startExperienceLoginBtn')?.addEventListener('click', () => openTry(true));
+    $('backToLandingBtn')?.addEventListener('click', () => returnToLanding());
+    setExperienceMode('landing');
   }
 
   function formatNumber(value, fallback = '-') {
@@ -214,10 +721,10 @@
     const authStatus = $('authStatus');
     if (!authStatus) return;
     if (state.user?.email) {
-      authStatus.textContent = `Signed in as ${state.user.email}`;
+      authStatus.textContent = t('signed_in_as', { email: state.user.email });
       authStatus.classList.add('signed-in');
     } else {
-      authStatus.textContent = 'Guest mode';
+      authStatus.textContent = t('guest_mode');
       authStatus.classList.remove('signed-in');
     }
   }
@@ -239,66 +746,66 @@
   function getViewTip(viewName) {
     const tips = {
       overview: {
-        title: 'Quick start',
-        text: 'Register or login first to unlock points, ranks, family sync and missions.',
-        ctaLabel: 'Go to Auth',
+        titleKey: 'tip_overview_title',
+        textKey: 'tip_overview_text',
+        ctaKey: 'tip_overview_cta',
         ctaAction: () => {
           const registerEmail = $('registerEmail');
           if (registerEmail) registerEmail.focus();
         }
       },
       market: {
-        title: 'Map workflow',
-        text: 'Use filters for verified prices and distance, then search by product to compare stores.',
-        ctaLabel: 'Refresh Stores',
+        titleKey: 'tip_market_title',
+        textKey: 'tip_market_text',
+        ctaKey: 'tip_market_cta',
         ctaAction: () => { loadMapStores().catch(() => {}); }
       },
       basket: {
-        title: 'Basket optimization',
-        text: 'Enter one item per line using format like “milk x2”, then build and optimize.',
-        ctaLabel: 'Build Basket',
+        titleKey: 'tip_basket_title',
+        textKey: 'tip_basket_text',
+        ctaKey: 'tip_basket_cta',
         ctaAction: () => { buildBasket().catch(() => {}); }
       },
       receipts: {
-        title: 'Receipt intelligence',
-        text: 'Upload a receipt photo to get overpay breakdown and future savings suggestions.',
-        ctaLabel: 'Analyze Receipt',
+        titleKey: 'tip_receipts_title',
+        textKey: 'tip_receipts_text',
+        ctaKey: 'tip_receipts_cta',
         ctaAction: () => { analyzeReceipt().catch(() => {}); }
       },
       family: {
-        title: 'Family sync',
-        text: 'Create household, invite members, then manage shared list with event polling.',
-        ctaLabel: 'Load Lists',
+        titleKey: 'tip_family_title',
+        textKey: 'tip_family_text',
+        ctaKey: 'tip_family_cta',
         ctaAction: () => { loadFamilyLists().catch(() => {}); }
       },
       missions: {
-        title: 'Bounty missions',
-        text: 'Load nearby missions, start one, submit proof, then verify submissions.',
-        ctaLabel: 'Load Missions',
+        titleKey: 'tip_missions_title',
+        textKey: 'tip_missions_text',
+        ctaKey: 'tip_missions_cta',
         ctaAction: () => { loadNearbyMissions().catch(() => {}); }
       },
       leaderboard: {
-        title: 'Competition',
-        text: 'Track rank progression by lifetime XP. Friends board uses your active household members.',
-        ctaLabel: 'Refresh Global',
+        titleKey: 'tip_leaderboard_title',
+        textKey: 'tip_leaderboard_text',
+        ctaKey: 'tip_leaderboard_cta',
         ctaAction: () => { loadGlobalLeaderboard().catch(() => {}); }
       },
       plus: {
-        title: 'Plus unlock',
-        text: 'Core remains free. Unlock premium insights by subscription or redeeming points.',
-        ctaLabel: 'Load Plus Status',
+        titleKey: 'tip_plus_title',
+        textKey: 'tip_plus_text',
+        ctaKey: 'tip_plus_cta',
         ctaAction: () => { loadPlusStatus().catch(() => {}); }
       },
       kids: {
-        title: 'Kids mode',
-        text: 'Parent-controlled missions only. Activate session with PIN, then submit kid missions safely.',
-        ctaLabel: 'Load Kids Missions',
+        titleKey: 'tip_kids_title',
+        textKey: 'tip_kids_text',
+        ctaKey: 'tip_kids_cta',
         ctaAction: () => { loadKidsMissions().catch(() => {}); }
       },
       profile: {
-        title: 'Profile and rank catalog',
-        text: 'Review account info and inspect all 20 launch ranks with XP thresholds.',
-        ctaLabel: 'Load Ranks',
+        titleKey: 'tip_profile_title',
+        textKey: 'tip_profile_text',
+        ctaKey: 'tip_profile_cta',
         ctaAction: () => { loadRankCatalog().catch(() => {}); }
       }
     };
@@ -336,10 +843,10 @@
     const actionBtn = $('contextTipAction');
     const tipData = getViewTip(viewName);
 
-    if (titleEl) titleEl.textContent = tipData.title;
-    if (textEl) textEl.textContent = tipData.text;
+    if (titleEl) titleEl.textContent = t(tipData.titleKey);
+    if (textEl) textEl.textContent = t(tipData.textKey);
     if (actionBtn) {
-      actionBtn.textContent = tipData.ctaLabel;
+      actionBtn.textContent = t(tipData.ctaKey);
       actionBtn.onclick = () => tipData.ctaAction();
     }
   }
@@ -421,7 +928,7 @@
     button.id = 'helpTourBtn';
     button.className = 'btn btn-ghost';
     button.type = 'button';
-    button.textContent = 'Guide';
+    button.textContent = t('guide');
     topbarActions.appendChild(button);
     return button;
   }
@@ -1985,13 +2492,17 @@
   }
 
   async function boot() {
+    state.device = detectDevice();
     bindNavigation();
-    setupOnboarding();
+    setupLanguage();
+    setupExperienceEntry();
+    applyDeviceNotice();
+    setupDeviceWatcher();
     bindControls();
     renderAuthState();
 
-    renderEmpty($('searchResults'), 'Type product name or barcode.');
-    renderEmpty($('basketItems'), 'Basket is empty.');
+    renderEmpty($('searchResults'), t('search_placeholder'));
+    renderEmpty($('basketItems'), t('basket_empty'));
     renderBasketPlan(null);
     renderReceiptReport(null);
     renderFamilyLists([]);
@@ -2006,17 +2517,6 @@
     renderProfile(null);
     renderLedgerPreview([]);
     renderGamification(null);
-
-    initMap();
-    runEntranceAnimations();
-
-    await Promise.allSettled([
-      refreshAuthedPanels(),
-      loadMapStores(),
-      loadGlobalLeaderboard(),
-      loadPlusFeatures(),
-      loadRankCatalog()
-    ]);
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js').catch(() => {});

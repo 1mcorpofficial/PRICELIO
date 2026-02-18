@@ -14,69 +14,115 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body data-view="overview">
+  <body data-view="overview" data-mode="landing" data-device="desktop">
     <div class="bg-layer"></div>
-    <div class="app-shell">
+    <section id="landingShell" class="landing-shell">
+      <header class="landing-top">
+        <div class="brand-block">
+          <div class="brand-logo">PL</div>
+          <div>
+            <h1 data-i18n="brand_name">PRICELIO</h1>
+            <p data-i18n="brand_tagline">Smart grocery price intelligence for Baltic shoppers.</p>
+          </div>
+        </div>
+        <div class="landing-actions">
+          <select id="landingLanguageSelect" class="language-select" aria-label="Language"></select>
+          <button id="startExperienceBtn" class="btn" type="button" data-i18n="try_now">Noriu išbandyti</button>
+        </div>
+      </header>
+
+      <div class="landing-hero">
+        <div class="landing-copy">
+          <h2 data-i18n="landing_headline">Pirk protingiau. Žinok kur permoki.</h2>
+          <p data-i18n="landing_subline">Įkelk čekį, palygink kainas aplink tave ir kitą kartą pirk ten, kur pigiausia.</p>
+          <div class="landing-cta-row">
+            <button id="startExperienceSecondaryBtn" class="btn" type="button" data-i18n="try_now">Noriu išbandyti</button>
+            <button id="startExperienceLoginBtn" class="btn btn-ghost" type="button" data-i18n="go_login">Prisijungti</button>
+          </div>
+          <p id="deviceHintText" class="muted" data-i18n="landing_device_hint">Telefonu gausi pilną patirtį: greitesnis čekio skenavimas, lokacija, misijos.</p>
+        </div>
+        <div class="landing-stats">
+          <article class="landing-stat-card">
+            <h3 data-i18n="landing_card1_title">Po pirkimo</h3>
+            <p data-i18n="landing_card1_text">Rodo kur permokėjai ir kiek galėjai sutaupyti.</p>
+          </article>
+          <article class="landing-stat-card">
+            <h3 data-i18n="landing_card2_title">Prieš pirkimą</h3>
+            <p data-i18n="landing_card2_text">„Twix“ paieška parodo kainas skirtingose parduotuvėse aplink tave.</p>
+          </article>
+          <article class="landing-stat-card">
+            <h3 data-i18n="landing_card3_title">Šeimai</h3>
+            <p data-i18n="landing_card3_text">Bendri sąrašai, pakvietimai ir pirkinių koordinacija vienoje vietoje.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <div id="appShell" class="app-shell">
       <header class="topbar">
         <div class="brand-block">
           <div class="brand-logo">PL</div>
           <div>
-            <h1>PRICELIO</h1>
-            <p>Post-purchase intelligence and next-trip savings</p>
+            <h1 data-i18n="brand_name">PRICELIO</h1>
+            <p data-i18n="brand_tagline">Smart grocery price intelligence for Baltic shoppers.</p>
           </div>
         </div>
         <div class="topbar-actions">
-          <div id="authStatus" class="auth-status">Guest mode</div>
-          <button id="refreshAllBtn" class="btn btn-ghost">Refresh</button>
+          <div id="authStatus" class="auth-status" data-i18n="guest_mode">Guest mode</div>
+          <button id="backToLandingBtn" class="btn btn-ghost" type="button" data-i18n="home_btn">Home</button>
+          <select id="languageSelect" class="language-select" aria-label="Language"></select>
+          <button id="refreshAllBtn" class="btn btn-ghost" data-i18n="refresh">Refresh</button>
         </div>
       </header>
 
+      <section id="deviceCapabilityNotice" class="context-tip"></section>
+
       <nav class="view-nav" aria-label="Views">
-        <button class="nav-btn active" data-view="overview">Overview</button>
-        <button class="nav-btn" data-view="market">Market</button>
-        <button class="nav-btn" data-view="basket">Basket</button>
-        <button class="nav-btn" data-view="receipts">Receipts</button>
-        <button class="nav-btn" data-view="family">Family</button>
-        <button class="nav-btn" data-view="missions">Missions</button>
-        <button class="nav-btn" data-view="leaderboard">Leaderboard</button>
-        <button class="nav-btn" data-view="plus">Plus</button>
-        <button class="nav-btn" data-view="kids">Kids</button>
-        <button class="nav-btn" data-view="profile">Profile</button>
+        <button class="nav-btn active" data-view="overview" data-i18n="nav_overview">Overview</button>
+        <button class="nav-btn" data-view="market" data-i18n="nav_market">Market</button>
+        <button class="nav-btn" data-view="basket" data-i18n="nav_basket">Basket</button>
+        <button class="nav-btn" data-view="receipts" data-i18n="nav_receipts">Receipts</button>
+        <button class="nav-btn" data-view="family" data-i18n="nav_family">Family</button>
+        <button class="nav-btn" data-view="missions" data-i18n="nav_missions">Missions</button>
+        <button class="nav-btn" data-view="leaderboard" data-i18n="nav_leaderboard">Leaderboard</button>
+        <button class="nav-btn" data-view="plus" data-i18n="nav_plus">Plus</button>
+        <button class="nav-btn" data-view="kids" data-i18n="nav_kids">Kids</button>
+        <button class="nav-btn" data-view="profile" data-i18n="nav_profile">Profile</button>
       </nav>
 
       <main class="content">
         <section class="view active" id="view-overview">
           <div class="grid two">
             <article class="panel">
-              <h2>Auth</h2>
-              <p class="muted">Login to unlock points, family, missions and kids mode.</p>
+              <h2 data-i18n="auth_title">Auth</h2>
+              <p class="muted" data-i18n="auth_subtitle">Login to unlock points, family, missions and kids mode.</p>
               <div class="auth-grid">
                 <form id="registerForm" class="stack">
-                  <h3>Create account</h3>
-                  <input type="email" id="registerEmail" placeholder="email@example.com" autocomplete="email" required />
-                  <input type="password" id="registerPassword" placeholder="password (min 8)" autocomplete="new-password" required />
-                  <button class="btn" type="submit">Register</button>
+                  <h3 data-i18n="register_title">Create account</h3>
+                  <input type="email" id="registerEmail" placeholder="email@example.com" data-i18n-placeholder="email_placeholder" autocomplete="email" required />
+                  <input type="password" id="registerPassword" placeholder="password (min 8)" data-i18n-placeholder="password_new_placeholder" autocomplete="new-password" required />
+                  <button class="btn" type="submit" data-i18n="register_btn">Register</button>
                 </form>
                 <form id="loginForm" class="stack">
-                  <h3>Login</h3>
-                  <input type="email" id="loginEmail" placeholder="email@example.com" autocomplete="email" required />
-                  <input type="password" id="loginPassword" placeholder="password" autocomplete="current-password" required />
+                  <h3 data-i18n="login_title">Login</h3>
+                  <input type="email" id="loginEmail" placeholder="email@example.com" data-i18n-placeholder="email_placeholder" autocomplete="email" required />
+                  <input type="password" id="loginPassword" placeholder="password" data-i18n-placeholder="password_current_placeholder" autocomplete="current-password" required />
                   <div class="row">
-                    <button class="btn" type="submit">Login</button>
-                    <button class="btn btn-ghost" id="logoutBtn" type="button">Logout</button>
+                    <button class="btn" type="submit" data-i18n="login_btn">Login</button>
+                    <button class="btn btn-ghost" id="logoutBtn" type="button" data-i18n="logout_btn">Logout</button>
                   </div>
                 </form>
               </div>
             </article>
             <article class="panel">
-              <h2>Gamification</h2>
+              <h2 data-i18n="gamification_title">Gamification</h2>
               <div class="kpi-grid">
-                <div class="kpi"><span>Rank</span><strong id="kpiRank">-</strong></div>
-                <div class="kpi"><span>Level</span><strong id="kpiLevel">-</strong></div>
-                <div class="kpi"><span>Lifetime XP</span><strong id="kpiXp">-</strong></div>
-                <div class="kpi"><span>Spendable</span><strong id="kpiPoints">-</strong></div>
+                <div class="kpi"><span data-i18n="kpi_rank">Rank</span><strong id="kpiRank">-</strong></div>
+                <div class="kpi"><span data-i18n="kpi_level">Level</span><strong id="kpiLevel">-</strong></div>
+                <div class="kpi"><span data-i18n="kpi_lifetime_xp">Lifetime XP</span><strong id="kpiXp">-</strong></div>
+                <div class="kpi"><span data-i18n="kpi_spendable">Spendable</span><strong id="kpiPoints">-</strong></div>
               </div>
-              <h3 class="subhead">Recent Points</h3>
+              <h3 class="subhead" data-i18n="recent_points">Recent Points</h3>
               <div id="ledgerPreview" class="list compact"></div>
             </article>
           </div>
@@ -86,10 +132,10 @@
           <div class="grid two">
             <article class="panel">
               <div class="panel-head">
-                <h2>Store map</h2>
+                <h2 data-i18n="store_map_title">Store map</h2>
                 <div class="chips" id="mapChips">
-                  <button class="chip active" data-filter="category" data-value="All">All</button>
-                  <button class="chip" data-filter="verified" data-value="true">Verified</button>
+                  <button class="chip active" data-filter="category" data-value="All" data-i18n="chip_all">All</button>
+                  <button class="chip" data-filter="verified" data-value="true" data-i18n="chip_verified">Verified</button>
                   <button class="chip" data-filter="distance" data-value="2">&lt;2km</button>
                   <button class="chip" data-filter="distance" data-value="5">&lt;5km</button>
                 </div>
@@ -97,13 +143,13 @@
               <div id="map" class="map"></div>
             </article>
             <article class="panel">
-              <h2>Search and compare</h2>
+              <h2 data-i18n="search_compare_title">Search and compare</h2>
               <div class="row">
-                <input type="search" id="searchInput" placeholder="Pvz: Twix - rodys pigiausia aplink jus" />
-                <button id="searchBtn" class="btn">Search</button>
+                <input type="search" id="searchInput" placeholder="Pvz: Twix - rodys pigiausia aplink jus" data-i18n-placeholder="search_placeholder" />
+                <button id="searchBtn" class="btn" data-i18n="search_btn">Search</button>
               </div>
               <div class="row">
-                <label for="searchRadiusKm" class="muted small">Spindulys (km)</label>
+                <label for="searchRadiusKm" class="muted small" data-i18n="radius_label">Spindulys (km)</label>
                 <select id="searchRadiusKm">
                   <option value="2" selected>2 km</option>
                   <option value="5">5 km</option>
@@ -118,17 +164,17 @@
         <section class="view" id="view-basket">
           <div class="grid two">
             <article class="panel">
-              <h2>Basket builder</h2>
-              <p class="muted">One line per item. Use format: <code>milk x2</code>.</p>
+              <h2 data-i18n="basket_builder_title">Basket builder</h2>
+              <p class="muted" data-i18n="basket_builder_subtitle">One line per item. Use format: <code>milk x2</code>.</p>
               <textarea id="basketInput" rows="8" placeholder="Greek yogurt x1&#10;Arabica coffee x1&#10;Fresh salmon x1"></textarea>
               <div class="row">
-                <button id="buildBasketBtn" class="btn">Build Basket</button>
-                <button id="optimizeBasketBtn" class="btn btn-ghost">Optimize</button>
+                <button id="buildBasketBtn" class="btn" data-i18n="build_basket_btn">Build Basket</button>
+                <button id="optimizeBasketBtn" class="btn btn-ghost" data-i18n="optimize_btn">Optimize</button>
               </div>
               <div id="basketItems" class="list"></div>
             </article>
             <article class="panel">
-              <h2>Best plan</h2>
+              <h2 data-i18n="best_plan_title">Best plan</h2>
               <div id="basketPlan" class="plan-box muted">Create basket to see optimization plan.</div>
             </article>
           </div>
@@ -137,16 +183,16 @@
         <section class="view" id="view-receipts">
           <div class="grid two">
             <article class="panel">
-              <h2>Upload receipt</h2>
-              <div class="dropzone" id="scanPreview">Select a receipt photo to start.</div>
+              <h2 data-i18n="upload_receipt_title">Upload receipt</h2>
+              <div class="dropzone" id="scanPreview" data-i18n="scan_preview_text">Select a receipt photo to start.</div>
               <input type="file" id="scanInput" accept="image/*" />
               <div class="row">
-                <button id="scanBtn" class="btn">Analyze Receipt</button>
+                <button id="scanBtn" class="btn mobile-primary-action" data-i18n="analyze_receipt_btn">Analyze Receipt</button>
               </div>
               <p id="scanStatus" class="muted">Awaiting upload.</p>
             </article>
             <article class="panel">
-              <h2>Overpaid report</h2>
+              <h2 data-i18n="overpaid_report_title">Overpaid report</h2>
               <div id="receiptReport" class="list"></div>
             </article>
           </div>
@@ -155,43 +201,43 @@
         <section class="view" id="view-family">
           <div class="grid two">
             <article class="panel">
-              <h2>Family household</h2>
+              <h2 data-i18n="family_household_title">Family household</h2>
               <div class="stack">
-                <input id="familyName" placeholder="Family name" />
-                <button id="createFamilyBtn" class="btn">Create Family</button>
+                <input id="familyName" placeholder="Family name" data-i18n-placeholder="family_name_placeholder" />
+                <button id="createFamilyBtn" class="btn" data-i18n="create_family_btn">Create Family</button>
               </div>
               <hr />
               <div class="stack">
-                <input id="familyIdInput" placeholder="Household ID" />
-                <input id="familyInviteEmail" placeholder="Invite email (optional for token-only invite)" />
+                <input id="familyIdInput" placeholder="Household ID" data-i18n-placeholder="household_id_placeholder" />
+                <input id="familyInviteEmail" placeholder="Invite email (optional for token-only invite)" data-i18n-placeholder="invite_email_placeholder" />
                 <select id="familyInviteRole">
                   <option value="planner">Planner</option>
                   <option value="runner">Runner</option>
                   <option value="junior">Junior</option>
                 </select>
-                <button id="inviteFamilyBtn" class="btn btn-ghost">Create Invite</button>
+                <button id="inviteFamilyBtn" class="btn btn-ghost" data-i18n="create_invite_btn">Create Invite</button>
                 <div class="row">
-                  <input id="familyInviteTokenOutput" placeholder="Generated invite token will appear here" readonly />
-                  <button id="copyFamilyInviteTokenBtn" class="btn btn-ghost" type="button">Copy Token</button>
+                  <input id="familyInviteTokenOutput" placeholder="Generated invite token will appear here" data-i18n-placeholder="invite_token_output_placeholder" readonly />
+                  <button id="copyFamilyInviteTokenBtn" class="btn btn-ghost" type="button" data-i18n="copy_token_btn">Copy Token</button>
                 </div>
               </div>
               <hr />
               <div class="stack">
-                <input id="joinFamilyId" placeholder="Household ID" />
-                <input id="joinFamilyToken" placeholder="Invite token" />
-                <button id="joinFamilyBtn" class="btn btn-ghost">Join Family</button>
+                <input id="joinFamilyId" placeholder="Household ID" data-i18n-placeholder="household_id_placeholder" />
+                <input id="joinFamilyToken" placeholder="Invite token" data-i18n-placeholder="invite_token_placeholder" />
+                <button id="joinFamilyBtn" class="btn btn-ghost" data-i18n="join_family_btn">Join Family</button>
               </div>
             </article>
             <article class="panel">
-              <h2>Shared lists</h2>
+              <h2 data-i18n="shared_lists_title">Shared lists</h2>
               <div class="stack">
-                <input id="familyListHouseholdId" placeholder="Household ID" />
-                <button id="loadFamilyListsBtn" class="btn btn-ghost">Load Lists</button>
+                <input id="familyListHouseholdId" placeholder="Household ID" data-i18n-placeholder="household_id_placeholder" />
+                <button id="loadFamilyListsBtn" class="btn btn-ghost" data-i18n="load_lists_btn">Load Lists</button>
                 <div class="row">
-                  <input id="familyListItem" placeholder="New list item" />
-                  <button id="addFamilyItemBtn" class="btn">Add</button>
+                  <input id="familyListItem" placeholder="New list item" data-i18n-placeholder="new_list_item_placeholder" />
+                  <button id="addFamilyItemBtn" class="btn" data-i18n="add_btn">Add</button>
                 </div>
-                <button id="pollFamilyBtn" class="btn btn-ghost">Poll Family Events</button>
+                <button id="pollFamilyBtn" class="btn btn-ghost" data-i18n="poll_family_events_btn">Poll Family Events</button>
               </div>
               <div id="familyLists" class="list"></div>
               <div id="familyEvents" class="list compact"></div>
@@ -202,16 +248,16 @@
         <section class="view" id="view-missions">
           <div class="grid two">
             <article class="panel">
-              <h2>Bounty missions</h2>
+              <h2 data-i18n="bounty_missions_title">Bounty missions</h2>
               <div class="row">
                 <input id="missionLat" placeholder="Lat" />
                 <input id="missionLon" placeholder="Lon" />
-                <button id="loadMissionsBtn" class="btn">Nearby</button>
+                <button id="loadMissionsBtn" class="btn" data-i18n="nearby_btn">Nearby</button>
               </div>
               <div id="missionsList" class="list"></div>
             </article>
             <article class="panel">
-              <h2>Submit / verify proof</h2>
+              <h2 data-i18n="submit_verify_title">Submit / verify proof</h2>
               <div class="stack">
                 <input id="missionIdInput" placeholder="Mission ID" />
                 <input id="missionProductName" placeholder="Canonical product name" />
@@ -219,7 +265,7 @@
                 <input id="missionStoreChain" placeholder="Store chain" />
                 <input id="missionMediaHash" placeholder="Media hash" />
                 <label><input type="checkbox" id="missionForeground" checked /> App was foreground</label>
-                <button id="submitMissionBtn" class="btn">Submit Mission</button>
+                <button id="submitMissionBtn" class="btn mobile-primary-action" data-i18n="submit_mission_btn">Submit Mission</button>
               </div>
               <hr />
               <div class="row">
@@ -228,11 +274,11 @@
                   <option value="confirm">Confirm</option>
                   <option value="reject">Reject</option>
                 </select>
-                <button id="verifyMissionBtn" class="btn btn-ghost">Verify</button>
+                <button id="verifyMissionBtn" class="btn btn-ghost" data-i18n="verify_btn">Verify</button>
               </div>
               <div class="row">
                 <input id="proofIdInput" placeholder="Proof ID" />
-                <button id="loadProofBtn" class="btn btn-ghost">Status</button>
+                <button id="loadProofBtn" class="btn btn-ghost" data-i18n="status_btn">Status</button>
               </div>
               <div id="proofStatus" class="list compact"></div>
             </article>
@@ -242,13 +288,13 @@
         <section class="view" id="view-leaderboard">
           <div class="grid two">
             <article class="panel">
-              <h2>Global leaderboard</h2>
-              <button id="loadGlobalLeaderboardBtn" class="btn btn-ghost">Refresh Global</button>
+              <h2 data-i18n="global_leaderboard_title">Global leaderboard</h2>
+              <button id="loadGlobalLeaderboardBtn" class="btn btn-ghost" data-i18n="refresh_global_btn">Refresh Global</button>
               <div id="globalLeaderboard" class="table-wrap"></div>
             </article>
             <article class="panel">
-              <h2>Friends leaderboard</h2>
-              <button id="loadFriendsLeaderboardBtn" class="btn btn-ghost">Refresh Friends</button>
+              <h2 data-i18n="friends_leaderboard_title">Friends leaderboard</h2>
+              <button id="loadFriendsLeaderboardBtn" class="btn btn-ghost" data-i18n="refresh_friends_btn">Refresh Friends</button>
               <div id="friendsLeaderboard" class="table-wrap"></div>
             </article>
           </div>
@@ -257,22 +303,22 @@
         <section class="view" id="view-plus">
           <div class="grid two">
             <article class="panel">
-              <h2>PRICELIO Plus</h2>
-              <p class="muted">2.99 EUR/month or 3000 points for 30 days.</p>
+              <h2 data-i18n="plus_title">PRICELIO Plus</h2>
+              <p class="muted" data-i18n="plus_subtitle">2.99 EUR/month or 3000 points for 30 days.</p>
               <div class="row">
-                <button id="loadPlusFeaturesBtn" class="btn btn-ghost">Load Features</button>
-                <button id="subscribePlusBtn" class="btn">Subscribe</button>
-                <button id="unlockPlusBtn" class="btn btn-ghost">Unlock with Points</button>
+                <button id="loadPlusFeaturesBtn" class="btn btn-ghost" data-i18n="load_features_btn">Load Features</button>
+                <button id="subscribePlusBtn" class="btn" data-i18n="subscribe_btn">Subscribe</button>
+                <button id="unlockPlusBtn" class="btn btn-ghost" data-i18n="unlock_points_btn">Unlock with Points</button>
               </div>
               <div id="plusFeatures" class="list"></div>
               <div id="plusStatus" class="list compact"></div>
             </article>
             <article class="panel">
-              <h2>Premium insights</h2>
+              <h2 data-i18n="premium_insights_title">Premium insights</h2>
               <div class="stack">
                 <input id="timeMachineProductId" placeholder="Product ID for Time Machine" />
-                <button id="runTimeMachineBtn" class="btn btn-ghost">Run Time Machine</button>
-                <button id="loadAdvancedAnalyticsBtn" class="btn btn-ghost">Load Spending Analytics</button>
+                <button id="runTimeMachineBtn" class="btn btn-ghost" data-i18n="run_time_machine_btn">Run Time Machine</button>
+                <button id="loadAdvancedAnalyticsBtn" class="btn btn-ghost" data-i18n="load_spending_btn">Load Spending Analytics</button>
               </div>
               <div id="premiumInsights" class="list"></div>
             </article>
@@ -282,33 +328,33 @@
         <section class="view" id="view-kids">
           <div class="grid two">
             <article class="panel">
-              <h2>Kids mode (parent controlled)</h2>
+              <h2 data-i18n="kids_mode_title">Kids mode (parent controlled)</h2>
               <form id="kidsActivateForm" class="stack">
-                <input id="kidDisplayName" placeholder="Kid display name" />
+                <input id="kidDisplayName" placeholder="Kid display name" data-i18n-placeholder="kid_name_placeholder" />
                 <select id="kidAgeGroup">
                   <option value="4-8">4-8</option>
                   <option value="9-12">9-12</option>
                 </select>
-                <input id="kidParentPin" placeholder="Parent PIN" type="password" autocomplete="current-password" />
-                <button id="activateKidsBtn" class="btn" type="submit">Activate Kids Mode</button>
+                <input id="kidParentPin" placeholder="Parent PIN" type="password" data-i18n-placeholder="parent_pin_placeholder" autocomplete="current-password" />
+                <button id="activateKidsBtn" class="btn mobile-primary-action" type="submit" data-i18n="activate_kids_btn">Activate Kids Mode</button>
               </form>
               <form id="kidsDeactivateForm" class="row">
-                <input id="kidsSessionId" placeholder="Kids session ID" />
-                <button id="deactivateKidsBtn" class="btn btn-ghost" type="submit">Deactivate</button>
+                <input id="kidsSessionId" placeholder="Kids session ID" data-i18n-placeholder="kids_session_placeholder" />
+                <button id="deactivateKidsBtn" class="btn btn-ghost" type="submit" data-i18n="deactivate_btn">Deactivate</button>
               </form>
             </article>
             <article class="panel">
-              <h2>Kids missions</h2>
+              <h2 data-i18n="kids_missions_title">Kids missions</h2>
               <div class="row">
-                <input id="kidsMissionSessionId" placeholder="Session ID" />
-                <button id="loadKidsMissionsBtn" class="btn btn-ghost">Load</button>
+                <input id="kidsMissionSessionId" placeholder="Session ID" data-i18n-placeholder="session_id_placeholder" />
+                <button id="loadKidsMissionsBtn" class="btn btn-ghost" data-i18n="load_btn">Load</button>
               </div>
               <div class="stack">
                 <input id="kidsMissionId" placeholder="Mission ID" />
                 <input id="kidsMissionProduct" placeholder="Canonical product name" />
                 <input id="kidsMissionBarcode" placeholder="Barcode" />
                 <input id="kidsMissionStoreChain" placeholder="Store chain" />
-                <button id="submitKidsMissionBtn" class="btn">Submit Kids Mission</button>
+                <button id="submitKidsMissionBtn" class="btn mobile-primary-action" data-i18n="submit_kids_mission_btn">Submit Kids Mission</button>
               </div>
               <div id="kidsMissions" class="list"></div>
             </article>
@@ -318,12 +364,12 @@
         <section class="view" id="view-profile">
           <div class="grid two">
             <article class="panel">
-              <h2>Profile</h2>
+              <h2 data-i18n="profile_title">Profile</h2>
               <div id="profileData" class="list compact"></div>
             </article>
             <article class="panel">
-              <h2>Rank catalog</h2>
-              <button id="loadRanksBtn" class="btn btn-ghost">Load Ranks</button>
+              <h2 data-i18n="rank_catalog_title">Rank catalog</h2>
+              <button id="loadRanksBtn" class="btn btn-ghost" data-i18n="load_ranks_btn">Load Ranks</button>
               <div id="rankCatalog" class="list"></div>
             </article>
           </div>

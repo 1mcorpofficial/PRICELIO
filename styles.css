@@ -4,7 +4,9 @@
   --font-display: 'Sora', 'Segoe UI', Arial, sans-serif;
 
   --ink-950: #11162a;
+  --ink-900: #18203a;
   --ink-800: #1c2440;
+  --ink-700: #2c3758;
   --ink-600: #3a4568;
   --ink-500: #5d6990;
   --ink-300: #a4afcd;
@@ -92,6 +94,107 @@ body {
   gap: var(--gap-4);
 }
 
+.landing-shell {
+  width: min(1280px, calc(100vw - 2rem));
+  margin: 1rem auto 1.6rem;
+  display: grid;
+  gap: var(--gap-4);
+  min-height: calc(100dvh - 2.2rem);
+  align-content: start;
+}
+
+body[data-mode="landing"] .app-shell {
+  display: none;
+}
+
+body[data-mode="app"] .landing-shell {
+  display: none;
+}
+
+.landing-top {
+  min-height: var(--topbar-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.1rem;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(125deg, #06204a 0%, #12408a 58%, #0f766e 100%);
+  box-shadow: var(--shadow-soft);
+  color: #f8fbff;
+  gap: var(--gap-3);
+}
+
+.landing-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-2);
+  flex-wrap: wrap;
+}
+
+.landing-hero {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: var(--gap-4);
+  align-items: stretch;
+}
+
+.landing-copy,
+.landing-stats {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #dfe8fb;
+  border-radius: var(--radius-lg);
+  padding: 1.15rem;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+}
+
+.landing-copy h2 {
+  margin: 0 0 0.55rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 2.9vw, 2.35rem);
+  line-height: 1.06;
+  letter-spacing: -0.02em;
+  color: #0f1f49;
+}
+
+.landing-copy p {
+  margin: 0;
+  font-size: 1.02rem;
+  color: #3f4f7a;
+  max-width: 54ch;
+}
+
+.landing-cta-row {
+  margin-top: var(--gap-4);
+  display: flex;
+  gap: var(--gap-2);
+  flex-wrap: wrap;
+}
+
+.landing-stats {
+  display: grid;
+  gap: var(--gap-3);
+  align-content: start;
+}
+
+.landing-stat-card {
+  border: 1px solid #dfe8fb;
+  border-radius: 12px;
+  padding: 0.8rem;
+  background: linear-gradient(165deg, #f9fbff, #f2f8ff);
+}
+
+.landing-stat-card h3 {
+  margin: 0 0 0.25rem;
+  font-size: 0.95rem;
+  color: #1b2f64;
+}
+
+.landing-stat-card p {
+  margin: 0;
+  color: #4c5d87;
+  font-size: 0.88rem;
+}
+
 .topbar {
   min-height: var(--topbar-height);
   display: flex;
@@ -141,6 +244,18 @@ body {
   display: flex;
   align-items: center;
   gap: var(--gap-3);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.language-select {
+  min-width: 122px;
+  border-radius: 10px;
+  border: 1px solid rgba(206, 215, 236, 0.9);
+  background: #f8fbff;
+  color: #153a7b;
+  font-weight: 700;
+  padding: 0.5rem 0.65rem;
 }
 
 .auth-status {
@@ -390,6 +505,12 @@ textarea {
 .btn:disabled {
   opacity: 0.55;
   cursor: default;
+}
+
+.btn.is-mobile-disabled {
+  opacity: 0.4;
+  filter: grayscale(0.12);
+  box-shadow: none;
 }
 
 .btn-ghost {
@@ -806,6 +927,10 @@ textarea {
   .app-shell {
     width: min(1380px, calc(100vw - 2.6rem));
   }
+
+  .landing-shell {
+    width: min(1280px, calc(100vw - 2.6rem));
+  }
 }
 
 @media (max-width: 700px) {
@@ -820,15 +945,46 @@ textarea {
     gap: 0.55rem;
   }
 
+  .landing-top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.7rem;
+  }
+
+  .landing-shell {
+    width: calc(100vw - 1rem);
+    margin: 0.5rem auto 1rem;
+    min-height: calc(100dvh - 1rem);
+  }
+
   .topbar-actions {
     width: 100%;
+    justify-content: flex-start;
+  }
+
+  .landing-actions {
+    width: 100%;
     justify-content: space-between;
+  }
+
+  .landing-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-copy h2 {
+    font-size: clamp(1.38rem, 7.4vw, 1.84rem);
+  }
+
+  .landing-copy,
+  .landing-stats {
+    padding: 0.94rem;
   }
 
   .view-nav {
     overflow-x: auto;
     flex-wrap: nowrap;
     padding-bottom: 0.4rem;
+    scroll-snap-type: x mandatory;
   }
 
   .context-tip {
@@ -837,6 +993,8 @@ textarea {
 
   .nav-btn {
     white-space: nowrap;
+    min-height: 40px;
+    scroll-snap-align: start;
   }
 
   .panel {
@@ -859,5 +1017,27 @@ textarea {
 
   .onboarding-footer .btn {
     flex: 1;
+  }
+
+  .language-select {
+    min-width: 106px;
+    flex: 1;
+  }
+
+  body[data-mode="app"] .topbar {
+    position: sticky;
+    top: 0.35rem;
+    z-index: 1200;
+  }
+
+  body[data-mode="app"] .view-nav {
+    position: sticky;
+    top: calc(0.35rem + var(--topbar-height) + 0.5rem);
+    z-index: 1100;
+    background: rgba(255, 255, 255, 0.95);
+  }
+
+  .row > .btn {
+    min-height: 42px;
   }
 }
