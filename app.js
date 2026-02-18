@@ -3209,6 +3209,22 @@
     setTimeout(revealAll, 750);
   }
 
+  function animateSavingsCounter() {
+    const el = document.getElementById('savingsCounter');
+    if (!el) return;
+    const target = 4.37; // realistic weekly saving demo value
+    const duration = 1800;
+    const start = performance.now();
+    const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+    const tick = (now) => {
+      const progress = Math.min((now - start) / duration, 1);
+      el.textContent = '€' + (target * easeOut(progress)).toFixed(2);
+      if (progress < 1) requestAnimationFrame(tick);
+    };
+    // Start after 600ms so reveal animation finishes first
+    setTimeout(() => requestAnimationFrame(tick), 600);
+  }
+
   async function boot() {
     state.device = detectDevice();
     bindNavigation();
@@ -3217,6 +3233,7 @@
     setupWaitlistModal();
     applyDeviceNotice();
     setupDeviceWatcher();
+    animateSavingsCounter();
     initScrollReveal();
     bindControls();
     renderAuthState();

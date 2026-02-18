@@ -385,10 +385,17 @@ body.js-reveal .reveal.visible { opacity: 1; transform: none; }
   font-size: 0.7rem; text-transform: uppercase;
   letter-spacing: 0.08em; font-weight: 700;
 }
-.phone-screen h3 {
-  margin: 0; font-size: 1.85rem; color: #062968;
+.phone-screen h3,
+.phone-savings-num {
+  margin: 0 0 0.3rem; font-size: 2rem; color: #062968;
   font-family: var(--font-display); font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, #059669 0%, #0369a1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: #059669; /* fallback */
+  line-height: 1;
 }
 .phone-item {
   display: flex; justify-content: space-between; align-items: center;
