@@ -388,25 +388,92 @@
 
         <!-- Receipts -->
         <section class="view" id="view-receipts">
-          <div class="grid two">
-            <article class="panel">
-              <h2 data-i18n="upload_receipt_title">Upload receipt</h2>
-              <!-- Hidden file inputs -->
-              <input type="file" id="scanInput" accept="image/*" style="display:none" />
-              <input type="file" id="scanInputCamera" accept="image/*" capture="environment" style="display:none" />
-              <!-- Tappable dropzone -->
-              <label for="scanInput" class="dropzone" id="scanPreview" data-i18n="scan_preview_text" style="cursor:pointer">Select a receipt photo to start.</label>
-              <div class="row" style="gap:0.5rem;flex-wrap:wrap">
-                <button id="scanCameraBtn" class="btn btn-outline" data-i18n="take_photo_btn">📷 Take Photo</button>
-                <button id="scanGalleryBtn" class="btn btn-outline" data-i18n="choose_gallery_btn">🖼 Gallery</button>
-                <button id="scanBtn" class="btn mobile-primary-action" data-i18n="analyze_receipt_btn" disabled>Analyze Receipt</button>
+          <!-- Hidden file inputs -->
+          <input type="file" id="scanInput" accept="image/*" style="display:none" />
+          <input type="file" id="scanInputCamera" accept="image/*" capture="environment" style="display:none" />
+
+          <div class="receipt-layout">
+
+            <!-- LEFT: Upload panel -->
+            <div class="receipt-upload-panel">
+              <div class="receipt-panel-header">
+                <span class="receipt-icon-badge">🧾</span>
+                <div>
+                  <h2 data-i18n="upload_receipt_title">Receipt Scanner</h2>
+                  <p class="muted small" data-i18n="receipt_subtitle">Upload or take a photo of your receipt</p>
+                </div>
               </div>
-              <p id="scanStatus" class="muted" data-i18n="awaiting_upload">Laukiama įkėlimo.</p>
-            </article>
-            <article class="panel">
-              <h2 data-i18n="overpaid_report_title">Overpaid report</h2>
-              <div id="receiptReport" class="list"></div>
-            </article>
+
+              <!-- Drop zone -->
+              <div class="receipt-dropzone" id="receiptDropzone">
+                <div class="receipt-dropzone-inner" id="scanPreview">
+                  <!-- Placeholder (hidden when image is loaded) -->
+                  <div class="dropzone-placeholder" id="dropzonePlaceholder">
+                    <div class="dropzone-icon">📄</div>
+                    <p class="dropzone-hint" data-i18n="dropzone_hint">Drag &amp; drop receipt here</p>
+                    <p class="dropzone-sub muted small" data-i18n="dropzone_sub">or use the buttons below · JPEG, PNG up to 10MB</p>
+                  </div>
+                  <!-- Preview (hidden by default) -->
+                  <div id="receiptPreviewWrap" style="display:none;position:relative;width:100%">
+                    <img id="receiptPreviewImg" src="" alt="Receipt preview" class="receipt-preview-img" />
+                    <button class="receipt-preview-overlay" id="changePhotoBtn" type="button">Change</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Action buttons -->
+              <div class="receipt-actions">
+                <button id="scanGalleryBtn" class="receipt-btn receipt-btn-secondary">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  <span data-i18n="choose_gallery_btn">Gallery</span>
+                </button>
+                <button id="scanCameraBtn" class="receipt-btn receipt-btn-secondary">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                  <span data-i18n="take_photo_btn">Camera</span>
+                </button>
+                <button id="scanBtn" class="receipt-btn receipt-btn-primary" disabled>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                  <span data-i18n="analyze_receipt_btn">Analyze</span>
+                </button>
+              </div>
+
+              <!-- Progress steps -->
+              <div class="receipt-progress" id="receiptProgress" style="display:none">
+                <div class="rp-step active" id="rpStep1">
+                  <div class="rp-dot"></div>
+                  <span data-i18n="rp_uploading">Uploading</span>
+                </div>
+                <div class="rp-line"></div>
+                <div class="rp-step" id="rpStep2">
+                  <div class="rp-dot"></div>
+                  <span data-i18n="rp_scanning">AI Scanning</span>
+                </div>
+                <div class="rp-line"></div>
+                <div class="rp-step" id="rpStep3">
+                  <div class="rp-dot"></div>
+                  <span data-i18n="rp_matching">Price Match</span>
+                </div>
+                <div class="rp-line"></div>
+                <div class="rp-step" id="rpStep4">
+                  <div class="rp-dot"></div>
+                  <span data-i18n="rp_done">Done</span>
+                </div>
+              </div>
+
+              <!-- Status line -->
+              <p id="scanStatus" class="receipt-status-text muted" data-i18n="awaiting_upload">Waiting for receipt…</p>
+            </div>
+
+            <!-- RIGHT: Report panel -->
+            <div class="receipt-report-panel" id="receiptReportPanel">
+              <div class="receipt-report-empty" id="receiptReportEmpty">
+                <div class="report-empty-icon">📊</div>
+                <h3 data-i18n="report_empty_title">Your report will appear here</h3>
+                <p class="muted small" data-i18n="report_empty_sub">After scanning, we'll show which items you could have bought cheaper and where.</p>
+              </div>
+              <div id="receiptReport"></div>
+            </div>
+
           </div>
         </section>
 

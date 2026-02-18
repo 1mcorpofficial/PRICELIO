@@ -115,12 +115,27 @@
       build_basket_btn: 'Build Basket',
       optimize_btn: 'Optimize',
       best_plan_title: 'Best plan',
-      upload_receipt_title: 'Upload receipt',
-      scan_preview_text: 'Tap here or choose below to select a receipt photo.',
-      analyze_receipt_btn: 'Analyze Receipt',
-      take_photo_btn: 'Take Photo',
+      upload_receipt_title: 'Receipt Scanner',
+      receipt_subtitle: 'Upload or take a photo of your receipt',
+      dropzone_hint: 'Drag & drop receipt here',
+      dropzone_sub: 'or use the buttons below · JPEG, PNG up to 10MB',
+      analyze_receipt_btn: 'Analyze',
+      take_photo_btn: 'Camera',
       choose_gallery_btn: 'Gallery',
       select_receipt_first: 'Please select a receipt image first.',
+      change_photo: 'Change',
+      rp_uploading: 'Uploading',
+      rp_scanning: 'AI Scanning',
+      rp_matching: 'Price Match',
+      rp_done: 'Done',
+      report_empty_title: 'Your report will appear here',
+      report_empty_sub: 'After scanning, we\'ll show which items you could have bought cheaper and where.',
+      report_saved_label: 'Could save',
+      report_verified_label: 'Verified',
+      report_overpaid_label: 'Overpaid items',
+      report_items_head: 'Receipt items',
+      report_best_store: 'Best price at',
+      report_ok_price: '✓ Good price',
       overpaid_report_title: 'Overpaid report',
       family_household_title: 'Family household',
       create_family_btn: 'Create Family',
@@ -368,12 +383,27 @@
       build_basket_btn: 'Sudaryti krepšelį',
       optimize_btn: 'Optimizuoti',
       best_plan_title: 'Geriausias planas',
-      upload_receipt_title: 'Įkelti čekį',
-      scan_preview_text: 'Palieskite čia arba pasirinkite nuotrauką žemiau.',
-      analyze_receipt_btn: 'Analizuoti čekį',
-      take_photo_btn: 'Fotografuoti',
+      upload_receipt_title: 'Čekio skaitytuvas',
+      receipt_subtitle: 'Įkelkite arba nufotografuokite čekį',
+      dropzone_hint: 'Tempkite čekį čia',
+      dropzone_sub: 'arba naudokite mygtukus žemiau · JPEG, PNG iki 10MB',
+      analyze_receipt_btn: 'Analizuoti',
+      take_photo_btn: 'Kamera',
       choose_gallery_btn: 'Galerija',
       select_receipt_first: 'Pirmiausia pasirinkite čekio nuotrauką.',
+      change_photo: 'Keisti',
+      rp_uploading: 'Įkeliama',
+      rp_scanning: 'AI skaito',
+      rp_matching: 'Kainos',
+      rp_done: 'Baigta',
+      report_empty_title: 'Čia pasirodys jūsų ataskaita',
+      report_empty_sub: 'Po nuskaitymo matysime, kur galėjote pirkti pigiau.',
+      report_saved_label: 'Galima sutaupyti',
+      report_verified_label: 'Patikrinta',
+      report_overpaid_label: 'Permokėta pozicijų',
+      report_items_head: 'Čekio pozicijos',
+      report_best_store: 'Geriausia kaina',
+      report_ok_price: '✓ Gera kaina',
       overpaid_report_title: 'Permokėjimo ataskaita',
       family_household_title: 'Šeimos namų ūkis',
       create_family_btn: 'Sukurti šeimą',
@@ -1968,99 +1998,218 @@
     }
   }
 
+  // ── Receipt helpers ──────────────────────────────────────
+
+  function receiptSetStep(step) {
+    // step: 1=uploading, 2=scanning, 3=matching, 4=done
+    const prog = $('receiptProgress');
+    if (!prog) return;
+    prog.style.display = 'flex';
+    ['rpStep1','rpStep2','rpStep3','rpStep4'].forEach((id, idx) => {
+      const el = $(id);
+      if (!el) return;
+      el.classList.remove('active','done');
+      if (idx + 1 < step) el.classList.add('done');
+      else if (idx + 1 === step) el.classList.add('active');
+    });
+    // colour lines
+    prog.querySelectorAll('.rp-line').forEach((line, idx) => {
+      line.classList.toggle('done', idx + 1 < step);
+    });
+  }
+
+  function receiptResetProgress() {
+    const prog = $('receiptProgress');
+    if (prog) prog.style.display = 'none';
+    ['rpStep1','rpStep2','rpStep3','rpStep4'].forEach((id) => {
+      const el = $(id);
+      if (el) { el.classList.remove('active','done'); }
+    });
+  }
+
+  function receiptSetStatus(text, type = '') {
+    const el = $('scanStatus');
+    if (!el) return;
+    el.textContent = text;
+    el.className = 'receipt-status-text muted' + (type ? ' ' + type : '');
+  }
+
+  function receiptShowFile(file) {
+    const url = URL.createObjectURL(file);
+    const img = $('receiptPreviewImg');
+    const wrap = $('receiptPreviewWrap');
+    const ph = $('dropzonePlaceholder');
+    const dropzone = $('receiptDropzone');
+    if (img) img.src = url;
+    if (wrap) wrap.style.display = '';
+    if (ph) ph.style.display = 'none';
+    if (dropzone) dropzone.classList.add('has-image');
+    const btn = $('changePhotoBtn');
+    if (btn) btn.textContent = t('change_photo') || 'Change';
+    setTimeout(() => URL.revokeObjectURL(url), 120000);
+  }
+
+  function receiptResetUI() {
+    const wrap = $('receiptPreviewWrap');
+    const ph = $('dropzonePlaceholder');
+    const dropzone = $('receiptDropzone');
+    const img = $('receiptPreviewImg');
+    if (wrap) wrap.style.display = 'none';
+    if (ph) ph.style.display = '';
+    if (dropzone) dropzone.classList.remove('has-image');
+    if (img) img.src = '';
+    const btn = $('scanBtn');
+    if (btn) btn.disabled = true;
+    const emptyEl = $('receiptReportEmpty');
+    if (emptyEl) emptyEl.style.display = '';
+    const rep = $('receiptReport');
+    if (rep) rep.innerHTML = '';
+    receiptResetProgress();
+    receiptSetStatus(t('awaiting_upload') || 'Waiting for receipt…');
+  }
+
   function bindReceiptPreview() {
     const input = $('scanInput');
     const inputCamera = $('scanInputCamera');
-    const preview = $('scanPreview');
-    const analyzeBtn = $('scanBtn');
-    if (!input || !preview) return;
+    const dropzone = $('receiptDropzone');
+    if (!input) return;
 
-    function onFileSelected(source) {
-      const file = source.files?.[0];
-      if (!file) return;
-      // Sync file to main input if selected via camera input
-      if (source === inputCamera && input) {
+    function applyFile(file) {
+      if (!file || !file.type.startsWith('image/')) return;
+      // Sync to main input
+      try {
         const dt = new DataTransfer();
         dt.items.add(file);
         input.files = dt.files;
-      }
-      const url = URL.createObjectURL(file);
-      preview.innerHTML = `<img src="${url}" alt="Receipt preview" class="preview-img" />`;
+      } catch (_) {}
+      receiptShowFile(file);
+      const analyzeBtn = $('scanBtn');
       if (analyzeBtn) analyzeBtn.disabled = false;
-      $('scanStatus').textContent = t('scan_ready', { file: file.name });
-      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      receiptSetStatus(t('scan_ready', { file: file.name }));
     }
 
-    input.addEventListener('change', () => onFileSelected(input));
-    if (inputCamera) inputCamera.addEventListener('change', () => onFileSelected(inputCamera));
+    input.addEventListener('change', () => { if (input.files?.[0]) applyFile(input.files[0]); });
+    if (inputCamera) inputCamera.addEventListener('change', () => { if (inputCamera.files?.[0]) applyFile(inputCamera.files[0]); });
 
-    // Camera button → open camera input
     $('scanCameraBtn')?.addEventListener('click', () => inputCamera?.click());
-    // Gallery button → open gallery input
     $('scanGalleryBtn')?.addEventListener('click', () => input?.click());
+    $('changePhotoBtn')?.addEventListener('click', () => input?.click());
+
+    // Click on dropzone placeholder → gallery
+    dropzone?.addEventListener('click', (e) => {
+      if (e.target.closest('.dropzone-placeholder')) {
+        input?.click();
+      }
+    });
+
+    // Drag & drop
+    dropzone?.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('drag-over');
+    });
+    dropzone?.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+    dropzone?.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('drag-over');
+      const file = e.dataTransfer?.files?.[0];
+      if (file) applyFile(file);
+    });
   }
 
-  async function pollReceiptUntilComplete(receiptId, maxAttempts = 14) {
+  async function pollReceiptUntilComplete(receiptId, maxAttempts = 16) {
     for (let i = 0; i < maxAttempts; i += 1) {
-      const status = await apiRequest(`/receipts/${receiptId}/status`);
-      $('scanStatus').textContent = t('scan_status', { status: status.status, progress: status.progress || 0 });
-      if (['processed', 'finalized', 'needs_confirmation'].includes(status.status)) {
-        return status;
-      }
-      await new Promise((resolve) => setTimeout(resolve, 1100));
+      await new Promise((r) => setTimeout(r, 1200));
+      try {
+        const status = await apiRequest(`/receipts/${receiptId}/status`);
+        const s = status.status || '';
+        const pct = status.progress || 0;
+        receiptSetStatus(`${t('rp_scanning')}… ${pct}%`);
+        if (pct > 30) receiptSetStep(3);
+        if (['processed', 'finalized', 'needs_confirmation'].includes(s)) {
+          return status;
+        }
+      } catch (_) { /* network blip – keep polling */ }
     }
     return null;
   }
 
   function renderReceiptReport(report) {
     const container = $('receiptReport');
+    const emptyEl = $('receiptReportEmpty');
     if (!container) return;
 
+    if (emptyEl) emptyEl.style.display = 'none';
+
     if (!report) {
-      renderEmpty(container, t('empty_report'));
+      container.innerHTML = `<div class="empty">${t('empty_report') || 'No data.'}</div>`;
       return;
     }
 
     const lines = Array.isArray(report.line_items) ? report.line_items : [];
     const overpaid = Array.isArray(report.overpaid_items) ? report.overpaid_items : [];
+    const savings = Number(report.savings_total || 0);
+    const verifiedRatio = Number(report.verified_ratio || 0);
+    const verifiedPct = Math.round(verifiedRatio * 100);
 
-    const summary = `
-      <div class="line-item">
-        <span>Total savings opportunity</span>
-        <strong class="positive">${formatMoney(report.savings_total || 0)}</strong>
-      </div>
-      <div class="line-item">
-        <span>Verified ratio</span>
-        <strong>${formatNumber((report.verified_ratio || 0) * 100)}%</strong>
-      </div>
-      <div class="line-item">
-        <span>Overpaid items</span>
-        <strong>${formatNumber(overpaid.length)}</strong>
-      </div>
-    `;
-
-    const rows = lines.map((item) => {
-      const savings = Number(item.savings_eur || 0);
-      return `
-        <div class="line-item ${savings > 0 ? 'overpaid' : ''}">
-          <div>
-            <strong>${sanitize(item.product_name || item.receipt_name || 'Item')}</strong>
-            <div class="muted small">Best store: ${sanitize(item.store_chain || '-')}</div>
-          </div>
-          <div class="right">
-            <div>${formatMoney(item.price)}</div>
-            <div class="${savings > 0 ? 'negative small' : 'muted small'}">${savings > 0 ? `Overpaid ${formatMoney(savings)}` : 'OK price'}</div>
-          </div>
+    // Hero summary card
+    const savingsColor = savings > 0 ? '' : 'style="background:linear-gradient(135deg,#047857,#059669)"';
+    const summaryHtml = `
+      <div class="report-summary" ${savingsColor}>
+        <div class="report-savings-big">
+          <div class="label">${t('report_saved_label')}</div>
+          <div class="amount">${formatMoney(savings)}</div>
+          <div class="sub">${overpaid.length} ${t('report_overpaid_label')}</div>
         </div>
-      `;
-    }).join('');
+        <div class="report-meta-chips">
+          <div class="report-chip">📋 ${lines.length} item${lines.length !== 1 ? 's' : ''}</div>
+          <div class="report-chip">✓ ${verifiedPct}% ${t('report_verified_label')}</div>
+        </div>
+      </div>`;
 
-    container.innerHTML = `${summary}${rows}`;
+    // Verified bar
+    const verBar = `
+      <div class="report-verified-bar">
+        <span class="verified-label">✓ ${t('report_verified_label')}</span>
+        <div class="verified-bar-track">
+          <div class="verified-bar-fill" style="width:${verifiedPct}%"></div>
+        </div>
+        <span class="verified-pct">${verifiedPct}%</span>
+      </div>`;
+
+    // Items
+    const head = `<div class="report-items-head">${t('report_items_head')}</div>`;
+    const itemsHtml = lines.length === 0
+      ? `<div class="empty">${t('report_empty_title') || 'No items found'}</div>`
+      : lines.map((item) => {
+          const sav = Number(item.savings_eur || 0);
+          const isOverpaid = sav > 0;
+          const icon = isOverpaid ? '⚠️' : '✅';
+          const cls = isOverpaid ? 'overpaid' : 'ok';
+          const store = item.store_chain ? `${t('report_best_store')}: ${sanitize(item.store_chain)}` : '';
+          const bestP = item.best_offer_price != null ? ` · €${Number(item.best_offer_price).toFixed(2)}` : '';
+          return `
+            <div class="report-item ${cls}">
+              <div class="report-item-icon">${icon}</div>
+              <div class="report-item-body">
+                <div class="report-item-name">${sanitize(item.product_name || item.receipt_name || 'Item')}</div>
+                ${store ? `<div class="report-item-store">${store}${bestP}</div>` : ''}
+              </div>
+              <div class="report-item-prices">
+                <div class="report-item-paid">€${item.price != null ? Number(item.price).toFixed(2) : '—'}</div>
+                ${isOverpaid
+                  ? `<div class="report-item-savings">−€${sav.toFixed(2)} overpaid</div>`
+                  : `<div class="report-item-ok-badge">${t('report_ok_price')}</div>`}
+              </div>
+              ${isOverpaid ? `<div class="report-overpaid-badge">−€${sav.toFixed(2)}</div>` : ''}
+            </div>`;
+        }).join('');
+
+    container.innerHTML = summaryHtml + verBar + head + itemsHtml;
   }
 
   async function analyzeReceipt() {
     const fileInput = $('scanInput');
-    if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+    if (!fileInput?.files?.[0]) {
       showToast(t('select_receipt_first'), 'warning');
       return;
     }
@@ -2073,26 +2222,38 @@
     formData.append('file', file);
 
     try {
-      $('scanStatus').textContent = t('uploading_receipt');
-      const upload = await apiRequest('/receipts/upload', {
-        method: 'POST',
-        formData
-      });
+      receiptSetStep(1);
+      receiptSetStatus(t('uploading_receipt') || 'Uploading…');
+
+      const upload = await apiRequest('/receipts/upload', { method: 'POST', formData });
       state.lastReceiptId = upload.receipt_id;
-      $('scanStatus').textContent = t('receipt_uploaded', { id: upload.receipt_id });
+
+      receiptSetStep(2);
+      receiptSetStatus(`${t('rp_scanning')}…`);
 
       const finalStatus = await pollReceiptUntilComplete(upload.receipt_id);
+
+      receiptSetStep(3);
+      receiptSetStatus(`${t('rp_matching')}…`);
+
       if (!finalStatus) {
-        showToast(t('still_processing'), 'info');
+        showToast(t('still_processing') || 'Still processing…', 'info');
+        receiptSetStatus(t('still_processing') || 'Still processing…', 'error');
+        if (analyzeBtn) analyzeBtn.disabled = false;
         return;
       }
 
       const report = await apiRequest(`/receipts/${upload.receipt_id}/report`);
+
+      receiptSetStep(4);
+      receiptSetStatus(t('receipt_analysis_complete') || 'Done!', 'success');
       renderReceiptReport(report);
-      showToast(t('receipt_analysis_complete'), 'success');
+      showToast(t('receipt_analysis_complete') || 'Analysis complete!', 'success');
     } catch (error) {
-      showToast(`Receipt failed: ${toApiErrorLabel(error)}`, 'error');
-      $('scanStatus').textContent = `Failed: ${toApiErrorLabel(error)}`;
+      const msg = toApiErrorLabel(error);
+      showToast(`Receipt failed: ${msg}`, 'error');
+      receiptSetStatus(`Error: ${msg}`, 'error');
+      receiptResetProgress();
       if (analyzeBtn) analyzeBtn.disabled = false;
     }
   }
