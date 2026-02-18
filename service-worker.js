@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pricelio-pwa-v2';
+const CACHE_NAME = 'pricelio-pwa-v3';
 const ASSETS = [
   '.',
   'index.html',
@@ -61,21 +61,17 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (isStaticAsset) {
-    // Cache-first for static files; refresh in background.
+    // Network-first for static files to avoid stale app.js/api-base issues after deploy.
     event.respondWith(
-      caches.match(req).then((cached) => {
-        const network = fetch(req)
-          .then((response) => {
-            if (response && response.ok) {
-              const copy = response.clone();
-              caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
-            }
-            return response;
-          })
-          .catch(() => null);
-
-        return cached || network;
-      })
+      fetch(req)
+        .then((response) => {
+          if (response && response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+          }
+          return response;
+        })
+        .catch(() => caches.match(req))
     );
     return;
   }
