@@ -1,14 +1,19 @@
 const crypto = require('crypto');
+const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { getClient } = require('./db');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'change-this-secret-in-production';
 const JWT_EXPIRES_IN = '7d';
 const REFRESH_TOKEN_EXPIRES_IN = '30d';
+const BCRYPT_ROUNDS = 12;
 
-// Hash password using SHA-256 (in production, use bcrypt)
-function hashPassword(password) {
-  return crypto.createHash('sha256').update(password).digest('hex');
+async function hashPassword(password) {
+  return bcrypt.hash(password, BCRYPT_ROUNDS);
+}
+
+async function verifyPassword(password, hash) {
+  return bcrypt.compare(password, hash);
 }
 
 // Generate JWT access token
@@ -84,7 +89,7 @@ async function registerUser(email, password, cityId = null) {
   }
   
   // Create user
-  const passwordHash = hashPassword(password);
+  const passwordHash = await hashPassword(password);
   
   const result = await client.query(
     `INSERT INTO users (email, password_hash, status)
@@ -105,16 +110,19 @@ async function registerUser(email, password, cityId = null) {
 // Login user
 async function loginUser(email, password) {
   const client = await getClient();
-  
-  const passwordHash = hashPassword(password);
-  
+
   const result = await client.query(
-    `SELECT id, email, status FROM users 
-     WHERE email = $1 AND password_hash = $2`,
-    [email.toLowerCase(), passwordHash]
+    `SELECT id, email, status, password_hash FROM users
+     WHERE email = $1`,
+    [email.toLowerCase()]
   );
-  
+
   if (result.rows.length === 0) {
+    throw new Error('invalid_credentials');
+  }
+
+  const valid = await verifyPassword(password, result.rows[0].password_hash);
+  if (!valid) {
     throw new Error('invalid_credentials');
   }
   
