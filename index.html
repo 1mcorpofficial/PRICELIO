@@ -27,33 +27,58 @@
         </div>
         <div class="landing-actions">
           <select id="landingLanguageSelect" class="language-select" aria-label="Language"></select>
-          <button id="startExperienceBtn" class="btn" type="button" data-i18n="try_now">Noriu išbandyti</button>
+          <button id="startExperienceBtn" class="btn cta-primary" type="button" data-i18n="try_now">Noriu išbandyti</button>
         </div>
       </header>
 
       <div class="landing-hero">
         <div class="landing-copy">
-          <h2 data-i18n="landing_headline">Pirk protingiau. Žinok kur permoki.</h2>
-          <p data-i18n="landing_subline">Įkelk čekį, palygink kainas aplink tave ir kitą kartą pirk ten, kur pigiausia.</p>
+          <h2 data-i18n="landing_headline">Nustok permokėti už maistą ir kasdienes prekes.</h2>
+          <p data-i18n="landing_subline">Įkelk čekį, palygink kainas aplink save ir per kelias sekundes sužinok, kur pirkti pigiau.</p>
           <div class="landing-cta-row">
-            <button id="startExperienceSecondaryBtn" class="btn" type="button" data-i18n="try_now">Noriu išbandyti</button>
+            <button id="startExperienceSecondaryBtn" class="btn cta-primary" type="button" data-i18n="try_now">Noriu išbandyti</button>
             <button id="startExperienceLoginBtn" class="btn btn-ghost" type="button" data-i18n="go_login">Prisijungti</button>
+          </div>
+          <div class="store-badge-row">
+            <a href="#" id="storeGoogleBtn" class="store-badge" data-i18n="store_google_badge">Get it on Google Play</a>
+            <a href="#" id="storeAppleBtn" class="store-badge" data-i18n="store_apple_badge">Download on the App Store</a>
           </div>
           <p id="deviceHintText" class="muted" data-i18n="landing_device_hint">Telefonu gausi pilną patirtį: greitesnis čekio skenavimas, lokacija, misijos.</p>
         </div>
-        <div class="landing-stats">
-          <article class="landing-stat-card">
-            <h3 data-i18n="landing_card1_title">Po pirkimo</h3>
-            <p data-i18n="landing_card1_text">Rodo kur permokėjai ir kiek galėjai sutaupyti.</p>
-          </article>
-          <article class="landing-stat-card">
-            <h3 data-i18n="landing_card2_title">Prieš pirkimą</h3>
-            <p data-i18n="landing_card2_text">„Twix“ paieška parodo kainas skirtingose parduotuvėse aplink tave.</p>
-          </article>
-          <article class="landing-stat-card">
-            <h3 data-i18n="landing_card3_title">Šeimai</h3>
-            <p data-i18n="landing_card3_text">Bendri sąrašai, pakvietimai ir pirkinių koordinacija vienoje vietoje.</p>
-          </article>
+        <div class="landing-visual">
+          <div class="phone-mockup" aria-hidden="true">
+            <div class="phone-notch"></div>
+            <div class="phone-screen">
+              <p class="phone-caption" data-i18n="mockup_caption">Šiandien būtum sutaupęs</p>
+              <h3>€6.40</h3>
+              <div class="phone-item">
+                <span>Twix</span>
+                <strong>€0.89</strong>
+              </div>
+              <div class="phone-item">
+                <span data-i18n="mockup_alt_store">Pigiausia: Lidl</span>
+                <strong class="positive">-31%</strong>
+              </div>
+              <div class="phone-item">
+                <span data-i18n="mockup_basket">Krepšelio planas</span>
+                <strong data-i18n="mockup_ready">Paruoštas</strong>
+              </div>
+            </div>
+          </div>
+          <div class="landing-stats">
+            <article class="landing-stat-card">
+              <h3 data-i18n="landing_card1_title">Po pirkimo</h3>
+              <p data-i18n="landing_card1_text">Rodo kur permokėjai ir kiek galėjai sutaupyti.</p>
+            </article>
+            <article class="landing-stat-card">
+              <h3 data-i18n="landing_card2_title">Prieš pirkimą</h3>
+              <p data-i18n="landing_card2_text">„Twix“ paieška parodo kainas skirtingose parduotuvėse aplink tave.</p>
+            </article>
+            <article class="landing-stat-card">
+              <h3 data-i18n="landing_card3_title">Šeimai</h3>
+              <p data-i18n="landing_card3_text">Bendri sąrašai, pakvietimai ir pirkinių koordinacija vienoje vietoje.</p>
+            </article>
+          </div>
         </div>
       </div>
 
@@ -70,16 +95,19 @@
         <p class="eyebrow" data-i18n="landing_flow_eyebrow">Kaip veikia</p>
         <div class="landing-flow-grid">
           <article>
+            <div class="icon-badge" aria-hidden="true">📷</div>
             <span>1</span>
             <h4 data-i18n="landing_step1_title">Nufotografuok čekį</h4>
             <p data-i18n="landing_step1_text">AI ištraukia prekes, kiekius ir kainas, o jautri informacija užmaskuojama.</p>
           </article>
           <article>
+            <div class="icon-badge" aria-hidden="true">🔎</div>
             <span>2</span>
             <h4 data-i18n="landing_step2_title">Palygink kainas aplink</h4>
             <p data-i18n="landing_step2_text">Ieškai „Twix“ ir iškart matai, kur šalia tavęs pigiausia.</p>
           </article>
           <article>
+            <div class="icon-badge" aria-hidden="true">💶</div>
             <span>3</span>
             <h4 data-i18n="landing_step3_title">Kitą kartą sutaupyk</h4>
             <p data-i18n="landing_step3_text">Sistema parodo, kur pirkinių krepšelis kainuos mažiau ir ką verta pirkti kitoje parduotuvėje.</p>
@@ -89,26 +117,32 @@
 
       <section class="landing-feature-grid">
         <article class="panel-surface">
+          <div class="icon-badge" aria-hidden="true">🧾</div>
           <h4 data-i18n="landing_feat1_title">Po pirkimo analizė</h4>
           <p data-i18n="landing_feat1_text">Permokėjimo ataskaita, „ouch“ suma ir aiškios alternatyvos kitam kartui.</p>
         </article>
         <article class="panel-surface">
+          <div class="icon-badge" aria-hidden="true">📍</div>
           <h4 data-i18n="landing_feat2_title">Prieš pirkimą paieška</h4>
           <p data-i18n="landing_feat2_text">Vienos prekės palyginimas daugelyje parduotuvių pagal realią vartotojo vietą.</p>
         </article>
         <article class="panel-surface">
+          <div class="icon-badge" aria-hidden="true">👨‍👩‍👧‍👦</div>
           <h4 data-i18n="landing_feat3_title">Šeimos režimas</h4>
           <p data-i18n="landing_feat3_text">Bendri sąrašai, pakvietimai ir realaus laiko atnaujinimai visiems šeimos nariams.</p>
         </article>
         <article class="panel-surface">
+          <div class="icon-badge" aria-hidden="true">✅</div>
           <h4 data-i18n="landing_feat4_title">Misijos ir duomenų kokybė</h4>
           <p data-i18n="landing_feat4_text">Bendruomenė tikrina kainas, o sistema naudoja konsensusą ir pasitikėjimo balą.</p>
         </article>
         <article class="panel-surface">
+          <div class="icon-badge" aria-hidden="true">🛡️</div>
           <h4 data-i18n="landing_feat5_title">Vaikų režimas</h4>
           <p data-i18n="landing_feat5_text">Tėvų valdomas režimas su PIN ir amžiaus grupėms pritaikytomis užduotimis.</p>
         </article>
         <article class="panel-surface">
+          <div class="icon-badge" aria-hidden="true">🔒</div>
           <h4 data-i18n="landing_feat6_title">Privatumas pirmoje vietoje</h4>
           <p data-i18n="landing_feat6_text">Tik tai, kas reikalinga kainų analizei. Mokėjimo duomenys nerodomi ir nesaugomi atvirai.</p>
         </article>
@@ -127,7 +161,7 @@
       <section class="landing-final-cta panel-surface">
         <h3 data-i18n="landing_final_title">Pradėk testuoti dabar</h3>
         <p data-i18n="landing_final_text">Spausk „Noriu išbandyti“, susikurk paskyrą ir pradėk nuo pirmo čekio ar prekės paieškos.</p>
-        <button id="startExperienceFinalBtn" class="btn" type="button" data-i18n="try_now">Noriu išbandyti</button>
+        <button id="startExperienceFinalBtn" class="btn cta-primary" type="button" data-i18n="try_now">Noriu išbandyti</button>
       </section>
     </section>
 
