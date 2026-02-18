@@ -262,7 +262,7 @@
               <div class="row">
                 <button id="scanBtn" class="btn mobile-primary-action" data-i18n="analyze_receipt_btn">Analyze Receipt</button>
               </div>
-              <p id="scanStatus" class="muted">Awaiting upload.</p>
+              <p id="scanStatus" class="muted" data-i18n="awaiting_upload">Laukiama įkėlimo.</p>
             </article>
             <article class="panel">
               <h2 data-i18n="overpaid_report_title">Overpaid report</h2>
@@ -323,8 +323,8 @@
             <article class="panel">
               <h2 data-i18n="bounty_missions_title">Bounty missions</h2>
               <div class="row">
-                <input id="missionLat" placeholder="Lat" />
-                <input id="missionLon" placeholder="Lon" />
+                <input id="missionLat" placeholder="Lat" data-i18n-placeholder="lat_placeholder" />
+                <input id="missionLon" placeholder="Lon" data-i18n-placeholder="lon_placeholder" />
                 <button id="loadMissionsBtn" class="btn" data-i18n="nearby_btn">Nearby</button>
               </div>
               <div id="missionsList" class="list"></div>
@@ -332,25 +332,25 @@
             <article class="panel">
               <h2 data-i18n="submit_verify_title">Submit / verify proof</h2>
               <div class="stack">
-                <input id="missionIdInput" placeholder="Mission ID" />
-                <input id="missionProductName" placeholder="Canonical product name" />
-                <input id="missionBarcode" placeholder="Barcode" />
-                <input id="missionStoreChain" placeholder="Store chain" />
-                <input id="missionMediaHash" placeholder="Media hash" />
-                <label><input type="checkbox" id="missionForeground" checked /> App was foreground</label>
+                <input id="missionIdInput" placeholder="Mission ID" data-i18n-placeholder="mission_id_placeholder" />
+                <input id="missionProductName" placeholder="Canonical product name" data-i18n-placeholder="canonical_product_placeholder" />
+                <input id="missionBarcode" placeholder="Barcode" data-i18n-placeholder="barcode_placeholder" />
+                <input id="missionStoreChain" placeholder="Store chain" data-i18n-placeholder="store_chain_placeholder" />
+                <input id="missionMediaHash" placeholder="Media hash" data-i18n-placeholder="media_hash_placeholder" />
+                <label><input type="checkbox" id="missionForeground" checked /> <span data-i18n="app_foreground_label">App was foreground</span></label>
                 <button id="submitMissionBtn" class="btn mobile-primary-action" data-i18n="submit_mission_btn">Submit Mission</button>
               </div>
               <hr />
               <div class="row">
-                <input id="verifySubmissionId" placeholder="Submission ID" />
+                <input id="verifySubmissionId" placeholder="Submission ID" data-i18n-placeholder="submission_id_placeholder" />
                 <select id="verifyVote">
-                  <option value="confirm">Confirm</option>
-                  <option value="reject">Reject</option>
+                  <option value="confirm" data-i18n="confirm_option">Confirm</option>
+                  <option value="reject" data-i18n="reject_option">Reject</option>
                 </select>
                 <button id="verifyMissionBtn" class="btn btn-ghost" data-i18n="verify_btn">Verify</button>
               </div>
               <div class="row">
-                <input id="proofIdInput" placeholder="Proof ID" />
+                <input id="proofIdInput" placeholder="Proof ID" data-i18n-placeholder="proof_id_placeholder" />
                 <button id="loadProofBtn" class="btn btn-ghost" data-i18n="status_btn">Status</button>
               </div>
               <div id="proofStatus" class="list compact"></div>
@@ -389,7 +389,7 @@
             <article class="panel">
               <h2 data-i18n="premium_insights_title">Premium insights</h2>
               <div class="stack">
-                <input id="timeMachineProductId" placeholder="Product ID for Time Machine" />
+                <input id="timeMachineProductId" placeholder="Product ID for Time Machine" data-i18n-placeholder="time_machine_product_placeholder" />
                 <button id="runTimeMachineBtn" class="btn btn-ghost" data-i18n="run_time_machine_btn">Run Time Machine</button>
                 <button id="loadAdvancedAnalyticsBtn" class="btn btn-ghost" data-i18n="load_spending_btn">Load Spending Analytics</button>
               </div>
@@ -423,10 +423,10 @@
                 <button id="loadKidsMissionsBtn" class="btn btn-ghost" data-i18n="load_btn">Load</button>
               </div>
               <div class="stack">
-                <input id="kidsMissionId" placeholder="Mission ID" />
-                <input id="kidsMissionProduct" placeholder="Canonical product name" />
-                <input id="kidsMissionBarcode" placeholder="Barcode" />
-                <input id="kidsMissionStoreChain" placeholder="Store chain" />
+                <input id="kidsMissionId" placeholder="Mission ID" data-i18n-placeholder="mission_id_placeholder" />
+                <input id="kidsMissionProduct" placeholder="Canonical product name" data-i18n-placeholder="canonical_product_placeholder" />
+                <input id="kidsMissionBarcode" placeholder="Barcode" data-i18n-placeholder="barcode_placeholder" />
+                <input id="kidsMissionStoreChain" placeholder="Store chain" data-i18n-placeholder="store_chain_placeholder" />
                 <button id="submitKidsMissionBtn" class="btn mobile-primary-action" data-i18n="submit_kids_mission_btn">Submit Kids Mission</button>
               </div>
               <div id="kidsMissions" class="list"></div>

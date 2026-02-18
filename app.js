@@ -156,6 +156,20 @@
       kid_name_placeholder: 'Kid display name',
       parent_pin_placeholder: 'Parent PIN',
       kids_session_placeholder: 'Kids session ID',
+      session_id_placeholder: 'Session ID',
+      lat_placeholder: 'Latitude',
+      lon_placeholder: 'Longitude',
+      mission_id_placeholder: 'Mission ID',
+      canonical_product_placeholder: 'Canonical product name',
+      barcode_placeholder: 'Barcode',
+      store_chain_placeholder: 'Store chain',
+      media_hash_placeholder: 'Media hash',
+      submission_id_placeholder: 'Submission ID',
+      proof_id_placeholder: 'Proof ID',
+      time_machine_product_placeholder: 'Product ID for Time Machine',
+      app_foreground_label: 'App was foreground',
+      confirm_option: 'Confirm',
+      reject_option: 'Reject',
       device_notice_title_mobile: 'Mobile mode',
       device_notice_text_mobile: 'All PRICELIO features are available. You can scan receipts and run missions faster.',
       device_notice_title_desktop: 'Desktop mode',
@@ -192,7 +206,54 @@
       tip_profile_text: 'Review account info and inspect all 20 launch ranks with XP thresholds.',
       tip_profile_cta: 'Load Ranks',
       tip_more: 'More',
-      tip_less: 'Less'
+      tip_less: 'Less',
+      awaiting_upload: 'Awaiting upload.',
+      empty_points_events: 'No points events yet.',
+      empty_profile: 'Login to see profile data.',
+      empty_basket_plan: 'No optimization plan available yet.',
+      empty_report: 'No report loaded.',
+      empty_family_lists: 'No family lists found.',
+      empty_family_events: 'No new family events.',
+      empty_missions: 'No missions nearby.',
+      empty_proof: 'No proof selected.',
+      empty_leaderboard: 'No leaderboard data yet.',
+      empty_plus_features: 'No plus features available.',
+      empty_plus_status: 'No active plus entitlements.',
+      empty_premium: 'No premium insights loaded yet.',
+      empty_kids_missions: 'No kids missions available.',
+      loading_ranks: 'Loading rank catalog...',
+      no_rank_levels: 'No rank levels configured.',
+      search_input_required: 'Type product name or barcode.',
+      search_no_match: 'No matching products found.',
+      onboarding_title: 'Welcome to PRICELIO',
+      onboarding_close: 'Close',
+      onboarding_back: 'Back',
+      onboarding_skip: 'Skip',
+      onboarding_next: 'Next',
+      onboarding_finish: 'Finish',
+      onboarding_step_start_title: 'Start Here',
+      onboarding_step_start_text: 'Create account or login to activate points, missions, family and kids mode.',
+      onboarding_step_market_title: 'Check Market',
+      onboarding_step_market_text: 'Use map filters and product search to see where the best price is now.',
+      onboarding_step_basket_title: 'Build Basket',
+      onboarding_step_basket_text: 'Create your shopping basket and run optimization to get the cheapest plan.',
+      onboarding_step_receipts_title: 'Upload Receipt',
+      onboarding_step_receipts_text: 'Scan receipts to detect overpay and strengthen your city-level price truth.',
+      onboarding_step_family_title: 'Family Sync',
+      onboarding_step_family_text: 'Create household and shared lists so everyone can coordinate purchases.',
+      onboarding_step_missions_title: 'Missions & Proof',
+      onboarding_step_missions_text: 'Submit and verify product proof to earn points and improve data quality.',
+      onboarding_step_plus_title: 'Plus Economy',
+      onboarding_step_plus_text: 'Unlock premium insights via subscription or with redeemable points.',
+      onboarding_complete: 'Onboarding complete. Use Guide anytime.',
+      onboarding_skipped: 'Onboarding skipped. You can reopen with Guide.',
+      scan_ready: 'Ready: {file}',
+      scan_status: 'Status: {status} ({progress}%)',
+      uploading_receipt: 'Uploading receipt...',
+      receipt_uploaded: 'Receipt uploaded: {id}',
+      still_processing: 'Still processing. Try refresh later.',
+      receipt_analysis_complete: 'Receipt analysis complete.',
+      mission_selected_for_submit: 'Mission {id} selected for submit.'
     },
     lt: {
       brand_name: 'PRICELIO',
@@ -332,6 +393,20 @@
       kid_name_placeholder: 'Vaiko vardas',
       parent_pin_placeholder: 'Tėvų PIN',
       kids_session_placeholder: 'Vaiko sesijos ID',
+      session_id_placeholder: 'Sesijos ID',
+      lat_placeholder: 'Platuma',
+      lon_placeholder: 'Ilguma',
+      mission_id_placeholder: 'Misijos ID',
+      canonical_product_placeholder: 'Kanoninis prekės pavadinimas',
+      barcode_placeholder: 'Brūkšninis kodas',
+      store_chain_placeholder: 'Parduotuvės tinklas',
+      media_hash_placeholder: 'Failo hash',
+      submission_id_placeholder: 'Pateikimo ID',
+      proof_id_placeholder: 'Įrodymo ID',
+      time_machine_product_placeholder: 'Prekės ID Time Machine funkcijai',
+      app_foreground_label: 'Programėlė buvo pirmame plane',
+      confirm_option: 'Patvirtinti',
+      reject_option: 'Atmesti',
       device_notice_title_mobile: 'Telefono režimas',
       device_notice_text_mobile: 'Aktyvios visos PRICELIO funkcijos: čekiai, lokacija, misijos.',
       device_notice_title_desktop: 'Kompiuterio režimas',
@@ -368,7 +443,54 @@
       tip_profile_text: 'Peržiūrėk paskyros informaciją ir visus 20 starto rangų su XP slenksčiais.',
       tip_profile_cta: 'Įkelti rangus',
       tip_more: 'Daugiau',
-      tip_less: 'Mažiau'
+      tip_less: 'Mažiau',
+      awaiting_upload: 'Laukiama įkėlimo.',
+      empty_points_events: 'Dar nėra taškų įrašų.',
+      empty_profile: 'Prisijunkite, kad matytumėte profilio duomenis.',
+      empty_basket_plan: 'Optimizavimo planas dar nesukurtas.',
+      empty_report: 'Ataskaita dar neužkrauta.',
+      empty_family_lists: 'Šeimos sąrašų dar nėra.',
+      empty_family_events: 'Naujų šeimos įvykių nėra.',
+      empty_missions: 'Aplink misijų nerasta.',
+      empty_proof: 'Įrodymas dar nepasirinktas.',
+      empty_leaderboard: 'Reitingo duomenų dar nėra.',
+      empty_plus_features: 'Plus funkcijų duomenys nepasiekiami.',
+      empty_plus_status: 'Aktyvių Plus teisių nėra.',
+      empty_premium: 'Premium įžvalgos dar neužkrautos.',
+      empty_kids_missions: 'Vaikų misijų nėra.',
+      loading_ranks: 'Įkeliamas rangų katalogas...',
+      no_rank_levels: 'Rangų lygiai nesukonfigūruoti.',
+      search_input_required: 'Įveskite prekės pavadinimą arba brūkšninį kodą.',
+      search_no_match: 'Atitinkančių prekių nerasta.',
+      onboarding_title: 'Sveiki atvykę į PRICELIO',
+      onboarding_close: 'Uždaryti',
+      onboarding_back: 'Atgal',
+      onboarding_skip: 'Praleisti',
+      onboarding_next: 'Toliau',
+      onboarding_finish: 'Baigti',
+      onboarding_step_start_title: 'Pradėkite čia',
+      onboarding_step_start_text: 'Sukurkite paskyrą arba prisijunkite, kad aktyvuotumėte taškus, misijas, šeimą ir vaikų režimą.',
+      onboarding_step_market_title: 'Patikrinkite rinką',
+      onboarding_step_market_text: 'Naudokite žemėlapio filtrus ir prekių paiešką, kad rastumėte geriausią kainą.',
+      onboarding_step_basket_title: 'Sudarykite krepšelį',
+      onboarding_step_basket_text: 'Sukurkite pirkinių krepšelį ir paleiskite optimizaciją.',
+      onboarding_step_receipts_title: 'Įkelkite čekį',
+      onboarding_step_receipts_text: 'Nuskenuokite čekį, pamatykite permokėjimą ir sustiprinkite kainų duomenis.',
+      onboarding_step_family_title: 'Šeimos sinchronizacija',
+      onboarding_step_family_text: 'Sukurkite namų ūkį ir bendrus sąrašus visai šeimai.',
+      onboarding_step_missions_title: 'Misijos ir įrodymai',
+      onboarding_step_missions_text: 'Pateikite ir tikrinkite įrodymus, kad rinktumėte taškus.',
+      onboarding_step_plus_title: 'Plus ekonomika',
+      onboarding_step_plus_text: 'Atrakinkite premium įžvalgas su prenumerata arba taškais.',
+      onboarding_complete: 'Gidas baigtas. Bet kada galite atsidaryti per „Gidas“.',
+      onboarding_skipped: 'Gidas praleistas. Galite atidaryti vėliau.',
+      scan_ready: 'Paruošta: {file}',
+      scan_status: 'Būsena: {status} ({progress}%)',
+      uploading_receipt: 'Įkeliamas čekis...',
+      receipt_uploaded: 'Čekis įkeltas: {id}',
+      still_processing: 'Vis dar apdorojama. Pabandykite atnaujinti vėliau.',
+      receipt_analysis_complete: 'Čekio analizė baigta.',
+      mission_selected_for_submit: 'Misija {id} parinkta pateikimui.'
     }
   };
   const EXTRA_LANG_OVERRIDES = {
@@ -1159,17 +1281,17 @@
     modal.innerHTML = `
       <div class="onboarding-card">
         <div class="onboarding-header">
-          <h2 id="onboardingTitle">Welcome to PRICELIO</h2>
-          <button id="onboardingCloseBtn" class="btn btn-ghost btn-small" type="button">Close</button>
+          <h2 id="onboardingTitle">${sanitize(t('onboarding_title'))}</h2>
+          <button id="onboardingCloseBtn" class="btn btn-ghost btn-small" type="button">${sanitize(t('onboarding_close'))}</button>
         </div>
         <div class="onboarding-progress">
           <div id="onboardingProgressBar"></div>
         </div>
         <p id="onboardingText"></p>
         <div class="onboarding-footer">
-          <button id="onboardingPrevBtn" class="btn btn-ghost btn-small" type="button">Back</button>
-          <button id="onboardingSkipBtn" class="btn btn-ghost btn-small" type="button">Skip</button>
-          <button id="onboardingNextBtn" class="btn btn-small" type="button">Next</button>
+          <button id="onboardingPrevBtn" class="btn btn-ghost btn-small" type="button">${sanitize(t('onboarding_back'))}</button>
+          <button id="onboardingSkipBtn" class="btn btn-ghost btn-small" type="button">${sanitize(t('onboarding_skip'))}</button>
+          <button id="onboardingNextBtn" class="btn btn-small" type="button">${sanitize(t('onboarding_next'))}</button>
         </div>
       </div>
     `;
@@ -1179,13 +1301,13 @@
 
   function setupOnboarding() {
     const steps = [
-      { view: 'overview', title: 'Start Here', text: 'Create account or login to activate points, missions, family and kids mode.' },
-      { view: 'market', title: 'Check Market', text: 'Use map filters and product search to see where the best price is now.' },
-      { view: 'basket', title: 'Build Basket', text: 'Create your shopping basket and run optimization to get the cheapest plan.' },
-      { view: 'receipts', title: 'Upload Receipt', text: 'Scan receipts to detect overpay and strengthen your city-level price truth.' },
-      { view: 'family', title: 'Family Sync', text: 'Create household and shared lists so everyone can coordinate purchases.' },
-      { view: 'missions', title: 'Missions & Proof', text: 'Submit and verify product proof to earn points and improve data quality.' },
-      { view: 'plus', title: 'Plus Economy', text: 'Unlock premium insights via subscription or with redeemable points.' }
+      { view: 'overview', titleKey: 'onboarding_step_start_title', textKey: 'onboarding_step_start_text' },
+      { view: 'market', titleKey: 'onboarding_step_market_title', textKey: 'onboarding_step_market_text' },
+      { view: 'basket', titleKey: 'onboarding_step_basket_title', textKey: 'onboarding_step_basket_text' },
+      { view: 'receipts', titleKey: 'onboarding_step_receipts_title', textKey: 'onboarding_step_receipts_text' },
+      { view: 'family', titleKey: 'onboarding_step_family_title', textKey: 'onboarding_step_family_text' },
+      { view: 'missions', titleKey: 'onboarding_step_missions_title', textKey: 'onboarding_step_missions_text' },
+      { view: 'plus', titleKey: 'onboarding_step_plus_title', textKey: 'onboarding_step_plus_text' }
     ];
 
     const modal = ensureOnboardingModal();
@@ -1203,14 +1325,17 @@
       const step = steps[stepIndex];
       if (!step) return;
 
-      if (titleEl) titleEl.textContent = `${step.title} (${stepIndex + 1}/${steps.length})`;
-      if (textEl) textEl.textContent = step.text;
+      if (titleEl) titleEl.textContent = `${t(step.titleKey)} (${stepIndex + 1}/${steps.length})`;
+      if (textEl) textEl.textContent = t(step.textKey);
       if (progressBar) {
         const pct = Math.round(((stepIndex + 1) / steps.length) * 100);
         progressBar.style.width = `${pct}%`;
       }
       if (prevBtn) prevBtn.disabled = stepIndex === 0;
-      if (nextBtn) nextBtn.textContent = stepIndex === steps.length - 1 ? 'Finish' : 'Next';
+      if (nextBtn) nextBtn.textContent = stepIndex === steps.length - 1 ? t('onboarding_finish') : t('onboarding_next');
+      if (skipBtn) skipBtn.textContent = t('onboarding_skip');
+      if (closeBtn) closeBtn.textContent = t('onboarding_close');
+      if (prevBtn) prevBtn.textContent = t('onboarding_back');
 
       if (typeof state.setView === 'function') {
         state.setView(step.view);
@@ -1237,7 +1362,7 @@
         return;
       }
       closeOnboarding(true);
-      showToast('Onboarding complete. Use Guide anytime.', 'success');
+      showToast(t('onboarding_complete'), 'success');
     });
 
     prevBtn?.addEventListener('click', () => {
@@ -1249,7 +1374,7 @@
 
     skipBtn?.addEventListener('click', () => {
       closeOnboarding(true);
-      showToast('Onboarding skipped. You can reopen with Guide.', 'info');
+      showToast(t('onboarding_skipped'), 'info');
     });
 
     closeBtn?.addEventListener('click', () => {
@@ -1359,7 +1484,7 @@
     if (!container) return;
 
     if (!rows || !rows.length) {
-      renderEmpty(container, 'No points events yet.');
+      renderEmpty(container, t('empty_points_events'));
       return;
     }
 
@@ -1386,7 +1511,7 @@
     if (!container) return;
 
     if (!profile) {
-      renderEmpty(container, 'Login to see profile data.');
+      renderEmpty(container, t('empty_profile'));
       return;
     }
 
@@ -1560,7 +1685,7 @@
 
     const query = input.value.trim();
     if (!query) {
-      renderEmpty(container, 'Type product name or barcode.');
+      renderEmpty(container, t('search_input_required'));
       return;
     }
 
@@ -1581,7 +1706,7 @@
 
       const rows = await apiRequest(`/products/compare?${params.toString()}`);
       if (!rows || !rows.length) {
-        renderEmpty(container, 'No matching products found.');
+        renderEmpty(container, t('search_no_match'));
         return;
       }
 
@@ -1662,7 +1787,7 @@
 
     if (!plan || !Array.isArray(plan.plan) || !plan.plan.length) {
       container.classList.add('muted');
-      container.textContent = 'No optimization plan available yet.';
+      container.textContent = t('empty_basket_plan');
       return;
     }
 
@@ -1757,12 +1882,12 @@
     input.addEventListener('change', () => {
       const file = input.files?.[0];
       if (!file) {
-        preview.textContent = 'Select a receipt photo to start.';
+        preview.textContent = t('scan_preview_text');
         return;
       }
       const url = URL.createObjectURL(file);
       preview.innerHTML = `<img src="${url}" alt="Receipt preview" class="preview-img" />`;
-      $('scanStatus').textContent = `Ready: ${file.name}`;
+      $('scanStatus').textContent = t('scan_ready', { file: file.name });
       setTimeout(() => URL.revokeObjectURL(url), 60000);
     });
   }
@@ -1770,7 +1895,7 @@
   async function pollReceiptUntilComplete(receiptId, maxAttempts = 14) {
     for (let i = 0; i < maxAttempts; i += 1) {
       const status = await apiRequest(`/receipts/${receiptId}/status`);
-      $('scanStatus').textContent = `Status: ${status.status} (${status.progress || 0}%)`;
+      $('scanStatus').textContent = t('scan_status', { status: status.status, progress: status.progress || 0 });
       if (['processed', 'finalized', 'needs_confirmation'].includes(status.status)) {
         return status;
       }
@@ -1784,7 +1909,7 @@
     if (!container) return;
 
     if (!report) {
-      renderEmpty(container, 'No report loaded.');
+      renderEmpty(container, t('empty_report'));
       return;
     }
 
@@ -1837,23 +1962,23 @@
     formData.append('file', file);
 
     try {
-      $('scanStatus').textContent = 'Uploading receipt...';
+      $('scanStatus').textContent = t('uploading_receipt');
       const upload = await apiRequest('/receipts/upload', {
         method: 'POST',
         formData
       });
       state.lastReceiptId = upload.receipt_id;
-      $('scanStatus').textContent = `Receipt uploaded: ${upload.receipt_id}`;
+      $('scanStatus').textContent = t('receipt_uploaded', { id: upload.receipt_id });
 
       const finalStatus = await pollReceiptUntilComplete(upload.receipt_id);
       if (!finalStatus) {
-        showToast('Still processing. Try refresh later.', 'info');
+        showToast(t('still_processing'), 'info');
         return;
       }
 
       const report = await apiRequest(`/receipts/${upload.receipt_id}/report`);
       renderReceiptReport(report);
-      showToast('Receipt analysis complete.', 'success');
+      showToast(t('receipt_analysis_complete'), 'success');
     } catch (error) {
       showToast(`Receipt failed: ${toApiErrorLabel(error)}`, 'error');
       $('scanStatus').textContent = `Failed: ${toApiErrorLabel(error)}`;
@@ -1953,7 +2078,7 @@
     if (!container) return;
 
     if (!lists || !lists.length) {
-      renderEmpty(container, 'No family lists found.');
+      renderEmpty(container, t('empty_family_lists'));
       return;
     }
 
@@ -2040,7 +2165,7 @@
 
     const events = payload?.events || [];
     if (!events.length) {
-      renderEmpty(container, 'No new family events.');
+      renderEmpty(container, t('empty_family_events'));
       return;
     }
 
@@ -2080,7 +2205,7 @@
     if (!container) return;
 
     if (!missions || !missions.length) {
-      renderEmpty(container, 'No missions nearby.');
+      renderEmpty(container, t('empty_missions'));
       return;
     }
 
@@ -2207,7 +2332,7 @@
     if (!container) return;
 
     if (!data) {
-      renderEmpty(container, 'No proof selected.');
+      renderEmpty(container, t('empty_proof'));
       return;
     }
 
@@ -2249,7 +2374,7 @@
     if (!container) return;
 
     if (!rows || !rows.length) {
-      renderEmpty(container, 'No leaderboard data yet.');
+      renderEmpty(container, t('empty_leaderboard'));
       return;
     }
 
@@ -2304,7 +2429,7 @@
     if (!container) return;
 
     if (!rows || !rows.length) {
-      renderEmpty(container, 'No plus features available.');
+      renderEmpty(container, t('empty_plus_features'));
       return;
     }
 
@@ -2338,7 +2463,7 @@
     if (!container) return;
 
     if (!rows || !rows.length) {
-      renderEmpty(container, 'No active plus entitlements.');
+      renderEmpty(container, t('empty_plus_status'));
       return;
     }
 
@@ -2398,7 +2523,7 @@
     if (!container) return;
 
     if (!rows || !rows.length) {
-      renderEmpty(container, 'No premium insights loaded yet.');
+      renderEmpty(container, t('empty_premium'));
       return;
     }
 
@@ -2451,7 +2576,7 @@
     if (!container) return;
 
     if (!rows || !rows.length) {
-      renderEmpty(container, 'No kids missions available.');
+      renderEmpty(container, t('empty_kids_missions'));
       return;
     }
 
@@ -2568,12 +2693,12 @@
   async function loadRankCatalog() {
     const container = $('rankCatalog');
     if (!container) return;
-    setLoading(container, 'Loading rank catalog...');
+    setLoading(container, t('loading_ranks'));
 
     try {
       const ranks = await apiRequest('/ranks');
       if (!ranks || !ranks.length) {
-        renderEmpty(container, 'No rank levels configured.');
+        renderEmpty(container, t('no_rank_levels'));
         return;
       }
 
@@ -2620,7 +2745,7 @@
 
       if (target.dataset.action === 'use') {
         $('missionIdInput').value = missionId;
-        showToast(`Mission ${missionId} selected for submit.`, 'info');
+        showToast(t('mission_selected_for_submit', { id: missionId }), 'info');
       }
     });
   }
