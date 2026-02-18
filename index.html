@@ -8,10 +8,13 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="PRICELIO" />
+    <meta name="color-scheme" content="light" />
     <title>PRICELIO – Smart Grocery Price Intelligence</title>
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
     <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="assets/icon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet" />
@@ -47,6 +50,12 @@
       <!-- Hero -->
       <div class="landing-hero">
         <div class="landing-copy reveal">
+          <!-- Launch badge -->
+          <div class="hero-launch-badge" aria-label="Launch status">
+            <span class="hero-badge-dot"></span>
+            <span data-i18n="hero_launch_badge">🇱🇹 Lietuva · Startuojame 2026</span>
+          </div>
+
           <h2 data-i18n="landing_headline">Nustok permokėti už maistą ir kasdienes prekes.</h2>
           <p data-i18n="landing_subline">Įkelk čekį, palygink kainas aplink save ir per kelias sekundes sužinok, kur pirkti pigiau.</p>
 
@@ -274,16 +283,16 @@
       <section id="deviceCapabilityNotice" class="device-notice"></section>
 
       <nav class="view-nav" aria-label="Views">
-        <button class="nav-btn active" data-view="overview"    data-i18n="nav_overview">Overview</button>
-        <button class="nav-btn"        data-view="market"      data-i18n="nav_market">Market</button>
-        <button class="nav-btn"        data-view="basket"      data-i18n="nav_basket">Basket</button>
-        <button class="nav-btn"        data-view="receipts"    data-i18n="nav_receipts">Receipts</button>
-        <button class="nav-btn"        data-view="family"      data-i18n="nav_family">Family</button>
-        <button class="nav-btn"        data-view="missions"    data-i18n="nav_missions">Missions</button>
-        <button class="nav-btn"        data-view="leaderboard" data-i18n="nav_leaderboard">Leaderboard</button>
-        <button class="nav-btn"        data-view="plus"        data-i18n="nav_plus">Plus</button>
-        <button class="nav-btn"        data-view="kids"        data-i18n="nav_kids">Kids</button>
-        <button class="nav-btn"        data-view="profile"     data-i18n="nav_profile">Profile</button>
+        <button class="nav-btn active" data-view="overview"    data-nav-icon="🏠" data-i18n="nav_overview">Overview</button>
+        <button class="nav-btn"        data-view="market"      data-nav-icon="🗺️" data-i18n="nav_market">Market</button>
+        <button class="nav-btn"        data-view="basket"      data-nav-icon="🛒" data-i18n="nav_basket">Basket</button>
+        <button class="nav-btn"        data-view="receipts"    data-nav-icon="🧾" data-i18n="nav_receipts">Receipts</button>
+        <button class="nav-btn"        data-view="family"      data-nav-icon="👨‍👩‍👧" data-i18n="nav_family">Family</button>
+        <button class="nav-btn"        data-view="missions"    data-nav-icon="🎯" data-i18n="nav_missions">Missions</button>
+        <button class="nav-btn"        data-view="leaderboard" data-nav-icon="🏆" data-i18n="nav_leaderboard">Leaderboard</button>
+        <button class="nav-btn"        data-view="plus"        data-nav-icon="⭐" data-i18n="nav_plus">Plus</button>
+        <button class="nav-btn"        data-view="kids"        data-nav-icon="👶" data-i18n="nav_kids">Kids</button>
+        <button class="nav-btn"        data-view="profile"     data-nav-icon="👤" data-i18n="nav_profile">Profile</button>
       </nav>
 
       <main class="content">
@@ -851,6 +860,29 @@
         </section>
 
       </main>
+      <!-- Mobile bottom navigation (5 key tabs) -->
+      <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="Mobile navigation">
+        <button class="mbn-btn nav-btn" data-view="overview" type="button">
+          <span class="mbn-icon">🏠</span>
+          <span class="mbn-label" data-i18n="nav_overview">Home</span>
+        </button>
+        <button class="mbn-btn nav-btn" data-view="receipts" type="button">
+          <span class="mbn-icon">🧾</span>
+          <span class="mbn-label" data-i18n="nav_receipts">Receipts</span>
+        </button>
+        <button class="mbn-btn nav-btn" data-view="basket" type="button">
+          <span class="mbn-icon">🛒</span>
+          <span class="mbn-label" data-i18n="nav_basket">Basket</span>
+        </button>
+        <button class="mbn-btn nav-btn" data-view="missions" type="button">
+          <span class="mbn-icon">🎯</span>
+          <span class="mbn-label" data-i18n="nav_missions">Missions</span>
+        </button>
+        <button class="mbn-btn nav-btn" data-view="profile" type="button">
+          <span class="mbn-icon">👤</span>
+          <span class="mbn-label" data-i18n="nav_profile">Profile</span>
+        </button>
+      </nav>
     </div><!-- /appShell -->
 
     <div id="toastRoot" class="toast-root" role="region" aria-live="polite" aria-label="Notifications"></div>

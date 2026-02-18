@@ -20,7 +20,8 @@
   const TRANSLATIONS = {
     en: {
       brand_name: 'PRICELIO',
-      brand_tagline: 'Don’t know if it’s cheaper elsewhere? PRICELIO shows it instantly.',
+      brand_tagline: 'Don't know if it's cheaper elsewhere? PRICELIO shows it instantly.',
+      hero_launch_badge: '🇱🇹 Lithuania · Launching 2026',
       guest_mode: 'Guest mode',
       home_btn: 'Home',
       refresh: 'Refresh',
@@ -289,6 +290,7 @@
     lt: {
       brand_name: 'PRICELIO',
       brand_tagline: 'Nežinai, ar kitur pigiau? PRICELIO parodo iškart.',
+      hero_launch_badge: '🇱🇹 Lietuva · Startuojame 2026',
       guest_mode: 'Svečio režimas',
       home_btn: 'Pradžia',
       refresh: 'Atnaujinti',
@@ -1014,8 +1016,22 @@
     $('startExperienceSecondaryBtn')?.addEventListener('click', () => openTry(true));
     $('startExperienceLoginBtn')?.addEventListener('click', () => openTry(true));
     $('startExperienceFinalBtn')?.addEventListener('click', () => openTry(true));
+    // Mobile sticky CTA bar buttons
+    $('mobileTryBtn')?.addEventListener('click', () => openTry(true));
+    $('mobileLoginBtn')?.addEventListener('click', () => openTry(true));
     $('backToLandingBtn')?.addEventListener('click', () => returnToLanding());
     setExperienceMode('landing');
+
+    // Scroll progress bar
+    const progress = $('scrollProgress');
+    if (progress) {
+      window.addEventListener('scroll', () => {
+        const scrollTop = window.scrollY;
+        const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const pct = docHeight > 0 ? Math.min(scrollTop / docHeight, 1) : 0;
+        progress.style.transform = `scaleX(${pct})`;
+      }, { passive: true });
+    }
   }
 
   function formatNumber(value, fallback = '-') {
@@ -1302,19 +1318,31 @@
     view.classList.add('view-enter');
   }
 
-  function renderEmpty(container, message) {
+  function renderEmpty(container, message, icon = '📭') {
     if (!container) return;
-    container.innerHTML = `<div class="empty">${sanitize(message)}</div>`;
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">${icon}</div>
+        <p class="empty-msg">${sanitize(message)}</p>
+      </div>`;
   }
 
   function renderError(container, message) {
     if (!container) return;
-    container.innerHTML = `<div class="error-box">${sanitize(message)}</div>`;
+    container.innerHTML = `
+      <div class="error-box">
+        <span class="error-icon">⚠️</span>
+        <span>${sanitize(message)}</span>
+      </div>`;
   }
 
-  function setLoading(container, message = 'Loading...') {
+  function setLoading(container, message = 'Loading…') {
     if (!container) return;
-    container.innerHTML = `<div class="loading">${sanitize(message)}</div>`;
+    container.innerHTML = `
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <span>${sanitize(message)}</span>
+      </div>`;
   }
 
   function toApiErrorLabel(error) {
@@ -1635,16 +1663,35 @@
     if (!container) return;
 
     if (!profile) {
-      renderEmpty(container, t('empty_profile'));
+      renderEmpty(container, t('empty_profile'), '👤');
       return;
     }
 
+    const avatarLetter = (profile.email || 'U')[0].toUpperCase();
+    const statusClass  = profile.status === 'active' ? 'pf-status--active' : 'pf-status--suspended';
+
     container.innerHTML = `
-      <div class="line-item compact"><span>User ID</span><strong>${sanitize(profile.id || '-')}</strong></div>
-      <div class="line-item compact"><span>Email</span><strong>${sanitize(profile.email || '-')}</strong></div>
-      <div class="line-item compact"><span>Status</span><strong>${sanitize(profile.status || 'active')}</strong></div>
-      <div class="line-item compact"><span>Created</span><strong>${formatDate(profile.created_at)}</strong></div>
-      <div class="line-item compact"><span>Last login</span><strong>${formatDate(profile.last_login_at)}</strong></div>
+      <div class="profile-hero">
+        <div class="profile-avatar">${sanitize(avatarLetter)}</div>
+        <div>
+          <strong class="profile-email">${sanitize(profile.email || '-')}</strong>
+          <span class="muted small profile-id">ID: ${sanitize(String(profile.id || '-'))}</span>
+        </div>
+      </div>
+      <div class="list compact" style="margin-top:0.75rem">
+        <div class="line-item compact">
+          <span>Status</span>
+          <span class="pf-status ${statusClass}">${sanitize(profile.status || 'active')}</span>
+        </div>
+        <div class="line-item compact">
+          <span>Member since</span>
+          <strong>${formatDate(profile.created_at)}</strong>
+        </div>
+        <div class="line-item compact">
+          <span>Last login</span>
+          <strong>${formatDate(profile.last_login_at)}</strong>
+        </div>
+      </div>
     `;
   }
 
@@ -1937,13 +1984,17 @@
 
     container.classList.remove('muted');
     container.innerHTML = `
-      <div class="line-item">
-        <span>Total</span>
-        <strong>${formatMoney(plan.total_price)}</strong>
-      </div>
-      <div class="line-item">
-        <span>Potential save</span>
-        <strong class="positive">${formatMoney(plan.savings_eur || 0)}</strong>
+      <div class="plan-summary-hero">
+        <div class="plan-summary-item">
+          <span class="muted small">Total cost</span>
+          <strong class="plan-total">${formatMoney(plan.total_price)}</strong>
+        </div>
+        ${plan.savings_eur > 0 ? `
+          <div class="plan-summary-item plan-savings">
+            <span class="muted small">You save</span>
+            <strong class="positive plan-save-amount">-${formatMoney(plan.savings_eur)}</strong>
+          </div>
+        ` : ''}
       </div>
       ${stores}
     `;
@@ -2478,24 +2529,32 @@
     if (!container) return;
 
     if (!missions || !missions.length) {
-      renderEmpty(container, t('empty_missions'));
+      renderEmpty(container, t('empty_missions'), '🎯');
       return;
     }
 
+    const typeIcon = (type = '') => {
+      const map = { price_check: '💰', photo_proof: '📷', verify: '✅', barcode: '📊' };
+      return map[type.toLowerCase()] || '🎯';
+    };
+
     container.innerHTML = missions.map((mission) => `
       <div class="mission-card" data-mission-id="${sanitize(mission.id)}">
-        <div class="line-item">
-          <strong>${sanitize(mission.title || 'Mission')}</strong>
-          <span class="chip-static">+${formatNumber(mission.reward_points || 0)} pts</span>
+        <div class="mc-header">
+          <span class="mc-type-icon">${typeIcon(mission.mission_type)}</span>
+          <div class="mc-meta">
+            <strong class="mc-title">${sanitize(mission.title || 'Mission')}</strong>
+            ${mission.store_chain ? `<span class="mc-store muted small">📍 ${sanitize(mission.store_chain)}</span>` : ''}
+          </div>
+          <span class="mc-xp">+${formatNumber(mission.reward_points || 0)} XP</span>
         </div>
-        <div class="muted small">${sanitize(mission.description || '')}</div>
-        <div class="line-item compact">
-          <span>${sanitize(mission.store_chain || 'Store')}</span>
-          <span>Status: ${sanitize(mission.status || 'open')}</span>
-        </div>
-        <div class="row">
-          <button class="btn btn-ghost btn-small" data-action="start">Start</button>
-          <button class="btn btn-small" data-action="use">Use For Submit</button>
+        ${mission.description ? `<p class="mc-desc muted small">${sanitize(mission.description)}</p>` : ''}
+        <div class="mc-footer">
+          <span class="mc-status mc-status--${sanitize(mission.status || 'open')}">${sanitize(mission.status || 'open')}</span>
+          <div class="row">
+            <button class="btn btn-ghost btn-small" data-action="start">Start</button>
+            <button class="btn btn-small" data-action="use">Use for Submit</button>
+          </div>
         </div>
       </div>
     `).join('');
@@ -2647,33 +2706,45 @@
     if (!container) return;
 
     if (!rows || !rows.length) {
-      renderEmpty(container, t('empty_leaderboard'));
+      renderEmpty(container, t('empty_leaderboard'), '🏆');
       return;
     }
 
+    const podium = rows.slice(0, 3);
+    const rest   = rows.slice(3);
+    const medals = ['🥇', '🥈', '🥉'];
+
     container.innerHTML = `
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>User</th>
-            <th>Rank</th>
-            <th>XP</th>
-            <th>Points</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows.map((row) => `
-            <tr>
-              <td>${formatNumber(row.position || 0)}</td>
-              <td>${sanitize(row.email_masked || row.user_id || '-')}</td>
-              <td>${sanitize(row.rank_name || '-')}</td>
-              <td>${formatNumber(row.lifetime_xp || 0)}</td>
-              <td>${formatNumber(row.spendable_points || 0)}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
+      <div class="lb-podium">
+        ${podium.map((row, i) => `
+          <div class="lb-podium-item lb-podium-${i + 1}">
+            <div class="lb-medal">${medals[i]}</div>
+            <div class="lb-name">${sanitize(row.email_masked || row.user_id || '-')}</div>
+            <div class="lb-xp">${formatNumber(row.lifetime_xp || 0)} XP</div>
+            ${row.rank_name ? `<div class="lb-rank-name muted small">${sanitize(row.rank_name)}</div>` : ''}
+          </div>
+        `).join('')}
+      </div>
+      ${rest.length ? `
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr><th>#</th><th>User</th><th>Rank</th><th>XP</th><th>Points</th></tr>
+            </thead>
+            <tbody>
+              ${rest.map((row) => `
+                <tr>
+                  <td class="lb-pos">${formatNumber(row.position || 0)}</td>
+                  <td>${sanitize(row.email_masked || row.user_id || '-')}</td>
+                  <td>${sanitize(row.rank_name || '-')}</td>
+                  <td><strong>${formatNumber(row.lifetime_xp || 0)}</strong></td>
+                  <td>${formatNumber(row.spendable_points || 0)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      ` : ''}
     `;
   }
 
@@ -2721,12 +2792,13 @@
     });
 
     container.innerHTML = Object.entries(grouped).map(([code, plan]) => `
-      <div class="plus-card">
-        <div class="line-item">
-          <strong>${sanitize(plan.plan_name || code)}</strong>
-          <span>${formatMoney(plan.price_eur)} / ${formatNumber(plan.billing_days)}d</span>
-        </div>
-        ${plan.features.map((feature) => `<div class="line-item compact"><span>${sanitize(feature)}</span><strong>included</strong></div>`).join('')}
+      <div class="plus-features-list">
+        ${plan.features.map((feature) => `
+          <div class="plus-feature-row">
+            <span class="plus-check">✓</span>
+            <span>${sanitize(feature.replace(/_/g, ' '))}</span>
+          </div>
+        `).join('')}
       </div>
     `).join('');
   }
@@ -3105,6 +3177,38 @@
     bindReceiptPreview();
   }
 
+  function initScrollReveal() {
+    // Gate opacity:0 on body.js-reveal — without this class everything is
+    // visible by default, so Safari/slow-JS users never see a blank page.
+    document.body.classList.add('js-reveal');
+
+    const revealEls = Array.from(document.querySelectorAll('.reveal'));
+    if (!revealEls.length) return;
+
+    const revealAll = () => revealEls.forEach(el => el.classList.add('visible'));
+
+    if (!('IntersectionObserver' in window)) {
+      revealAll();
+      return;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    // Generous rootMargin so top-of-viewport elements always fire on iOS Safari
+    }, { threshold: 0.02, rootMargin: '60px 0px 0px 0px' });
+
+    revealEls.forEach(el => observer.observe(el));
+
+    // Hard fallback: 750 ms after boot make everything visible.
+    // Covers iOS Safari 14/15 where IntersectionObserver misses initial viewport.
+    setTimeout(revealAll, 750);
+  }
+
   async function boot() {
     state.device = detectDevice();
     bindNavigation();
@@ -3113,6 +3217,7 @@
     setupWaitlistModal();
     applyDeviceNotice();
     setupDeviceWatcher();
+    initScrollReveal();
     bindControls();
     renderAuthState();
 
@@ -3134,7 +3239,7 @@
     renderGamification(null);
 
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js?v=20260218-1').catch(() => {});
+      navigator.serviceWorker.register('service-worker.js?v=20260218-2').catch(() => {});
     }
   }
 
