@@ -530,6 +530,11 @@
 
     const { protocol, hostname, port, origin } = window.location;
     const isHttp = protocol === 'http:' || protocol === 'https:';
+
+    if (hostname === 'pricelio.app' || hostname === 'www.pricelio.app') {
+      return 'https://api.pricelio.app';
+    }
+
     const isLikelyStaticDevPort = port === '8000' || port === '8080' || port === '4173' || port === '5173';
     if (isHttp && isLikelyStaticDevPort) {
       const scheme = protocol === 'https:' ? 'https' : 'http';

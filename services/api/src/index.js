@@ -29,7 +29,16 @@ const ecosystem = require('./ecosystem');
 const app = express();
 const port = process.env.PORT || 3000;
 
-app.use(cors());
+app.use(cors({
+  origin: [
+    'https://pricelio.app',
+    'https://www.pricelio.app',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+    `http://38.242.217.82:8000`
+  ],
+  credentials: true
+}));
 app.use(express.json());
 
 const nowIso = () => new Date().toISOString();
