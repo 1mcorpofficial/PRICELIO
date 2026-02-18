@@ -51,14 +51,14 @@
               <div class="auth-grid">
                 <form id="registerForm" class="stack">
                   <h3>Create account</h3>
-                  <input type="email" id="registerEmail" placeholder="email@example.com" required />
-                  <input type="password" id="registerPassword" placeholder="password (min 8)" required />
+                  <input type="email" id="registerEmail" placeholder="email@example.com" autocomplete="email" required />
+                  <input type="password" id="registerPassword" placeholder="password (min 8)" autocomplete="new-password" required />
                   <button class="btn" type="submit">Register</button>
                 </form>
                 <form id="loginForm" class="stack">
                   <h3>Login</h3>
-                  <input type="email" id="loginEmail" placeholder="email@example.com" required />
-                  <input type="password" id="loginPassword" placeholder="password" required />
+                  <input type="email" id="loginEmail" placeholder="email@example.com" autocomplete="email" required />
+                  <input type="password" id="loginPassword" placeholder="password" autocomplete="current-password" required />
                   <div class="row">
                     <button class="btn" type="submit">Login</button>
                     <button class="btn btn-ghost" id="logoutBtn" type="button">Logout</button>
@@ -281,19 +281,19 @@
           <div class="grid two">
             <article class="panel">
               <h2>Kids mode (parent controlled)</h2>
-              <div class="stack">
+              <form id="kidsActivateForm" class="stack">
                 <input id="kidDisplayName" placeholder="Kid display name" />
                 <select id="kidAgeGroup">
                   <option value="4-8">4-8</option>
                   <option value="9-12">9-12</option>
                 </select>
-                <input id="kidParentPin" placeholder="Parent PIN" type="password" />
-                <button id="activateKidsBtn" class="btn">Activate Kids Mode</button>
-              </div>
-              <div class="row">
+                <input id="kidParentPin" placeholder="Parent PIN" type="password" autocomplete="current-password" />
+                <button id="activateKidsBtn" class="btn" type="submit">Activate Kids Mode</button>
+              </form>
+              <form id="kidsDeactivateForm" class="row">
                 <input id="kidsSessionId" placeholder="Kids session ID" />
-                <button id="deactivateKidsBtn" class="btn btn-ghost">Deactivate</button>
-              </div>
+                <button id="deactivateKidsBtn" class="btn btn-ghost" type="submit">Deactivate</button>
+              </form>
             </article>
             <article class="panel">
               <h2>Kids missions</h2>

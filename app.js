@@ -40,11 +40,26 @@
     setView: null
   };
 
-  const API_BASE = window.PRICELIO_API ||
-    window.RECEIPT_RADAR_API ||
-    ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-      ? 'http://localhost:3000'
-      : window.location.origin);
+  function resolveApiBase() {
+    if (window.PRICELIO_API) return window.PRICELIO_API;
+    if (window.RECEIPT_RADAR_API) return window.RECEIPT_RADAR_API;
+
+    const { protocol, hostname, port, origin } = window.location;
+    const isHttp = protocol === 'http:' || protocol === 'https:';
+    const isLikelyStaticDevPort = port === '8000' || port === '8080' || port === '4173' || port === '5173';
+    if (isHttp && isLikelyStaticDevPort) {
+      const scheme = protocol === 'https:' ? 'https' : 'http';
+      return `${scheme}://${hostname}:3000`;
+    }
+
+    if (isHttp && (hostname === 'localhost' || hostname === '127.0.0.1')) {
+      return 'http://localhost:3000';
+    }
+
+    return origin;
+  }
+
+  const API_BASE = resolveApiBase();
 
   class ApiError extends Error {
     constructor(message, status = 0, data = null) {
@@ -1951,8 +1966,14 @@
     $('runTimeMachineBtn')?.addEventListener('click', () => { runTimeMachine().catch(() => {}); });
     $('loadAdvancedAnalyticsBtn')?.addEventListener('click', () => { loadAdvancedAnalytics().catch(() => {}); });
 
-    $('activateKidsBtn')?.addEventListener('click', () => { activateKidsMode().catch(() => {}); });
-    $('deactivateKidsBtn')?.addEventListener('click', () => { deactivateKidsMode().catch(() => {}); });
+    $('kidsActivateForm')?.addEventListener('submit', (event) => {
+      event.preventDefault();
+      activateKidsMode().catch(() => {});
+    });
+    $('kidsDeactivateForm')?.addEventListener('submit', (event) => {
+      event.preventDefault();
+      deactivateKidsMode().catch(() => {});
+    });
     $('loadKidsMissionsBtn')?.addEventListener('click', () => { loadKidsMissions().catch(() => {}); });
     $('submitKidsMissionBtn')?.addEventListener('click', () => { submitKidsMission().catch(() => {}); });
 
