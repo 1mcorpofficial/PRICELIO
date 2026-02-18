@@ -8,6 +8,8 @@ import '../../features/search/presentation/search_page.dart';
 import '../../features/map/presentation/map_page.dart';
 import '../../features/basket/presentation/basket_page.dart';
 import '../../features/profile/presentation/profile_page.dart';
+import '../../features/scanner/presentation/scanner_page.dart';
+import '../../features/kids/presentation/kids_page.dart';
 import '../api/api_client.dart';
 
 final _storage = const FlutterSecureStorage();
@@ -27,6 +29,8 @@ final appRouter = GoRouter(
   routes: [
     GoRoute(path: '/login',    builder: (_, __) => const LoginPage()),
     GoRoute(path: '/register', builder: (_, __) => const RegisterPage()),
+    GoRoute(path: '/scanner',  builder: (_, __) => const ScannerPage()),
+    GoRoute(path: '/kids',     builder: (_, __) => const KidsPage()),
     ShellRoute(
       builder: (context, state, child) => MainShell(child: child),
       routes: [

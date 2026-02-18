@@ -99,6 +99,33 @@ class _ProfilePageState extends State<ProfilePage> {
           ]),
 
           const SizedBox(height: 28),
+
+          // Kids Space shortcut
+          OutlinedButton.icon(
+            onPressed: () => context.go('/kids'),
+            icon: const Icon(Icons.child_care),
+            label: const Text('Vaikų erdvė'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.secondary,
+              side: const BorderSide(color: AppColors.secondary, width: 2),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Barcode scanner shortcut
+          OutlinedButton.icon(
+            onPressed: () => context.go('/scanner'),
+            icon: const Icon(Icons.qr_code_scanner),
+            label: const Text('Barkodų skaitytuvas'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+          const SizedBox(height: 12),
+
           ElevatedButton.icon(
             onPressed: _logout,
             icon: const Icon(Icons.logout),
