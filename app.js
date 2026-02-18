@@ -760,7 +760,11 @@
 
   function t(key, vars = {}) {
     const lang = state.language || 'en';
-    const source = TRANSLATIONS[lang]?.[key] ?? TRANSLATIONS.en?.[key] ?? key;
+    const source =
+      TRANSLATIONS[lang]?.[key] ??
+      TRANSLATIONS.lt?.[key] ??
+      TRANSLATIONS.en?.[key] ??
+      String(key).replace(/_/g, ' ');
     return String(source).replace(/\{(\w+)\}/g, (_, token) => String(vars[token] ?? ''));
   }
 
