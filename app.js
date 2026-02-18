@@ -20,7 +20,7 @@
   const TRANSLATIONS = {
     en: {
       brand_name: 'PRICELIO',
-      brand_tagline: 'Smart grocery price intelligence for Baltic shoppers.',
+      brand_tagline: 'Don’t know if it’s cheaper elsewhere? PRICELIO shows it instantly.',
       guest_mode: 'Guest mode',
       home_btn: 'Home',
       refresh: 'Refresh',
@@ -28,8 +28,8 @@
       try_now: 'Try now',
       go_login: 'Login',
       register_required_to_continue: 'Create an account or login to continue.',
-      landing_headline: 'Shop smarter. Know exactly where you overpay.',
-      landing_subline: 'Upload receipts, compare nearby prices, and choose the cheapest store next time.',
+      landing_headline: 'Stop overpaying for groceries and daily essentials.',
+      landing_subline: 'Upload receipts, compare nearby prices, and find where to buy cheaper in seconds.',
       landing_device_hint: 'Best full experience on phone: receipt scan, location-aware prices, missions.',
       landing_device_hint_desktop: 'Desktop is great for browsing. For scans and missions, use your phone.',
       landing_device_hint_mobile: 'You are on mobile, full PRICELIO flow is available.',
@@ -39,6 +39,12 @@
       landing_card2_text: 'Search “Twix” and see prices in nearby stores.',
       landing_card3_title: 'For family',
       landing_card3_text: 'Shared lists, invites and shopping coordination in one place.',
+      store_google_badge: 'Get it on Google Play',
+      store_apple_badge: 'Download on the App Store',
+      mockup_caption: 'You could save today',
+      mockup_alt_store: 'Cheapest store: Lidl',
+      mockup_basket: 'Basket plan',
+      mockup_ready: 'Ready',
       landing_problem_eyebrow: 'Problem',
       landing_problem_title: '“Could I buy this cheaper elsewhere?” costs money every single week.',
       landing_problem_text: 'Most people discover overpaying only after they get home. PRICELIO connects real receipt prices, flyer deals, and online offers so your next shopping trip is cheaper.',
@@ -257,7 +263,7 @@
     },
     lt: {
       brand_name: 'PRICELIO',
-      brand_tagline: 'Išmanus apsipirkimo kainų asistentas Baltijos šalims.',
+      brand_tagline: 'Nežinai, ar kitur pigiau? PRICELIO parodo iškart.',
       guest_mode: 'Svečio režimas',
       home_btn: 'Pradžia',
       refresh: 'Atnaujinti',
@@ -265,8 +271,8 @@
       try_now: 'Noriu išbandyti',
       go_login: 'Prisijungti',
       register_required_to_continue: 'Norėdami tęsti, susikurkite paskyrą arba prisijunkite.',
-      landing_headline: 'Pirk protingiau. Žinok, kur permoki.',
-      landing_subline: 'Įkelk čekius, palygink kainas aplink tave ir kitą kartą pirk pigiausiai.',
+      landing_headline: 'Nustok permokėti už maistą ir kasdienes prekes.',
+      landing_subline: 'Įkelk čekį, palygink kainas aplink save ir per kelias sekundes sužinok, kur pirkti pigiau.',
       landing_device_hint: 'Pilna patirtis telefone: čekių skenavimas, lokacija, misijos.',
       landing_device_hint_desktop: 'Kompiuteris puikiai tinka peržiūrai. Čekių skenavimui ir misijoms naudok telefoną.',
       landing_device_hint_mobile: 'Naudoji telefoną, pilna PRICELIO patirtis pasiekiama.',
@@ -276,6 +282,12 @@
       landing_card2_text: 'Įvesk „Twix“ ir matysi kainas aplinkinėse parduotuvėse.',
       landing_card3_title: 'Šeimai',
       landing_card3_text: 'Bendri sąrašai, pakvietimai ir pirkinių koordinacija vienoje vietoje.',
+      store_google_badge: 'Gauk per Google Play',
+      store_apple_badge: 'Atsisiųsk per App Store',
+      mockup_caption: 'Šiandien būtum sutaupęs',
+      mockup_alt_store: 'Pigiausia: Lidl',
+      mockup_basket: 'Krepšelio planas',
+      mockup_ready: 'Paruoštas',
       landing_problem_eyebrow: 'Problema',
       landing_problem_title: '„Ar kitur nebuvo pigiau?“ šis klausimas kainuoja pinigus kas savaitę.',
       landing_problem_text: 'Dauguma žmonių supranta, kad permokėjo, tik grįžę namo. PRICELIO sujungia realias čekių kainas, akcijų leidinius ir internetines kainas.',
@@ -890,6 +902,14 @@
     $('startExperienceSecondaryBtn')?.addEventListener('click', () => openTry(true));
     $('startExperienceLoginBtn')?.addEventListener('click', () => openTry(true));
     $('startExperienceFinalBtn')?.addEventListener('click', () => openTry(true));
+    $('storeGoogleBtn')?.addEventListener('click', (event) => {
+      event.preventDefault();
+      openTry(true);
+    });
+    $('storeAppleBtn')?.addEventListener('click', (event) => {
+      event.preventDefault();
+      openTry(true);
+    });
     $('backToLandingBtn')?.addEventListener('click', () => returnToLanding());
     setExperienceMode('landing');
   }
