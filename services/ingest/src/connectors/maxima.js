@@ -255,5 +255,6 @@ module.exports = {
   extract,
   normalize,
   publish,
-  run
+  run,
+  storeName: 'Maxima'
 };
