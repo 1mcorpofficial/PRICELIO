@@ -1,9 +1,9 @@
-const CACHE_NAME = 'pricelio-pwa-v6';
+const CACHE_NAME = 'pricelio-pwa-v8';
 const ASSETS = [
   '.',
   'index.html',
   'styles.css',
-  'app.js',
+  'app.js?v=20260219-2',
   'manifest.webmanifest',
   'assets/icon.svg',
   'assets/fonts/fonts.css',

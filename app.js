@@ -20,7 +20,7 @@
   const TRANSLATIONS = {
     en: {
       brand_name: 'PRICELIO',
-      brand_tagline: 'Don't know if it's cheaper elsewhere? PRICELIO shows it instantly.',
+      brand_tagline: "Don't know if it's cheaper elsewhere? PRICELIO shows it instantly.",
       hero_launch_badge: '🇱🇹 Lithuania · Launching 2026',
       ov_hero_title: 'Smart Grocery Intelligence',
       ov_hero_sub: 'Scan receipts · compare prices · save every week',
@@ -728,7 +728,7 @@
     const isHttp = protocol === 'http:' || protocol === 'https:';
 
     if (hostname === 'pricelio.app' || hostname === 'www.pricelio.app') {
-      return 'https://api.pricelio.app';
+      return '/api';
     }
 
     const isLikelyStaticDevPort = port === '8000' || port === '8080' || port === '4173' || port === '5173';
@@ -3290,7 +3290,7 @@
     renderGamification(null);
 
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js?v=20260218-3').catch(() => {});
+      navigator.serviceWorker.register('service-worker.js?v=20260219-2').catch(() => {});
     }
   }
 
