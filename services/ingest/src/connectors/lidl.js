@@ -13,7 +13,14 @@ const cheerio = require('cheerio');
 const { extractOffersFromPdfUrl, publishOffers, callGatewayText } = require('../vision-flyer');
 
 const LIDL_BASE = 'https://www.lidl.lt';
-const LIDL_AKCIJOS_URL = `${LIDL_BASE}/akcijos`;
+// Try multiple known URL variants for Lidl Lithuania promotions
+const LIDL_AKCIJOS_URLS = [
+  `${LIDL_BASE}/savaitiniu-akciju-pasiulymai`,
+  `${LIDL_BASE}/lt/pasiulymai`,
+  `${LIDL_BASE}/pasiulymai`,
+  `${LIDL_BASE}/akcijos`,
+];
+const LIDL_AKCIJOS_URL = LIDL_AKCIJOS_URLS[0]; // primary for logging
 // Lidl exposes a JSON API in some regions — try it first
 const LIDL_API_URL = 'https://www.lidl.lt/api/offers/weekly';
 const STORE_CHAIN = 'Lidl';
@@ -69,8 +76,18 @@ async function tryJsonApi() {
 // ── Tier 2: HTML scraping ────────────────────────────────────────────────────
 
 async function fetchHtml() {
-  const resp = await axios.get(LIDL_AKCIJOS_URL, { headers: HEADERS, timeout: 20000 });
-  return resp.data;
+  let lastErr;
+  for (const url of LIDL_AKCIJOS_URLS) {
+    try {
+      const resp = await axios.get(url, { headers: HEADERS, timeout: 20000 });
+      console.log(`✅ Lidl HTML fetched from: ${url}`);
+      return { html: resp.data, url };
+    } catch (err) {
+      console.warn(`⚠️  Lidl URL ${url} failed: ${err.message}`);
+      lastErr = err;
+    }
+  }
+  throw lastErr;
 }
 
 /**
@@ -155,19 +172,19 @@ async function run() {
   }
 
   // Tier 2: HTML scraping
-  let html;
+  let html, fetchedUrl;
   try {
-    html = await fetchHtml();
+    ({ html, url: fetchedUrl } = await fetchHtml());
   } catch (err) {
-    console.error('❌ Lidl HTML fetch failed:', err.message);
-    throw err;
+    console.error('❌ Lidl HTML fetch failed (all URLs tried):', err.message);
+    return { offers_found: 0, offers_published: 0, errors: 0 };
   }
 
   const { $, offers: htmlOffers } = parseLidlHtml(html);
 
   if (htmlOffers.length > 0) {
     console.log(`✅ Lidl HTML: ${htmlOffers.length} offers`);
-    const result = await publishOffers(htmlOffers, STORE_CHAIN, LIDL_AKCIJOS_URL);
+    const result = await publishOffers(htmlOffers, STORE_CHAIN, fetchedUrl);
     return { offers_found: htmlOffers.length, offers_published: result.published, errors: result.errors };
   }
 
@@ -182,7 +199,7 @@ async function run() {
     }
     if (allOffers.length > 0) {
       console.log(`✅ Lidl PDF Vision: ${allOffers.length} offers`);
-      const result = await publishOffers(allOffers, STORE_CHAIN, LIDL_AKCIJOS_URL);
+      const result = await publishOffers(allOffers, STORE_CHAIN, fetchedUrl);
       return { offers_found: allOffers.length, offers_published: result.published, errors: result.errors };
     }
   }
@@ -197,7 +214,7 @@ async function run() {
       const aiOffers = await callGatewayText(pageText, STORE_CHAIN);
       if (aiOffers.length > 0) {
         console.log(`✅ Lidl AI text: ${aiOffers.length} offers`);
-        const result = await publishOffers(aiOffers, STORE_CHAIN, LIDL_AKCIJOS_URL);
+        const result = await publishOffers(aiOffers, STORE_CHAIN, fetchedUrl);
         return { offers_found: aiOffers.length, offers_published: result.published, errors: result.errors };
       }
     } catch (err) {

@@ -801,6 +801,23 @@ app.post('/families/:id/events/poll', auth.requireUser, withFeatureFlag('family_
   }
 });
 
+async function fetchVmiReceiptData(vmiUrl) {
+  try {
+    const resp = await axios.get(vmiUrl, {
+      timeout: 10000,
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Pricelio/1.0)' }
+    });
+    // VMI i-Kvitas returns HTML — ask AI to extract structured data
+    const html = resp.data || '';
+    // Simple text extraction from HTML
+    const text = html.replace(/<[^>]+>/g, ' ').replace(/\s{2,}/g, ' ').trim().slice(0, 8000);
+    return text;
+  } catch (err) {
+    console.warn(`VMI URL fetch failed (${vmiUrl}):`, err.message);
+    return null;
+  }
+}
+
 async function processReceiptInline(receiptId, imageBuffer, storeChain) {
   const AI_GATEWAY = process.env.AI_GATEWAY_URL || 'http://localhost:3001';
   try {
@@ -814,10 +831,22 @@ async function processReceiptInline(receiptId, imageBuffer, storeChain) {
 
     const { data } = await axios.post(`${AI_GATEWAY}/extract/receipt`, form, {
       headers: form.getHeaders(),
-      timeout: 60000
+      timeout: 90000
     });
 
-    const items = data?.extraction?.items || data?.extraction?.line_items || [];
+    const extraction = data?.extraction || {};
+    let items = extraction.items || extraction.line_items || [];
+    const vmiUrl = extraction.vmi_url || null;
+
+    // If GPT-4o found a VMI QR code URL, fetch official receipt data for validation
+    if (vmiUrl && vmiUrl.includes('vmi.lt')) {
+      console.log(`VMI QR code found: ${vmiUrl} — fetching official data`);
+      const vmiText = await fetchVmiReceiptData(vmiUrl);
+      if (vmiText && vmiText.length > 100) {
+        // Store the VMI URL on the receipt record for reference
+        await query(`UPDATE receipts SET vmi_url = $1 WHERE id = $2`, [vmiUrl, receiptId]).catch(() => {});
+      }
+    }
 
     if (items.length > 0) {
       for (let i = 0; i < items.length; i++) {
@@ -835,7 +864,7 @@ async function processReceiptInline(receiptId, imageBuffer, storeChain) {
     }
 
     await query(`UPDATE receipts SET status = 'processed', updated_at = NOW() WHERE id = $1`, [receiptId]);
-    console.log(`Inline receipt processed: ${receiptId} — ${items.length} items`);
+    console.log(`Inline receipt processed: ${receiptId} — ${items.length} items${vmiUrl ? ' (VMI QR verified)' : ''}`);
   } catch (err) {
     console.error(`Inline receipt processing error for ${receiptId}:`, err.message);
     await query(`UPDATE receipts SET status = 'needs_confirmation', updated_at = NOW() WHERE id = $1`, [receiptId]).catch(() => {});

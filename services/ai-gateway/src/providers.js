@@ -32,26 +32,46 @@ async function extractWithOpenAI(imageBuffer, options = {}) {
   const base64Image = imageBuffer.toString('base64');
   const mimeType = 'image/jpeg';
 
-  const prompt = `You are a receipt OCR expert. Extract data from this grocery receipt image and return ONLY valid JSON, no other text.
+  const prompt = `You are a Lithuanian grocery receipt OCR expert. Extract ALL data from this receipt image and return ONLY valid JSON, no other text.
 
 JSON format:
 {
   "store_name": "string or null",
+  "store_address": "string or null",
   "receipt_date": "YYYY-MM-DD or null",
+  "receipt_time": "HH:MM or null",
+  "receipt_number": "string or null",
+  "cashier": "string or null",
   "line_items": [
-    {"raw_name": "product name exactly as on receipt", "quantity": 1, "unit_price": 0.00, "total_price": 0.00, "line_number": 1}
+    {
+      "raw_name": "product name exactly as on receipt",
+      "quantity": 1,
+      "unit_price": 0.00,
+      "total_price": 0.00,
+      "line_number": 1,
+      "barcode": "EAN barcode number if visible near item or null",
+      "discount": 0.00
+    }
   ],
+  "subtotal": 0.00,
   "total": 0.00,
+  "vat_amount": 0.00,
   "currency": "EUR",
+  "payment_method": "cash|card|mixed or null",
+  "vmi_url": "full URL from QR code if present (e.g. https://i.vmi.lt/...) or null",
+  "barcode_number": "main receipt barcode number if visible or null",
   "confidence": 0.9
 }
 
 Rules:
-- Extract ONLY items that appear as product purchases (skip subtotals, tax lines, loyalty points)
-- Preserve Lithuanian product names exactly as printed
-- quantity defaults to 1 if not shown
-- unit_price = total_price / quantity
-- confidence: 0.9 if image clear, 0.5 if blurry`;
+- LOOK CAREFULLY for a QR code on the receipt — read it and extract the full URL into vmi_url
+- Look for barcode numbers printed on the receipt
+- Extract EVERY product line item (including discounted items with negative prices)
+- Preserve Lithuanian product names exactly as printed (e.g. "PIENAS", "DUONA")
+- quantity defaults to 1 if not shown; for weighted items use kg as quantity
+- unit_price = price per unit/kg; total_price = what was charged for that line
+- Include discount lines as separate items if they show a discount amount
+- confidence: 0.95 if image is sharp and all text visible, 0.7 if partially obscured, 0.5 if blurry`;
 
   const startTime = Date.now();
 
@@ -72,20 +92,14 @@ Rules:
           ]
         }
       ],
-      max_tokens: 2000,
+      max_tokens: 4000,
       temperature: 0.1,
       response_format: { type: "json_object" }
     });
 
     const content = response.choices[0].message.content;
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    
-    if (!jsonMatch) {
-      throw new Error('No valid JSON found in response');
-    }
+    const data = JSON.parse(content);
 
-    const data = JSON.parse(jsonMatch[0]);
-    
     return {
       provider: 'openai',
       data,
@@ -295,7 +309,7 @@ Rules:
     const response = await openaiClient.chat.completions.create({
       model: 'gpt-4o',
       messages: [{ role: 'system', content: systemPrompt }, ...messages],
-      max_tokens: 4000,
+      max_tokens: 16000,
       temperature: 0.1,
       response_format: { type: 'json_object' }
     });
