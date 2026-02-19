@@ -222,7 +222,7 @@ async function publishOffers(offers, storeChain, sourceUrl) {
               price_value, old_price_value, discount_percent,
               valid_from, valid_to, source_url, status, fetched_at
             ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,NOW())
-            ON CONFLICT DO NOTHING`,
+            ON CONFLICT (product_id, store_chain, COALESCE(valid_from, '1970-01-01'), COALESCE(valid_to, '9999-12-31')) DO NOTHING`,
             [
               productId, 'flyer', store.id, storeChain, store.city_id,
               offer.price_value, offer.old_price_value, offer.discount_percent,

@@ -5,11 +5,14 @@ build/
 .next/
 coverage/
 
-# Env files (never commit)
+# Env files (never commit secrets)
 **/.env
 **/.env.*
 .env
 .env.*
+# But allow example templates
+!**/.env.example
+!.env.example
 
 # Logs
 *.log
