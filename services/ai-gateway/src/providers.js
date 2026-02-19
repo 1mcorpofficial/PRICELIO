@@ -32,43 +32,26 @@ async function extractWithOpenAI(imageBuffer, options = {}) {
   const base64Image = imageBuffer.toString('base64');
   const mimeType = 'image/jpeg';
 
-  const prompt = `You are a receipt extraction expert. Analyze this receipt image and extract ALL information in strict JSON format.
+  const prompt = `You are a receipt OCR expert. Extract data from this grocery receipt image and return ONLY valid JSON, no other text.
 
-Extract:
-1. Store name and location (if visible)
-2. Receipt date and time
-3. ALL line items with: product name, quantity, unit price, total price
-4. Subtotal, tax, and total amounts
-5. Payment method (if visible)
-
-Return ONLY valid JSON in this exact format:
+JSON format:
 {
   "store_name": "string or null",
-  "store_location": "string or null",
   "receipt_date": "YYYY-MM-DD or null",
-  "receipt_time": "HH:MM or null",
   "line_items": [
-    {
-      "raw_name": "exact product name from receipt",
-      "quantity": number,
-      "unit_price": number,
-      "total_price": number,
-      "line_number": number
-    }
+    {"raw_name": "product name exactly as on receipt", "quantity": 1, "unit_price": 0.00, "total_price": 0.00, "line_number": 1}
   ],
-  "subtotal": number or null,
-  "tax_total": number or null,
-  "total": number or null,
+  "total": 0.00,
   "currency": "EUR",
-  "confidence": 0.0 to 1.0
+  "confidence": 0.9
 }
 
-Important:
-- Extract EVERY product line, even if partially visible
-- Use null for missing values
-- Preserve exact product names as they appear
-- Return confidence score based on image quality
-- Use Lithuanian language understanding for product names`;
+Rules:
+- Extract ONLY items that appear as product purchases (skip subtotals, tax lines, loyalty points)
+- Preserve Lithuanian product names exactly as printed
+- quantity defaults to 1 if not shown
+- unit_price = total_price / quantity
+- confidence: 0.9 if image clear, 0.5 if blurry`;
 
   const startTime = Date.now();
 
@@ -90,7 +73,8 @@ Important:
         }
       ],
       max_tokens: 2000,
-      temperature: 0.1
+      temperature: 0.1,
+      response_format: { type: "json_object" }
     });
 
     const content = response.choices[0].message.content;

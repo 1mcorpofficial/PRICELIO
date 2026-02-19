@@ -7,6 +7,8 @@ const path = require('path');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const multer = require('multer');
+const FormData = require('form-data');
+const axios = require('axios');
 const { query } = require('./db');
 const {
   getStorePins,
@@ -28,6 +30,7 @@ const { optimizeSingleStore } = require('./optimizer');
 const ecosystem = require('./ecosystem');
 
 const app = express();
+app.set('trust proxy', 1); // trust nginx reverse proxy for rate limiting
 const port = process.env.PORT || 3000;
 
 const ALLOWED_ORIGINS = new Set([
@@ -402,7 +405,7 @@ app.get('/map/stores', async (req, res) => {
     if (cityId && uuidRegex.test(String(cityId))) {
       resolvedCityId = String(cityId);
     } else {
-      const defaultCity = (city || 'Vilnius').toString();
+      const defaultCity = (city || 'Kaunas').toString();
       const cityRow = await query(
         `SELECT id
          FROM cities
@@ -798,6 +801,47 @@ app.post('/families/:id/events/poll', auth.requireUser, withFeatureFlag('family_
   }
 });
 
+async function processReceiptInline(receiptId, imageBuffer, storeChain) {
+  const AI_GATEWAY = process.env.AI_GATEWAY_URL || 'http://localhost:3001';
+  try {
+    await query(`UPDATE receipts SET status = 'processing', updated_at = NOW() WHERE id = $1`, [receiptId]);
+
+    const form = new FormData();
+    form.append('image', imageBuffer, { filename: 'receipt.jpg', contentType: 'image/jpeg' });
+    if (storeChain) form.append('store_chain', storeChain);
+    form.append('strict_mode', 'false');
+    form.append('language', 'lt');
+
+    const { data } = await axios.post(`${AI_GATEWAY}/extract/receipt`, form, {
+      headers: form.getHeaders(),
+      timeout: 60000
+    });
+
+    const items = data?.extraction?.items || data?.extraction?.line_items || [];
+
+    if (items.length > 0) {
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const rawName = item.name || item.raw_name || item.product || 'Unknown';
+        const totalPrice = parseFloat(item.total_price || item.total || item.price || 0) || null;
+        const unitPrice = parseFloat(item.unit_price || item.price_per_unit || 0) || null;
+        const qty = parseFloat(item.quantity || item.qty || 1) || 1;
+        await query(
+          `INSERT INTO receipt_items (receipt_id, line_number, raw_name, quantity, unit_price, total_price, currency)
+           VALUES ($1, $2, $3, $4, $5, $6, 'EUR')`,
+          [receiptId, i + 1, rawName.slice(0, 500), qty, unitPrice, totalPrice]
+        );
+      }
+    }
+
+    await query(`UPDATE receipts SET status = 'processed', updated_at = NOW() WHERE id = $1`, [receiptId]);
+    console.log(`Inline receipt processed: ${receiptId} — ${items.length} items`);
+  } catch (err) {
+    console.error(`Inline receipt processing error for ${receiptId}:`, err.message);
+    await query(`UPDATE receipts SET status = 'needs_confirmation', updated_at = NOW() WHERE id = $1`, [receiptId]).catch(() => {});
+  }
+}
+
 app.post('/receipts/upload', auth.optionalAuthMiddleware, upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
@@ -847,20 +891,17 @@ app.post('/receipts/upload', auth.optionalAuthMiddleware, upload.single('file'),
 
     const hasPriority = userId ? await ecosystem.hasFeature(userId, 'priority_scan').catch(() => false) : false;
 
-    // If queue is down, mark the receipt so polling doesn't hang indefinitely
     if (!queuePublished) {
-      try {
-        await query(
-          `UPDATE receipts SET status = 'needs_confirmation', updated_at = NOW() WHERE id = $1`,
-          [receipt.id]
-        );
-      } catch (_) {}
+      // Inline processing: call AI gateway directly and don't wait for response
+      processReceiptInline(receipt.id, req.file.buffer, req.body.store_chain).catch((err) => {
+        console.error('Inline receipt processing failed:', err.message);
+      });
     }
 
     res.json({
       receipt_id: receipt.id,
-      status: receipt.status,
-      progress: statusToProgress(receipt.status),
+      status: queuePublished ? receipt.status : 'processing',
+      progress: queuePublished ? statusToProgress(receipt.status) : 10,
       processing_priority: hasPriority ? 'priority' : 'standard'
     });
   } catch (error) {

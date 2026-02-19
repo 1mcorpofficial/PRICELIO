@@ -34,12 +34,9 @@ function validateExtraction(data) {
     if (!item.raw_name || item.raw_name.trim().length < 2) {
       issues.push(`Line ${index + 1}: Invalid product name`);
     }
-    if (typeof item.total_price !== 'number' || item.total_price <= 0) {
-      issues.push(`Line ${index + 1}: Invalid price`);
-    }
   });
 
-  if (data.total !== null && data.total <= 0) {
+  if (data.total !== null && data.total !== undefined && data.total <= 0) {
     issues.push('Invalid total amount');
   }
 

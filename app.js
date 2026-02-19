@@ -701,7 +701,7 @@
       lat: null,
       lon: null,
       cityId: null,
-      city: 'Vilnius'
+      city: 'Kaunas'
     },
     activeBasketId: null,
     activeBasketItems: [],
