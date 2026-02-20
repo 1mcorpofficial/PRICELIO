@@ -144,6 +144,8 @@
       report_items_head: 'Receipt items',
       report_best_store: 'Best price at',
       report_ok_price: '✓ Good price',
+      receipt_feedback_bad_scan_btn: 'Not scanned correctly',
+      receipt_feedback_bad_scan_sent: 'Thanks. Marked for manual review.',
       overpaid_report_title: 'Overpaid report',
       family_household_title: 'Family household',
       create_family_btn: 'Create Family',
@@ -441,6 +443,8 @@
       report_items_head: 'Čekio pozicijos',
       report_best_store: 'Geriausia kaina',
       report_ok_price: '✓ Gera kaina',
+      receipt_feedback_bad_scan_btn: 'Nuskaityta neteisingai',
+      receipt_feedback_bad_scan_sent: 'Ačiū. Pažymėta rankinei peržiūrai.',
       overpaid_report_title: 'Permokėjimo ataskaita',
       family_household_title: 'Šeimos namų ūkis',
       create_family_btn: 'Sukurti šeimą',
@@ -2347,6 +2351,13 @@
         <div class="kpi kpi-green"><span>${t('budget_saved')}</span><strong>${formatMoney(savedVsAverage)}</strong></div>
       </div>
     `;
+    const feedbackActions = `
+      <div class="receipt-feedback-actions">
+        <button class="btn ghost" type="button" data-receipt-feedback-bad-scan="1">
+          ${t('receipt_feedback_bad_scan_btn')}
+        </button>
+      </div>
+    `;
 
     // Items
     const head = `<div class="report-items-head">${t('report_items_head')}</div>`;
@@ -2376,7 +2387,31 @@
             </div>`;
         }).join('');
 
-    container.innerHTML = summaryHtml + verBar + avgComparison + head + itemsHtml;
+    container.innerHTML = summaryHtml + verBar + avgComparison + feedbackActions + head + itemsHtml;
+  }
+
+  async function submitBadReceiptFeedback() {
+    const receiptId = state.lastReceiptId;
+    if (!receiptId) {
+      showToast('No receipt loaded yet.', 'warning');
+      return;
+    }
+
+    try {
+      await apiRequest(`/receipts/${encodeURIComponent(receiptId)}/feedback`, {
+        method: 'POST',
+        body: {
+          issue_type: 'incorrect_scan',
+          snapshot: {
+            from_view: state.currentView || null,
+            submitted_at: new Date().toISOString()
+          }
+        }
+      });
+      showToast(t('receipt_feedback_bad_scan_sent'), 'success');
+    } catch (error) {
+      showToast(`Feedback failed: ${toApiErrorLabel(error)}`, 'error');
+    }
   }
 
   async function analyzeReceipt() {
@@ -3401,6 +3436,12 @@
     $('optimizeBasketBtn')?.addEventListener('click', () => { optimizeBasket().catch(() => {}); });
 
     $('scanBtn')?.addEventListener('click', () => { analyzeReceipt().catch(() => {}); });
+    $('receiptReport')?.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      if (!target.closest('[data-receipt-feedback-bad-scan]')) return;
+      submitBadReceiptFeedback().catch(() => {});
+    });
 
     $('createFamilyBtn')?.addEventListener('click', () => { createFamily().catch(() => {}); });
     $('inviteFamilyBtn')?.addEventListener('click', () => { inviteFamilyMember().catch(() => {}); });

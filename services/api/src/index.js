@@ -28,7 +28,8 @@ const {
   getUserLoyaltyCards,
   upsertUserLoyaltyCard,
   deactivateUserLoyaltyCard,
-  getUserLoyaltyChains
+  getUserLoyaltyChains,
+  createReceiptScanFeedback
 } = require('./queries');
 const { publishReceiptJob } = require('./queue');
 const { optimizeSingleStore } = require('./optimizer');
@@ -1134,6 +1135,7 @@ app.get('/receipts/:id/report', auth.optionalAuthMiddleware, async (req, res) =>
     }
 
     res.json({
+      receipt_id: req.params.id,
       overpaid_items: report.items.filter((item) => item.savings_eur > 0),
       line_items: report.items,
       savings_total: report.savings_total,
@@ -1142,6 +1144,56 @@ app.get('/receipts/:id/report', auth.optionalAuthMiddleware, async (req, res) =>
     });
   } catch (error) {
     res.status(500).json({ error: 'receipt_report_unavailable' });
+  }
+});
+
+app.post('/receipts/:id/feedback', auth.optionalAuthMiddleware, async (req, res) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'login_required' });
+    }
+
+    const receiptId = req.params.id;
+    const receiptLookup = await query(
+      `SELECT id, user_id, status
+       FROM receipts
+       WHERE id = $1
+       LIMIT 1`,
+      [receiptId]
+    );
+
+    if (!receiptLookup.rows.length) {
+      return res.status(404).json({ error: 'receipt_not_found' });
+    }
+
+    const receipt = receiptLookup.rows[0];
+    if (!receipt.user_id || receipt.user_id !== req.user.id) {
+      return res.status(403).json({ error: 'receipt_access_denied' });
+    }
+
+    const issueType = String(req.body?.issue_type || 'incorrect_scan').trim().slice(0, 64) || 'incorrect_scan';
+    const details = req.body?.details ? String(req.body.details).slice(0, 1000) : null;
+    const snapshot = req.body?.snapshot && typeof req.body.snapshot === 'object' ? req.body.snapshot : null;
+
+    const feedback = await createReceiptScanFeedback(receiptId, req.user.id, {
+      issue_type: issueType,
+      details,
+      snapshot
+    });
+
+    await query(
+      `UPDATE receipts
+       SET status = 'needs_confirmation',
+           updated_at = NOW()
+       WHERE id = $1
+         AND status IN ('processed', 'finalized')`,
+      [receiptId]
+    );
+
+    return res.json({ ok: true, feedback_id: feedback.id, queued_manual_review: true });
+  } catch (error) {
+    console.error('Receipt feedback failed:', error);
+    return res.status(500).json({ error: 'receipt_feedback_failed' });
   }
 });
 

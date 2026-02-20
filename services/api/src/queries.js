@@ -2,6 +2,7 @@ const { query } = require('./db');
 const { computeWeightedTruthPrice } = require('./ecosystem-algorithms');
 
 let loyaltyTableEnsured = false;
+let receiptFeedbackTableEnsured = false;
 
 async function ensureLoyaltyCardsTable() {
   if (loyaltyTableEnsured) return;
@@ -20,6 +21,24 @@ async function ensureLoyaltyCardsTable() {
   await query(`CREATE INDEX IF NOT EXISTS user_loyalty_cards_user_idx ON user_loyalty_cards (user_id, is_active)`);
   await query(`CREATE INDEX IF NOT EXISTS user_loyalty_cards_chain_idx ON user_loyalty_cards (lower(store_chain))`);
   loyaltyTableEnsured = true;
+}
+
+async function ensureReceiptFeedbackTable() {
+  if (receiptFeedbackTableEnsured) return;
+  await query(
+    `CREATE TABLE IF NOT EXISTS receipt_scan_feedback (
+       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+       receipt_id uuid NOT NULL REFERENCES receipts(id) ON DELETE CASCADE,
+       user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+       issue_type text NOT NULL DEFAULT 'incorrect_scan',
+       details text,
+       snapshot jsonb,
+       created_at timestamptz NOT NULL DEFAULT now()
+     )`
+  );
+  await query(`CREATE INDEX IF NOT EXISTS receipt_scan_feedback_receipt_idx ON receipt_scan_feedback (receipt_id, created_at DESC)`);
+  await query(`CREATE INDEX IF NOT EXISTS receipt_scan_feedback_user_idx ON receipt_scan_feedback (user_id, created_at DESC)`);
+  receiptFeedbackTableEnsured = true;
 }
 
 async function getStorePins(filters = {}) {
@@ -768,6 +787,20 @@ async function deactivateUserLoyaltyCard(userId, loyaltyCardId) {
   return result.rows.length > 0;
 }
 
+async function createReceiptScanFeedback(receiptId, userId, payload = {}) {
+  await ensureReceiptFeedbackTable();
+  const issueType = String(payload.issue_type || 'incorrect_scan').trim().slice(0, 64) || 'incorrect_scan';
+  const details = payload.details ? String(payload.details).trim().slice(0, 1000) : null;
+  const snapshot = payload.snapshot || null;
+  const result = await query(
+    `INSERT INTO receipt_scan_feedback (receipt_id, user_id, issue_type, details, snapshot)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING id, receipt_id, user_id, issue_type, details, created_at`,
+    [receiptId, userId, issueType, details, snapshot]
+  );
+  return result.rows[0];
+}
+
 module.exports = {
   getStorePins,
   getStoreDetail,
@@ -786,5 +819,6 @@ module.exports = {
   getUserLoyaltyCards,
   upsertUserLoyaltyCard,
   deactivateUserLoyaltyCard,
-  getUserLoyaltyChains
+  getUserLoyaltyChains,
+  createReceiptScanFeedback
 };

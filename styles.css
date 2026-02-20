@@ -1358,6 +1358,27 @@ textarea { resize: vertical; min-height: 110px; }
   text-align: right;
 }
 
+.receipt-feedback-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 0.85rem;
+}
+
+.receipt-feedback-actions .btn {
+  border: 1px solid var(--ink-200);
+  background: #fff;
+  color: var(--ink-700);
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0.4rem 0.8rem;
+}
+
+.receipt-feedback-actions .btn:hover {
+  border-color: var(--danger-300);
+  color: var(--danger-700);
+  background: #fff8f8;
+}
+
 /* Items list */
 .report-items-head {
   font-size: 0.78rem;
