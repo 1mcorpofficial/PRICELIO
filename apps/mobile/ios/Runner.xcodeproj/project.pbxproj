@@ -239,7 +239,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" embed_and_thin";
+			shellScript = "set -e\nif [ -z \"$FLUTTER_ROOT\" ]; then\n  FLUTTER_ROOT=\"$(flutter --version --machine 2>/dev/null | sed -n 's/.*\"flutterRoot\":\"\\([^\"]*\\)\".*/\\1/p')\"\nfi\nif [ -z \"$FLUTTER_ROOT\" ] || [ ! -x \"$FLUTTER_ROOT/bin/flutter\" ]; then\n  FLUTTER_ROOT=\"$(dirname \"$(dirname \"$(command -v flutter)\")\")\"\nfi\n/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" embed_and_thin";
 		};
 		9740EEB61CF901F6004384FC /* Run Script */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -254,7 +254,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" build";
+			shellScript = "set -e\nif [ -z \"$FLUTTER_ROOT\" ]; then\n  FLUTTER_ROOT=\"$(flutter --version --machine 2>/dev/null | sed -n 's/.*\"flutterRoot\":\"\\([^\"]*\\)\".*/\\1/p')\"\nfi\nif [ -z \"$FLUTTER_ROOT\" ] || [ ! -x \"$FLUTTER_ROOT/bin/flutter\" ]; then\n  FLUTTER_ROOT=\"$(dirname \"$(dirname \"$(command -v flutter)\")\")\"\nfi\nif [ -z \"$FLUTTER_APPLICATION_PATH\" ]; then\n  FLUTTER_APPLICATION_PATH=\"${SRCROOT}/..\"\nfi\nif [ ! -f \"${SRCROOT}/Flutter/Generated.xcconfig\" ] || [ ! -f \"${FLUTTER_APPLICATION_PATH}/.dart_tool/package_config.json\" ]; then\n  \"$FLUTTER_ROOT/bin/flutter\" pub get --suppress-analytics\nfi\n/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" build";
 		};
 /* End PBXShellScriptBuildPhase section */
 
