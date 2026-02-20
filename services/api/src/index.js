@@ -95,15 +95,32 @@ const apiLimiter = rateLimit({
   legacyHeaders: false
 });
 
+const receiptActionLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 12,
+  message: { error: 'too_many_receipt_requests' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 app.use('/auth', authLimiter);
-app.use('/api', apiLimiter);
+app.use(apiLimiter);
 
 const nowIso = () => new Date().toISOString();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 const uploadRoot = path.join(__dirname, '..', 'uploads');
 
 function ensureUploadPath(fileName) {
-  const fullPath = path.join(uploadRoot, fileName);
+  const normalized = path.normalize(String(fileName || ''));
+  if (normalized.startsWith('..') || path.isAbsolute(normalized)) {
+    throw new Error('invalid_upload_path');
+  }
+  const fullPath = path.join(uploadRoot, normalized);
+  const resolvedRoot = path.resolve(uploadRoot);
+  const resolvedPath = path.resolve(fullPath);
+  if (!resolvedPath.startsWith(`${resolvedRoot}${path.sep}`) && resolvedPath !== resolvedRoot) {
+    throw new Error('invalid_upload_path');
+  }
   fs.mkdirSync(path.dirname(fullPath), { recursive: true });
   return fullPath;
 }
@@ -1064,7 +1081,7 @@ async function processReceiptInline(receiptId, imageBuffer, storeChain) {
   }
 }
 
-app.post('/receipts/upload', auth.optionalAuthMiddleware, upload.single('file'), async (req, res) => {
+app.post('/receipts/upload', receiptActionLimiter, auth.optionalAuthMiddleware, upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       res.status(400).json({ error: 'file_required' });
@@ -1215,10 +1232,10 @@ app.get('/receipts/:id/report', auth.optionalAuthMiddleware, async (req, res) =>
   }
 });
 
-app.post('/receipts/:id/reprocess', auth.requireUser, async (req, res) => {
+app.post('/receipts/:id/reprocess', receiptActionLimiter, auth.requireUser, async (req, res) => {
   try {
     const receiptResult = await query(
-      `SELECT id, user_id, image_object_key, store_chain
+      `SELECT id, user_id, status, image_object_key, store_chain
        FROM receipts
        WHERE id = $1
        LIMIT 1`,
@@ -1234,6 +1251,9 @@ app.post('/receipts/:id/reprocess', auth.requireUser, async (req, res) => {
     }
     if (!receipt.image_object_key) {
       return res.status(400).json({ error: 'receipt_image_missing' });
+    }
+    if (receipt.status === 'processing') {
+      return res.status(409).json({ error: 'receipt_already_processing' });
     }
 
     const imagePath = ensureUploadPath(receipt.image_object_key);
