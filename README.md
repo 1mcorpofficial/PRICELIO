@@ -2,9 +2,16 @@
 
 Status: Active development repository with production-oriented architecture and broad feature coverage.
 
-Last verified against code: 2026-02-17
+Last verified against code: 2026-02-20
 
 Repository: `1mcorpofficial/PRICELIO`
+
+Current snapshot (2026-02-20):
+- PRICELIO is a multi-service grocery price intelligence platform with a production-deployed web app (`pricelio.app`) and VPS workflow (`push -> pull -> restart`).
+- Core capability is receipt intelligence: OCR extraction, product matching, overpay/savings report, and next-best store comparison.
+- Newer receipt quality controls are present: manual correction editor, bad-scan feedback, review queue/history, and quality summary panels.
+- Budget planning and loyalty cards are now first-class in the main app UI/API (budget insights + user discount card profile data).
+- The repository is strong for staging/iterative production, but still needs formal SRE/security/load hardening before "full production-grade" claim.
 
 ---
 
@@ -105,11 +112,16 @@ Claims are aligned to code in repository, not aspiration.
   - Mission submission + verification + trust adjustments.
   - Kids mode session workflows.
   - Feature flag checks.
-- Database migrations up to `013_feature_flags.sql`.
+- Database migrations up to `014_loyalty_cards.sql`.
 - 21 ingest connectors present.
 - Modernized main web UI (`index.html`, `styles.css`, `app.js`).
 - Modernized admin UI (`apps/admin/public/index.html`).
 - Root tests in `tests/` currently passing.
+- Receipt quality and correction flows implemented in API/UI:
+  - Receipt feedback (`incorrect_scan`) and manual review queue endpoints.
+  - Receipt line correction submit flow with candidate product selection.
+  - Receipt quality summary endpoint and dashboard cards.
+  - Receipt reprocess endpoint for AI rescan of existing uploaded receipt.
 
 ### 4.2 Implemented but partially wired/validated
 
@@ -120,7 +132,7 @@ Claims are aligned to code in repository, not aspiration.
 
 ### 4.3 Not yet verified in this repository session
 
-- Production deployment validation.
+- Full production deployment validation of latest receipt/budget changes on VPS.
 - High-load benchmarking and distributed resilience under real traffic.
 - Full red-team security audit.
 - End-to-end legal readiness for commercial release.
@@ -314,8 +326,18 @@ Contains:
 - Receipt file upload + preview.
 - Polling status.
 - Overpay report rendering.
+- Receipt fix editor (line corrections + candidate selection + confirmation).
+- "Not scanned correctly" feedback capture for quality loop.
+- Receipt rescan action for reprocessing with AI.
 
-### 8.5 Family
+### 8.5 Budget
+
+Contains:
+- Budget insights panel from analyzed receipts.
+- Monthly and store-chain spending/overpay/savings aggregation.
+- Loyalty card management (store chain, optional label, optional last4) for personalization.
+
+### 8.6 Family
 
 Contains:
 - Household creation.
@@ -323,39 +345,39 @@ Contains:
 - Shared lists loading/adding.
 - Event polling.
 
-### 8.6 Missions
+### 8.7 Missions
 
 Contains:
 - Nearby missions query.
 - Mission start/submit/verify flows.
 - Proof status querying.
 
-### 8.7 Leaderboard
+### 8.8 Leaderboard
 
 Contains:
 - Global leaderboard panel.
 - Friends/household leaderboard panel.
 
-### 8.8 Plus
+### 8.9 Plus
 
 Contains:
 - Feature list and status retrieval.
 - Subscribe/unlock actions.
 - Premium insights actions.
 
-### 8.9 Kids
+### 8.10 Kids
 
 Contains:
 - Parent-PIN activation/deactivation.
 - Kids mission list and submit actions.
 
-### 8.10 Profile
+### 8.11 Profile
 
 Contains:
 - Basic user profile data.
 - Rank catalog panel.
 
-### 8.11 UX enhancements added
+### 8.12 UX enhancements added
 
 - Contextual tip strip per active view.
 - Guided onboarding modal with progress.
