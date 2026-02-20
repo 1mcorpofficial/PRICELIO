@@ -90,10 +90,13 @@ class _ScannerPageState extends State<ScannerPage> {
         title: const Text('Brūkšninio kodo skaitytuvas'),
         actions: [
           IconButton(
-            icon: ValueListenableBuilder(
-              valueListenable: _controller.torchState,
+            icon: ValueListenableBuilder<MobileScannerState>(
+              valueListenable: _controller,
               builder: (_, state, __) => Icon(
-                state == TorchState.on ? Icons.flashlight_on : Icons.flashlight_off),
+                state.torchState == TorchState.on
+                    ? Icons.flashlight_on
+                    : Icons.flashlight_off,
+              ),
             ),
             onPressed: _controller.toggleTorch,
           ),

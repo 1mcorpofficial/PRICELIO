@@ -14,7 +14,6 @@ class AppColors {
 class AppTheme {
   static ThemeData get light => ThemeData(
     useMaterial3: true,
-    fontFamily: 'Inter',
     colorScheme: ColorScheme.fromSeed(
       seedColor: AppColors.primary,
       background: AppColors.background,
@@ -28,7 +27,6 @@ class AppTheme {
       elevation: 0,
       centerTitle: true,
       titleTextStyle: TextStyle(
-        fontFamily: 'Inter',
         fontWeight: FontWeight.w600,
         fontSize: 17,
         color: AppColors.textMain,

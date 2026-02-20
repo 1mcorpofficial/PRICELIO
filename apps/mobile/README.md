@@ -1,49 +1,67 @@
 # PRICELIO Mobile
 
-Flutter app for Android & iOS.
-
-## Requirements
-
-- Flutter SDK >= 3.2.0
-- Dart >= 3.2.0
-- Android Studio / Xcode
-
-## Setup
-
-```bash
-cd apps/mobile
-flutter pub get
-flutter run
-```
+Flutter mobile app for iOS and Android.
 
 ## API
 
-Backend: `https://api.pricelio.app`
+Default backend URL is set in `lib/core/api/api_client.dart`:
 
-## Structure
+`https://api.pricelio.app`
+
+## Quick start (Mac + iPhone + Xcode)
+
+1. Clone repo and open mobile app folder:
+
+```bash
+git clone https://github.com/1mcorpofficial/PRICELIO.git
+cd PRICELIO/apps/mobile
+flutter pub get
+```
+
+2. Generate iOS dependencies:
+
+```bash
+flutter precache --ios
+flutter build ios --debug --no-codesign
+```
+
+3. Open Xcode workspace:
+
+```bash
+open ios/Runner.xcworkspace
+```
+
+4. In Xcode:
+- Select `Runner` target.
+- Set your Apple Team in **Signing & Capabilities**.
+- Connect iPhone with cable and select the device.
+- Press **Run**.
+
+## Project structure
 
 ```
 lib/
 ├── main.dart
 ├── core/
-│   ├── api/          # API client (Dio + auto token refresh)
-│   ├── theme/        # Colors, typography
-│   └── utils/        # Router (go_router)
+│   ├── api/
+│   ├── theme/
+│   └── utils/
 └── features/
-    ├── auth/         # Login, Register
-    ├── home/         # Store list, feed (+ receipt scan banner)
-    ├── receipts/     # Receipt scan (camera/gallery → AI analysis)
-    ├── scanner/      # Barcode EAN scanner
-    ├── search/       # Product search
-    ├── map/          # Store map
-    ├── basket/       # Shopping basket optimizer
-    └── profile/      # User profile, rank, points
+    ├── auth/
+    ├── home/
+    ├── receipts/
+    ├── scanner/
+    ├── search/
+    ├── map/
+    ├── basket/
+    ├── missions/
+    ├── kids/
+    └── profile/
 ```
 
-## Android permissions (add to AndroidManifest.xml)
+## iOS permissions
 
-```xml
-<uses-permission android:name="android.permission.CAMERA" />
-<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
-<uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-```
+Configured in `ios/Runner/Info.plist`:
+- Camera (`NSCameraUsageDescription`)
+- Photo library read (`NSPhotoLibraryUsageDescription`)
+- Photo library write (`NSPhotoLibraryAddUsageDescription`)

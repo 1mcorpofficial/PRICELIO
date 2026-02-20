@@ -23,13 +23,20 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _loadData() async {
     try {
-      final results = await Future.wait([
-        ApiClient().dio.get('/map/stores', queryParameters: {'city': 'Vilnius'}),
-        ApiClient().dio.get('/me/gamification').catchError((_) => null),
-      ]);
+      final storesRes = await ApiClient().dio.get(
+        '/map/stores',
+        queryParameters: {'city': 'Vilnius'},
+      );
+      Map<String, dynamic>? gamification;
+      try {
+        final gamificationRes = await ApiClient().dio.get('/me/gamification');
+        if (gamificationRes.data is Map<String, dynamic>) {
+          gamification = gamificationRes.data as Map<String, dynamic>;
+        }
+      } catch (_) {}
       setState(() {
-        _stores = results[0].data is List ? results[0].data : [];
-        _gamification = results[1]?.data;
+        _stores = storesRes.data is List ? storesRes.data : [];
+        _gamification = gamification;
         _loading = false;
       });
     } catch (_) {
