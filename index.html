@@ -290,6 +290,7 @@
         <button class="nav-btn"        data-view="leaderboard" data-nav-icon="🏆" data-i18n="nav_leaderboard">Leaderboard</button>
         <button class="nav-btn"        data-view="plus"        data-nav-icon="⭐" data-i18n="nav_plus">Plus</button>
         <button class="nav-btn"        data-view="kids"        data-nav-icon="👶" data-i18n="nav_kids">Kids</button>
+        <button class="nav-btn"        data-view="budget"      data-nav-icon="💳" data-i18n="nav_budget">Budget</button>
         <button class="nav-btn"        data-view="profile"     data-nav-icon="👤" data-i18n="nav_profile">Profile</button>
       </nav>
 
@@ -844,6 +845,45 @@
         </section>
 
         <!-- ━━━ PROFILE ━━━ -->
+        <section class="view" id="view-budget">
+          <div class="v-grid">
+            <div class="panel">
+              <div class="view-panel-head">
+                <div class="vph-icon" style="background:#dbeafe;color:#1d4ed8">📊</div>
+                <div>
+                  <h2 data-i18n="budget_title">Budget Insights</h2>
+                  <p class="muted small" data-i18n="budget_subtitle">Track spending, overpay and savings from all receipts</p>
+                </div>
+              </div>
+              <div class="row" style="margin-bottom:0.75rem">
+                <button id="budgetLoadBtn" class="btn btn-ghost" data-i18n="budget_load_btn">Load Analytics</button>
+              </div>
+              <div id="budgetTotals"></div>
+              <h3 class="subhead" data-i18n="budget_monthly_title">Monthly Breakdown</h3>
+              <div id="budgetMonthly" class="list"></div>
+              <h3 class="subhead" data-i18n="budget_stores_title">By Store Chain</h3>
+              <div id="budgetStores" class="list"></div>
+            </div>
+            <div class="panel">
+              <div class="view-panel-head">
+                <div class="vph-icon" style="background:#ede9fe;color:#7c3aed">💳</div>
+                <div>
+                  <h2 data-i18n="loyalty_title">Loyalty Cards</h2>
+                  <p class="muted small" data-i18n="loyalty_subtitle">Mark discount cards to personalize recommendations</p>
+                </div>
+              </div>
+              <div class="stack">
+                <input id="loyaltyStoreChain" data-i18n-placeholder="loyalty_store_placeholder" placeholder="Store chain (e.g. Maxima)" />
+                <input id="loyaltyCardLabel" data-i18n-placeholder="loyalty_label_placeholder" placeholder="Card label (optional)" />
+                <input id="loyaltyCardLast4" data-i18n-placeholder="loyalty_last4_placeholder" placeholder="Last 4 digits (optional)" maxlength="4" />
+                <button id="saveLoyaltyCardBtn" class="btn" data-i18n="loyalty_save_btn">Save Card</button>
+              </div>
+              <div id="loyaltyCardsList" class="list" style="margin-top:0.75rem"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ━━━ PROFILE ━━━ -->
         <section class="view" id="view-profile">
           <div class="v-grid">
             <div class="panel pf-panel">
@@ -888,6 +928,10 @@
         <button class="mbn-btn nav-btn" data-view="missions" type="button">
           <span class="mbn-icon">🎯</span>
           <span class="mbn-label" data-i18n="nav_missions">Missions</span>
+        </button>
+        <button class="mbn-btn nav-btn" data-view="budget" type="button">
+          <span class="mbn-icon">💳</span>
+          <span class="mbn-label" data-i18n="nav_budget">Budget</span>
         </button>
         <button class="mbn-btn nav-btn" data-view="profile" type="button">
           <span class="mbn-icon">👤</span>

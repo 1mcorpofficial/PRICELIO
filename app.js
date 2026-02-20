@@ -4,6 +4,7 @@
   const STORAGE_TOKEN_KEY = 'pricelio_access_token';
   const STORAGE_USER_KEY = 'pricelio_user_snapshot';
   const STORAGE_ONBOARDING_KEY = 'pricelio_onboarding_done_v1';
+  const STORAGE_ONBOARDING_HINT_KEY = 'pricelio_onboarding_hint_seen_v1';
   const STORAGE_LANG_KEY = 'pricelio_lang';
   const SUPPORTED_LANGS = ['lt', 'en', 'lv', 'et', 'ru', 'pl', 'be', 'uk'];
   const LANG_LABELS = {
@@ -96,6 +97,7 @@
       nav_leaderboard: 'Leaderboard',
       nav_plus: 'Plus',
       nav_kids: 'Kids',
+      nav_budget: 'Budget',
       nav_profile: 'Profile',
       auth_title: 'Auth',
       auth_subtitle: 'Login to unlock points, family, missions and kids mode.',
@@ -179,6 +181,24 @@
       profile_title: 'Profile',
       rank_catalog_title: 'Rank catalog',
       load_ranks_btn: 'Load Ranks',
+      budget_title: 'Budget Insights',
+      budget_subtitle: 'Track spending, overpay and savings from all receipts',
+      budget_load_btn: 'Load Analytics',
+      budget_total_spent: 'Total spent',
+      budget_overpaid: 'Overpaid vs average',
+      budget_saved: 'Saved vs average',
+      budget_receipts_count: 'Receipts analyzed',
+      budget_monthly_title: 'Monthly Breakdown',
+      budget_stores_title: 'By Store Chain',
+      loyalty_title: 'Loyalty Cards',
+      loyalty_subtitle: 'Mark discount cards to personalize recommendations',
+      loyalty_store_placeholder: 'Store chain (e.g. Maxima)',
+      loyalty_label_placeholder: 'Card label (optional)',
+      loyalty_last4_placeholder: 'Last 4 digits (optional)',
+      loyalty_save_btn: 'Save Card',
+      loyalty_remove_btn: 'Remove',
+      empty_budget: 'No receipt analytics data yet.',
+      empty_loyalty_cards: 'No loyalty cards saved yet.',
       email_placeholder: 'email@example.com',
       password_new_placeholder: 'password (min 8)',
       password_current_placeholder: 'password',
@@ -214,7 +234,7 @@
       signed_in_as: 'Signed in as {email}',
       tip_overview_title: 'Quick start',
       tip_overview_text: 'Register or login first to unlock points, ranks, family sync and missions.',
-      tip_overview_cta: 'Go to Auth',
+      tip_overview_cta: 'Open Login',
       tip_market_title: 'Map workflow',
       tip_market_text: 'Use filters for verified prices and distance, then search by product to compare stores.',
       tip_market_cta: 'Refresh Stores',
@@ -239,6 +259,9 @@
       tip_kids_title: 'Kids mode',
       tip_kids_text: 'Parent-controlled missions only. Activate session with PIN, then submit kid missions safely.',
       tip_kids_cta: 'Load Kids Missions',
+      tip_budget_title: 'Budget planner',
+      tip_budget_text: 'See total spend, overpay, savings and add loyalty cards for better recommendations.',
+      tip_budget_cta: 'Load Analytics',
       tip_profile_title: 'Profile and rank catalog',
       tip_profile_text: 'Review account info and inspect all 20 launch ranks with XP thresholds.',
       tip_profile_cta: 'Load Ranks',
@@ -284,6 +307,7 @@
       onboarding_step_plus_text: 'Unlock premium insights via subscription or with redeemable points.',
       onboarding_complete: 'Onboarding complete. Use Guide anytime.',
       onboarding_skipped: 'Onboarding skipped. You can reopen with Guide.',
+      onboarding_hint: 'Open Guide to explore features step-by-step when you are ready.',
       scan_ready: 'Ready: {file}',
       scan_status: 'Status: {status} ({progress}%)',
       uploading_receipt: 'Uploading receipt...',
@@ -370,6 +394,7 @@
       nav_leaderboard: 'Reitingas',
       nav_plus: 'Plus',
       nav_kids: 'Vaikai',
+      nav_budget: 'Biudžetas',
       nav_profile: 'Profilis',
       auth_title: 'Paskyra',
       auth_subtitle: 'Prisijunk ir atrakink taškus, šeimą, misijas ir vaikų režimą.',
@@ -453,6 +478,24 @@
       profile_title: 'Profilis',
       rank_catalog_title: 'Lygių katalogas',
       load_ranks_btn: 'Įkelti lygius',
+      budget_title: 'Biudžeto įžvalgos',
+      budget_subtitle: 'Stebėk išlaidas, permoką ir sutaupymą iš visų čekių',
+      budget_load_btn: 'Įkelti analizę',
+      budget_total_spent: 'Iš viso išleista',
+      budget_overpaid: 'Permoka prieš vidurkį',
+      budget_saved: 'Sutaupyta prieš vidurkį',
+      budget_receipts_count: 'Išanalizuota čekių',
+      budget_monthly_title: 'Mėnesio suvestinė',
+      budget_stores_title: 'Pagal tinklą',
+      loyalty_title: 'Nuolaidų kortelės',
+      loyalty_subtitle: 'Pažymėk turimas korteles personalizuotoms rekomendacijoms',
+      loyalty_store_placeholder: 'Parduotuvės tinklas (pvz. Maxima)',
+      loyalty_label_placeholder: 'Kortelės pavadinimas (nebūtina)',
+      loyalty_last4_placeholder: 'Paskutiniai 4 skaičiai (nebūtina)',
+      loyalty_save_btn: 'Išsaugoti kortelę',
+      loyalty_remove_btn: 'Pašalinti',
+      empty_budget: 'Čekių analizės duomenų dar nėra.',
+      empty_loyalty_cards: 'Nuolaidų kortelių dar nėra.',
       email_placeholder: 'el.pastas@example.com',
       password_new_placeholder: 'slaptažodis (min 8)',
       password_current_placeholder: 'slaptažodis',
@@ -488,7 +531,7 @@
       signed_in_as: 'Prisijungta: {email}',
       tip_overview_title: 'Greita pradžia',
       tip_overview_text: 'Pirmiausia registruokis arba prisijunk, kad atrakintum taškus, šeimą ir misijas.',
-      tip_overview_cta: 'Į autorizaciją',
+      tip_overview_cta: 'Atidaryti prisijungimą',
       tip_market_title: 'Žemėlapio eiga',
       tip_market_text: 'Naudok filtrus pagal atstumą ir patvirtintas kainas, tada ieškok prekės.',
       tip_market_cta: 'Atnaujinti parduotuves',
@@ -513,6 +556,9 @@
       tip_kids_title: 'Vaikų režimas',
       tip_kids_text: 'Tik tėvų valdomos misijos. Aktyvuok sesiją su PIN ir saugiai pateik vaiko misijas.',
       tip_kids_cta: 'Įkelti vaikų misijas',
+      tip_budget_title: 'Biudžeto planavimas',
+      tip_budget_text: 'Matysi bendras išlaidas, permoką, sutaupymą ir galėsi pridėti nuolaidų korteles.',
+      tip_budget_cta: 'Įkelti analizę',
       tip_profile_title: 'Profilis ir rangų katalogas',
       tip_profile_text: 'Peržiūrėk paskyros informaciją ir visus 20 starto rangų su XP slenksčiais.',
       tip_profile_cta: 'Įkelti rangus',
@@ -558,6 +604,7 @@
       onboarding_step_plus_text: 'Atrakinkite premium įžvalgas su prenumerata arba taškais.',
       onboarding_complete: 'Gidas baigtas. Bet kada galite atsidaryti per „Gidas“.',
       onboarding_skipped: 'Gidas praleistas. Galite atidaryti vėliau.',
+      onboarding_hint: 'Atidarykite „Gidą“, kai būsite pasiruošę peržiūrėti funkcijas žingsnis po žingsnio.',
       scan_ready: 'Paruošta: {file}',
       scan_status: 'Būsena: {status} ({progress}%)',
       uploading_receipt: 'Įkeliamas čekis...',
@@ -717,7 +764,8 @@
     experienceStarted: false,
     appBootstrapped: false,
     onboardingReady: false,
-    setView: null
+    setView: null,
+    setAuthTab: null
   };
 
   function resolveApiBase() {
@@ -924,7 +972,7 @@
     document.body.dataset.mode = mode;
   }
 
-  async function startAppExperience({ focusAuth = false } = {}) {
+  async function startAppExperience({ focusAuth = null } = {}) {
     state.experienceStarted = true;
     setExperienceMode('app');
 
@@ -949,7 +997,13 @@
 
     if (focusAuth) {
       state.setView?.('overview');
-      $('registerEmail')?.focus();
+      const authMode = focusAuth === 'login' ? 'login' : 'register';
+      state.setAuthTab?.(authMode);
+      if (authMode === 'login') {
+        $('loginEmail')?.focus();
+      } else {
+        $('registerEmail')?.focus();
+      }
       if (!state.token) {
         showToast(t('register_required_to_continue'), 'info');
       }
@@ -1022,31 +1076,34 @@
     const formLogin = $('loginForm');
     if (!tabRegister || !tabLogin) return;
 
-    function showTab(which) {
-      tabRegister.classList.toggle('active', which === 'register');
-      tabLogin.classList.toggle('active', which === 'login');
-      formRegister?.classList.toggle('active', which === 'register');
-      formLogin?.classList.toggle('active', which === 'login');
+    function showTab(which = 'register') {
+      const mode = which === 'login' ? 'login' : 'register';
+      tabRegister.classList.toggle('active', mode === 'register');
+      tabLogin.classList.toggle('active', mode === 'login');
+      formRegister?.classList.toggle('active', mode === 'register');
+      formLogin?.classList.toggle('active', mode === 'login');
     }
 
     tabRegister.addEventListener('click', () => showTab('register'));
     tabLogin.addEventListener('click', () => showTab('login'));
+    state.setAuthTab = showTab;
+    showTab('register');
   }
 
   function setupExperienceEntry() {
-    const openTry = (focusAuth = false) => {
+    const openTry = (focusAuth = 'register') => {
       startAppExperience({ focusAuth }).catch((error) => {
         showToast(`Initialization failed: ${error.message || error}`, 'error');
       });
     };
 
-    $('startExperienceBtn')?.addEventListener('click', () => openTry(true));
-    $('startExperienceSecondaryBtn')?.addEventListener('click', () => openTry(true));
-    $('startExperienceLoginBtn')?.addEventListener('click', () => openTry(true));
-    $('startExperienceFinalBtn')?.addEventListener('click', () => openTry(true));
+    $('startExperienceBtn')?.addEventListener('click', () => openTry('register'));
+    $('startExperienceSecondaryBtn')?.addEventListener('click', () => openTry('register'));
+    $('startExperienceLoginBtn')?.addEventListener('click', () => openTry('login'));
+    $('startExperienceFinalBtn')?.addEventListener('click', () => openTry('register'));
     // Mobile sticky CTA bar buttons
-    $('mobileTryBtn')?.addEventListener('click', () => openTry(true));
-    $('mobileLoginBtn')?.addEventListener('click', () => openTry(true));
+    $('mobileTryBtn')?.addEventListener('click', () => openTry('register'));
+    $('mobileLoginBtn')?.addEventListener('click', () => openTry('login'));
     $('backToLandingBtn')?.addEventListener('click', () => returnToLanding());
     setExperienceMode('landing');
 
@@ -1225,8 +1282,10 @@
         textKey: 'tip_overview_text',
         ctaKey: 'tip_overview_cta',
         ctaAction: () => {
-          const registerEmail = $('registerEmail');
-          if (registerEmail) registerEmail.focus();
+          state.setView?.('overview');
+          state.setAuthTab?.('login');
+          const loginEmail = $('loginEmail');
+          if (loginEmail) loginEmail.focus();
         }
       },
       market: {
@@ -1276,6 +1335,12 @@
         textKey: 'tip_kids_text',
         ctaKey: 'tip_kids_cta',
         ctaAction: () => { loadKidsMissions().catch(() => {}); }
+      },
+      budget: {
+        titleKey: 'tip_budget_title',
+        textKey: 'tip_budget_text',
+        ctaKey: 'tip_budget_cta',
+        ctaAction: () => { loadBudgetAnalytics().catch(() => {}); }
       },
       profile: {
         titleKey: 'tip_profile_title',
@@ -1422,6 +1487,10 @@
 
       if (viewName === 'market' && state.map) {
         state.map.invalidateSize();
+      }
+      if (viewName === 'budget' && state.token) {
+        loadBudgetAnalytics().catch(() => {});
+        loadLoyaltyCards().catch(() => {});
       }
       updateAuthGateUi();
       updateContextTip(viewName);
@@ -1586,8 +1655,11 @@
       }
     });
 
-    if (!localStorage.getItem(STORAGE_ONBOARDING_KEY)) {
-      setTimeout(() => openOnboarding(true), 500);
+    if (!localStorage.getItem(STORAGE_ONBOARDING_HINT_KEY)) {
+      setTimeout(() => {
+        showToast(t('onboarding_hint'), 'info');
+        localStorage.setItem(STORAGE_ONBOARDING_HINT_KEY, '1');
+      }, 700);
     }
   }
 
@@ -1732,6 +1804,7 @@
     if (!state.token) {
       renderGamification(null);
       renderLedgerPreview([]);
+      renderLoyaltyCards([]);
       return;
     }
 
@@ -1747,6 +1820,9 @@
       renderProfile(profile);
       renderGamification(gamification);
       renderLedgerPreview(ledger);
+      if (state.currentView === 'budget') {
+        await Promise.allSettled([loadBudgetAnalytics(), loadLoyaltyCards()]);
+      }
     } catch (error) {
       renderGamification(null);
       renderLedgerPreview([]);
@@ -2234,6 +2310,10 @@
     const savings = Number(report.savings_total || 0);
     const verifiedRatio = Number(report.verified_ratio || 0);
     const verifiedPct = Math.round(verifiedRatio * 100);
+    const summary = report.summary || {};
+    const totalSpent = Number(summary.total_spent || 0);
+    const overpaidVsAverage = Number(summary.overpaid_vs_average_total || 0);
+    const savedVsAverage = Number(summary.saved_vs_average_total || 0);
 
     // Hero summary card
     const savingsColor = savings > 0 ? '' : 'style="background:linear-gradient(135deg,#047857,#059669)"';
@@ -2247,6 +2327,7 @@
         <div class="report-meta-chips">
           <div class="report-chip">📋 ${lines.length} item${lines.length !== 1 ? 's' : ''}</div>
           <div class="report-chip">✓ ${verifiedPct}% ${t('report_verified_label')}</div>
+          <div class="report-chip">💶 ${formatMoney(totalSpent)} spent</div>
         </div>
       </div>`;
 
@@ -2259,6 +2340,13 @@
         </div>
         <span class="verified-pct">${verifiedPct}%</span>
       </div>`;
+
+    const avgComparison = `
+      <div class="kpi-grid" style="margin-bottom:0.8rem">
+        <div class="kpi"><span>${t('budget_overpaid')}</span><strong>${formatMoney(overpaidVsAverage)}</strong></div>
+        <div class="kpi kpi-green"><span>${t('budget_saved')}</span><strong>${formatMoney(savedVsAverage)}</strong></div>
+      </div>
+    `;
 
     // Items
     const head = `<div class="report-items-head">${t('report_items_head')}</div>`;
@@ -2288,7 +2376,7 @@
             </div>`;
         }).join('');
 
-    container.innerHTML = summaryHtml + verBar + head + itemsHtml;
+    container.innerHTML = summaryHtml + verBar + avgComparison + head + itemsHtml;
   }
 
   async function analyzeReceipt() {
@@ -2949,6 +3037,149 @@
     }
   }
 
+  function renderBudgetAnalytics(data) {
+    const totalsContainer = $('budgetTotals');
+    const monthlyContainer = $('budgetMonthly');
+    const storesContainer = $('budgetStores');
+    if (!totalsContainer || !monthlyContainer || !storesContainer) return;
+
+    const totals = data?.totals || {};
+    const spent = Number(totals.spent || 0);
+    const overpaid = Number(totals.overpaid_vs_average || 0);
+    const saved = Number(totals.saved_vs_average || 0);
+    const receiptsCount = Number(data?.receipts_count || 0);
+
+    totalsContainer.innerHTML = `
+      <div class="kpi-grid">
+        <div class="kpi"><span>${t('budget_total_spent')}</span><strong>${formatMoney(spent)}</strong></div>
+        <div class="kpi"><span>${t('budget_overpaid')}</span><strong>${formatMoney(overpaid)}</strong></div>
+        <div class="kpi kpi-green"><span>${t('budget_saved')}</span><strong>${formatMoney(saved)}</strong></div>
+        <div class="kpi"><span>${t('budget_receipts_count')}</span><strong>${formatNumber(receiptsCount)}</strong></div>
+      </div>
+    `;
+
+    const monthly = Array.isArray(data?.monthly) ? data.monthly : [];
+    if (!monthly.length) {
+      renderEmpty(monthlyContainer, t('empty_budget'), '📉');
+    } else {
+      monthlyContainer.innerHTML = monthly.map((row) => `
+        <div class="line-item compact">
+          <div>
+            <strong>${sanitize(row.month || '-')}</strong>
+            <div class="muted small">${t('budget_total_spent')}: ${formatMoney(row.spent)}</div>
+          </div>
+          <div class="right">
+            <div class="negative">${formatMoney(row.overpaid_vs_average || 0)}</div>
+            <div class="positive">${formatMoney(row.saved_vs_average || 0)}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    const stores = Array.isArray(data?.by_store_chain) ? data.by_store_chain : [];
+    if (!stores.length) {
+      renderEmpty(storesContainer, t('empty_budget'), '🏬');
+    } else {
+      storesContainer.innerHTML = stores.map((row) => `
+        <div class="line-item compact">
+          <div>
+            <strong>${sanitize(row.store_chain || 'Unknown')}</strong>
+            <div class="muted small">${t('budget_total_spent')}: ${formatMoney(row.spent)}</div>
+          </div>
+          <div class="right">
+            <div class="negative">${formatMoney(row.overpaid_vs_average || 0)}</div>
+            <div class="positive">${formatMoney(row.saved_vs_average || 0)}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+  }
+
+  async function loadBudgetAnalytics() {
+    const totalsContainer = $('budgetTotals');
+    const monthlyContainer = $('budgetMonthly');
+    const storesContainer = $('budgetStores');
+    if (!totalsContainer || !monthlyContainer || !storesContainer) return;
+
+    if (!state.token) {
+      renderEmpty(totalsContainer, t('register_required_to_continue'));
+      renderEmpty(monthlyContainer, t('register_required_to_continue'));
+      renderEmpty(storesContainer, t('register_required_to_continue'));
+      return;
+    }
+
+    setLoading(totalsContainer, 'Loading analytics…');
+    setLoading(monthlyContainer, 'Loading monthly…');
+    setLoading(storesContainer, 'Loading stores…');
+    const data = await apiRequest('/me/receipts/analytics?months=12');
+    renderBudgetAnalytics(data);
+  }
+
+  function renderLoyaltyCards(rows) {
+    const container = $('loyaltyCardsList');
+    if (!container) return;
+    if (!rows || !rows.length) {
+      renderEmpty(container, t('empty_loyalty_cards'), '💳');
+      return;
+    }
+    container.innerHTML = rows.map((row) => `
+      <div class="line-item compact">
+        <div>
+          <strong>${sanitize(row.store_chain || '-')}</strong>
+          <div class="muted small">${sanitize(row.card_label || '')}${row.card_last4 ? ` • ****${sanitize(row.card_last4)}` : ''}</div>
+        </div>
+        <button
+          class="btn btn-ghost btn-small"
+          type="button"
+          data-remove-loyalty-id="${sanitize(row.id)}"
+        >${t('loyalty_remove_btn')}</button>
+      </div>
+    `).join('');
+  }
+
+  async function loadLoyaltyCards() {
+    const container = $('loyaltyCardsList');
+    if (!container) return;
+    if (!state.token) {
+      renderEmpty(container, t('register_required_to_continue'));
+      return;
+    }
+    setLoading(container, 'Loading cards…');
+    const cards = await apiRequest('/me/loyalty-cards');
+    renderLoyaltyCards(cards);
+  }
+
+  async function saveLoyaltyCard() {
+    const storeChain = $('loyaltyStoreChain')?.value?.trim();
+    const cardLabel = $('loyaltyCardLabel')?.value?.trim();
+    const cardLast4 = $('loyaltyCardLast4')?.value?.trim();
+
+    if (!storeChain) {
+      showToast('Store chain is required.', 'warning');
+      return;
+    }
+
+    await apiRequest('/me/loyalty-cards', {
+      method: 'POST',
+      body: {
+        store_chain: storeChain,
+        card_label: cardLabel || null,
+        card_last4: cardLast4 || null
+      }
+    });
+    $('loyaltyStoreChain').value = '';
+    $('loyaltyCardLabel').value = '';
+    $('loyaltyCardLast4').value = '';
+    await loadLoyaltyCards();
+    showToast('Loyalty card saved.', 'success');
+  }
+
+  async function removeLoyaltyCard(cardId) {
+    await apiRequest(`/me/loyalty-cards/${encodeURIComponent(cardId)}`, { method: 'DELETE' });
+    await loadLoyaltyCards();
+    showToast('Loyalty card removed.', 'info');
+  }
+
   function renderKidsMissions(rows) {
     const container = $('kidsMissions');
     if (!container) return;
@@ -3097,7 +3328,8 @@
       refreshAuthedPanels(),
       loadMapStores(),
       loadGlobalLeaderboard(),
-      state.token ? loadPlusStatus() : Promise.resolve()
+      state.token ? loadPlusStatus() : Promise.resolve(),
+      state.token ? loadBudgetAnalytics() : Promise.resolve()
     ]);
     showToast('Refresh complete.', 'info');
   }
@@ -3204,6 +3436,15 @@
     $('submitKidsMissionBtn')?.addEventListener('click', () => { submitKidsMission().catch(() => {}); });
 
     $('loadRanksBtn')?.addEventListener('click', () => { loadRankCatalog().catch(() => {}); });
+    $('budgetLoadBtn')?.addEventListener('click', () => { loadBudgetAnalytics().catch(() => {}); });
+    $('saveLoyaltyCardBtn')?.addEventListener('click', () => { saveLoyaltyCard().catch((error) => showToast(`Save card failed: ${toApiErrorLabel(error)}`, 'error')); });
+    $('loyaltyCardsList')?.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const id = target.getAttribute('data-remove-loyalty-id');
+      if (!id) return;
+      removeLoyaltyCard(id).catch((error) => showToast(`Remove card failed: ${toApiErrorLabel(error)}`, 'error'));
+    });
 
     bindMissionListActions();
     bindKidsMissionSelection();
@@ -3286,6 +3527,10 @@
     renderPremiumInsights([]);
     renderKidsMissions([]);
     renderProfile(null);
+    renderEmpty($('budgetTotals'), t('empty_budget'), '📊');
+    renderEmpty($('budgetMonthly'), t('empty_budget'), '📈');
+    renderEmpty($('budgetStores'), t('empty_budget'), '🏬');
+    renderLoyaltyCards([]);
     renderLedgerPreview([]);
     renderGamification(null);
 
