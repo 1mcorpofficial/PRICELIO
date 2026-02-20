@@ -23,11 +23,22 @@ const {
   getBasketItems,
   findProductByName,
   getReceiptStatus,
-  getReceiptReport
+  getReceiptReport,
+  getUserReceiptsAnalytics,
+  getUserLoyaltyCards,
+  upsertUserLoyaltyCard,
+  deactivateUserLoyaltyCard,
+  getUserLoyaltyChains
 } = require('./queries');
 const { publishReceiptJob } = require('./queue');
 const { optimizeSingleStore } = require('./optimizer');
 const ecosystem = require('./ecosystem');
+const {
+  normalizeExtractionPayload,
+  resolveStoreFromExtraction,
+  matchProductFromReceiptLine,
+  computeReceiptConfidence
+} = require('./receipt-intelligence');
 
 const app = express();
 app.set('trust proxy', 1); // trust nginx reverse proxy for rate limiting
@@ -282,6 +293,62 @@ app.get('/me', auth.authMiddleware, async (req, res) => {
   }
 });
 
+app.get('/me/receipts/analytics', auth.requireUser, async (req, res) => {
+  try {
+    const months = Math.max(1, Math.min(24, Number(req.query.months || 12)));
+    const analytics = await getUserReceiptsAnalytics(req.user.id, { months });
+    res.json(analytics);
+  } catch (error) {
+    console.error('Receipt analytics failed:', error);
+    res.status(500).json({ error: 'receipt_analytics_failed' });
+  }
+});
+
+app.get('/me/loyalty-cards', auth.requireUser, async (req, res) => {
+  try {
+    const cards = await getUserLoyaltyCards(req.user.id);
+    res.json(cards);
+  } catch (error) {
+    console.error('Loyalty cards fetch failed:', error);
+    res.status(500).json({ error: 'loyalty_cards_fetch_failed' });
+  }
+});
+
+app.post('/me/loyalty-cards', auth.requireUser, async (req, res) => {
+  try {
+    const storeChain = String(req.body?.store_chain || '').trim();
+    const cardLabel = String(req.body?.card_label || '').trim() || null;
+    const cardLast4 = String(req.body?.card_last4 || '').replace(/[^\d]/g, '').slice(-4) || null;
+
+    if (!storeChain) {
+      return res.status(400).json({ error: 'store_chain_required' });
+    }
+
+    const card = await upsertUserLoyaltyCard(req.user.id, {
+      store_chain: storeChain,
+      card_label: cardLabel,
+      card_last4: cardLast4
+    });
+    res.json(card);
+  } catch (error) {
+    console.error('Loyalty card upsert failed:', error);
+    res.status(500).json({ error: 'loyalty_card_upsert_failed' });
+  }
+});
+
+app.delete('/me/loyalty-cards/:id', auth.requireUser, async (req, res) => {
+  try {
+    const ok = await deactivateUserLoyaltyCard(req.user.id, req.params.id);
+    if (!ok) {
+      return res.status(404).json({ error: 'loyalty_card_not_found' });
+    }
+    res.status(204).send();
+  } catch (error) {
+    console.error('Loyalty card delete failed:', error);
+    res.status(500).json({ error: 'loyalty_card_delete_failed' });
+  }
+});
+
 // =============================
 // Gamification / Points / Plus
 // =============================
@@ -502,7 +569,7 @@ app.get('/search', async (req, res) => {
 });
 
 // Compare one product prices across many stores by name or barcode
-app.get('/products/compare', async (req, res) => {
+app.get('/products/compare', auth.optionalAuthMiddleware, async (req, res) => {
   try {
     const q = String(req.query.q || '').trim();
     const limit = Math.max(1, Math.min(10, parseInt(req.query.limit, 10) || 5));
@@ -578,6 +645,10 @@ app.get('/products/compare', async (req, res) => {
       pricesByProduct.set(row.product_id, list);
     });
 
+    const loyaltyChains = req.user?.id
+      ? new Set(await getUserLoyaltyChains(req.user.id))
+      : new Set();
+
     const payload = products.rows.map((product) => {
       const allStorePrices = (pricesByProduct.get(product.id) || []).sort((a, b) => (a.price || 0) - (b.price || 0));
       const nearbyStorePrices = hasGeo
@@ -600,7 +671,10 @@ app.get('/products/compare', async (req, res) => {
           distance_km: bestNearby.distance_km
         } : null,
         radius_km: hasGeo ? radiusKm : null,
-        store_prices: nearbyStorePrices
+        store_prices: nearbyStorePrices.map((row) => ({
+          ...row,
+          loyalty_card_available: row.chain ? loyaltyChains.has(String(row.chain).toLowerCase()) : false
+        }))
       };
     });
 
@@ -826,7 +900,7 @@ async function processReceiptInline(receiptId, imageBuffer, storeChain) {
     const form = new FormData();
     form.append('image', imageBuffer, { filename: 'receipt.jpg', contentType: 'image/jpeg' });
     if (storeChain) form.append('store_chain', storeChain);
-    form.append('strict_mode', 'false');
+    form.append('strict_mode', 'true');
     form.append('language', 'lt');
 
     const { data } = await axios.post(`${AI_GATEWAY}/extract/receipt`, form, {
@@ -835,7 +909,7 @@ async function processReceiptInline(receiptId, imageBuffer, storeChain) {
     });
 
     const extraction = data?.extraction || {};
-    let items = extraction.items || extraction.line_items || [];
+    const normalized = normalizeExtractionPayload(extraction);
     const vmiUrl = extraction.vmi_url || null;
 
     // If GPT-4o found a VMI QR code URL, fetch official receipt data for validation
@@ -848,23 +922,104 @@ async function processReceiptInline(receiptId, imageBuffer, storeChain) {
       }
     }
 
-    if (items.length > 0) {
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        const rawName = item.name || item.raw_name || item.product || 'Unknown';
-        const totalPrice = parseFloat(item.total_price || item.total || item.price || 0) || null;
-        const unitPrice = parseFloat(item.unit_price || item.price_per_unit || 0) || null;
-        const qty = parseFloat(item.quantity || item.qty || 1) || 1;
-        await query(
-          `INSERT INTO receipt_items (receipt_id, line_number, raw_name, quantity, unit_price, total_price, currency)
-           VALUES ($1, $2, $3, $4, $5, $6, 'EUR')`,
-          [receiptId, i + 1, rawName.slice(0, 500), qty, unitPrice, totalPrice]
-        );
-      }
+    const resolvedStore = await resolveStoreFromExtraction({
+      explicitStoreChain: storeChain,
+      extractedStoreName: normalized.store_name,
+      extractedStoreAddress: normalized.store_address
+    });
+
+    await query(`DELETE FROM receipt_items WHERE receipt_id = $1`, [receiptId]);
+
+    const enrichedLines = [];
+    for (const item of normalized.line_items) {
+      const match = item.line_type === 'product'
+        ? await matchProductFromReceiptLine(item)
+        : {
+            matched_product_id: null,
+            match_status: 'unmatched',
+            match_confidence: 0,
+            candidates: []
+          };
+
+      const row = {
+        ...item,
+        matched_product_id: match.matched_product_id,
+        match_status: match.match_status,
+        match_confidence: match.match_confidence,
+        candidates: match.candidates
+      };
+      enrichedLines.push(row);
+
+      await query(
+        `INSERT INTO receipt_items (
+           receipt_id, line_number, raw_name, normalized_name, quantity, unit_price, total_price, currency,
+           matched_product_id, match_status, confidence, candidates
+         )
+         VALUES (
+           $1, $2, $3, $4, $5, $6, $7, $8,
+           $9, $10, $11, $12::jsonb
+         )`,
+        [
+          receiptId,
+          row.line_number,
+          row.raw_name.slice(0, 500),
+          row.normalized_name ? row.normalized_name.slice(0, 500) : null,
+          row.quantity,
+          row.unit_price,
+          row.total_price,
+          normalized.currency || 'EUR',
+          row.matched_product_id,
+          row.match_status,
+          row.confidence,
+          JSON.stringify(row.candidates || [])
+        ]
+      );
     }
 
-    await query(`UPDATE receipts SET status = 'processed', updated_at = NOW() WHERE id = $1`, [receiptId]);
-    console.log(`Inline receipt processed: ${receiptId} — ${items.length} items${vmiUrl ? ' (VMI QR verified)' : ''}`);
+    const receiptConfidence = computeReceiptConfidence({
+      extractionConfidence: normalized.extraction_confidence,
+      lines: enrichedLines
+    });
+
+    const hasProductLines = enrichedLines.some((line) => line.line_type === 'product');
+    const matchedProducts = enrichedLines.filter((line) => line.match_status === 'matched').length;
+    const finalStatus = hasProductLines && matchedProducts > 0 && receiptConfidence >= 0.62
+      ? 'processed'
+      : 'needs_confirmation';
+
+    await query(
+      `UPDATE receipts
+       SET store_id = $2,
+           store_chain = $3,
+           store_raw = $4,
+           receipt_date = COALESCE($5, receipt_date),
+           subtotal = COALESCE($6, subtotal),
+           tax_total = COALESCE($7, tax_total),
+           total = COALESCE($8, total),
+           currency = COALESCE($9, currency),
+           confidence = $10,
+           status = $11,
+           updated_at = NOW()
+       WHERE id = $1`,
+      [
+        receiptId,
+        resolvedStore.store_id,
+        resolvedStore.store_chain || null,
+        resolvedStore.store_raw || null,
+        normalized.receipt_date,
+        normalized.subtotal,
+        normalized.tax_total,
+        normalized.total,
+        normalized.currency || 'EUR',
+        receiptConfidence,
+        finalStatus
+      ]
+    );
+
+    console.log(
+      `Inline receipt processed: ${receiptId} — ${enrichedLines.length} items, ` +
+      `${matchedProducts} matched, confidence ${receiptConfidence}${vmiUrl ? ' (VMI QR verified)' : ''}`
+    );
   } catch (err) {
     console.error(`Inline receipt processing error for ${receiptId}:`, err.message);
     await query(`UPDATE receipts SET status = 'needs_confirmation', updated_at = NOW() WHERE id = $1`, [receiptId]).catch(() => {});
@@ -982,7 +1137,8 @@ app.get('/receipts/:id/report', auth.optionalAuthMiddleware, async (req, res) =>
       overpaid_items: report.items.filter((item) => item.savings_eur > 0),
       line_items: report.items,
       savings_total: report.savings_total,
-      verified_ratio: report.verified_ratio
+      verified_ratio: report.verified_ratio,
+      summary: report.summary || null
     });
   } catch (error) {
     res.status(500).json({ error: 'receipt_report_unavailable' });

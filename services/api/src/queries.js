@@ -1,6 +1,27 @@
 const { query } = require('./db');
 const { computeWeightedTruthPrice } = require('./ecosystem-algorithms');
 
+let loyaltyTableEnsured = false;
+
+async function ensureLoyaltyCardsTable() {
+  if (loyaltyTableEnsured) return;
+  await query(
+    `CREATE TABLE IF NOT EXISTS user_loyalty_cards (
+       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+       user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+       store_chain text NOT NULL,
+       card_label text,
+       card_last4 text,
+       is_active boolean NOT NULL DEFAULT true,
+       created_at timestamptz NOT NULL DEFAULT now(),
+       updated_at timestamptz NOT NULL DEFAULT now()
+     )`
+  );
+  await query(`CREATE INDEX IF NOT EXISTS user_loyalty_cards_user_idx ON user_loyalty_cards (user_id, is_active)`);
+  await query(`CREATE INDEX IF NOT EXISTS user_loyalty_cards_chain_idx ON user_loyalty_cards (lower(store_chain))`);
+  loyaltyTableEnsured = true;
+}
+
 async function getStorePins(filters = {}) {
   const { category, verified, maxDistance, lat, lon, cityId } = filters;
   
@@ -409,12 +430,18 @@ async function getReceiptReport(receiptId) {
 
   let savingsTotal = 0;
   let verifiedCount = 0;
+  let totalSpent = 0;
+  let marketAverageTotal = 0;
+  let overpaidVsAverageTotal = 0;
+  let savedVsAverageTotal = 0;
+  let matchedItems = 0;
 
   const mapped = [];
   for (const row of items.rows) {
     const receiptPrice = row.total_price != null ? Number(row.total_price) : null;
     let bestOfferPrice = row.best_offer_price != null ? Number(row.best_offer_price) : null;
     const oldPrice = row.best_offer_old_price != null ? Number(row.best_offer_old_price) : null;
+    let avgMarketPrice = null;
 
     if (row.matched_product_id) {
       const truthSources = await query(
@@ -432,6 +459,14 @@ async function getReceiptReport(receiptId) {
       const truthPrice = computeWeightedTruthPrice(truthSources.rows);
       if (truthPrice != null) {
         bestOfferPrice = truthPrice;
+      }
+
+      const numericPrices = truthSources.rows
+        .map((source) => Number(source.price))
+        .filter((value) => Number.isFinite(value) && value > 0);
+      if (numericPrices.length) {
+        const sum = numericPrices.reduce((acc, value) => acc + value, 0);
+        avgMarketPrice = Number((sum / numericPrices.length).toFixed(2));
       }
     }
 
@@ -451,6 +486,34 @@ async function getReceiptReport(receiptId) {
     if (savings > 0) {
       savingsTotal += savings;
     }
+    if (row.matched_product_id) {
+      matchedItems += 1;
+    }
+    if (receiptPrice != null) {
+      totalSpent += receiptPrice;
+    }
+    if (avgMarketPrice != null) {
+      marketAverageTotal += avgMarketPrice;
+      if (receiptPrice != null) {
+        const delta = Number((receiptPrice - avgMarketPrice).toFixed(2));
+        if (delta > 0) {
+          overpaidVsAverageTotal += delta;
+        } else if (delta < 0) {
+          savedVsAverageTotal += Math.abs(delta);
+        }
+      }
+    }
+
+    const deltaVsAverage = receiptPrice != null && avgMarketPrice != null
+      ? Number((receiptPrice - avgMarketPrice).toFixed(2))
+      : null;
+    const comparisonVsAverage = deltaVsAverage == null
+      ? 'unknown'
+      : deltaVsAverage > 0
+        ? 'overpaid'
+        : deltaVsAverage < 0
+          ? 'saved'
+          : 'equal';
 
     const item = {
       product_id: row.matched_product_id || null,
@@ -458,6 +521,9 @@ async function getReceiptReport(receiptId) {
       receipt_name: row.raw_name,
       price: receiptPrice,
       best_offer_price: bestOfferPrice,
+      average_market_price: avgMarketPrice,
+      delta_vs_average: deltaVsAverage,
+      comparison_vs_average: comparisonVsAverage,
       old_price: oldPrice,
       store_chain: row.best_offer_store_chain || null,
       source: bestOfferPrice != null ? 'OFFER' : 'RECEIPT',
@@ -477,8 +543,229 @@ async function getReceiptReport(receiptId) {
   return {
     items: mapped,
     savings_total: Number(savingsTotal.toFixed(2)),
-    verified_ratio: verifiedRatio
+    verified_ratio: verifiedRatio,
+    summary: {
+      total_spent: Number(totalSpent.toFixed(2)),
+      market_average_total: Number(marketAverageTotal.toFixed(2)),
+      overpaid_vs_average_total: Number(overpaidVsAverageTotal.toFixed(2)),
+      saved_vs_average_total: Number(savedVsAverageTotal.toFixed(2)),
+      matched_items: matchedItems,
+      total_items: mapped.length
+    }
   };
+}
+
+async function getUserReceiptsAnalytics(userId, options = {}) {
+  const months = Math.max(1, Math.min(24, Number(options.months || 12)));
+
+  const itemsResult = await query(
+    `SELECT ri.receipt_id,
+            ri.total_price,
+            ri.matched_product_id,
+            r.store_chain,
+            r.created_at
+     FROM receipt_items ri
+     JOIN receipts r ON r.id = ri.receipt_id
+     WHERE r.user_id = $1
+       AND r.created_at >= NOW() - ($2::int * INTERVAL '1 month')
+       AND r.status IN ('processed', 'finalized', 'needs_confirmation')
+       AND ri.total_price IS NOT NULL
+     ORDER BY r.created_at DESC`,
+    [userId, months]
+  );
+
+  if (!itemsResult.rows.length) {
+    return {
+      totals: {
+        spent: 0,
+        overpaid_vs_average: 0,
+        saved_vs_average: 0,
+        market_average_total: 0
+      },
+      monthly: [],
+      by_store_chain: [],
+      receipts_count: 0
+    };
+  }
+
+  const uniqueProductIds = [...new Set(
+    itemsResult.rows
+      .map((row) => row.matched_product_id)
+      .filter(Boolean)
+  )];
+
+  const avgByProduct = new Map();
+  if (uniqueProductIds.length) {
+    const avgResult = await query(
+      `SELECT product_id,
+              AVG(price_value)::numeric(10,4) AS avg_price
+       FROM offers
+       WHERE product_id = ANY($1::uuid[])
+         AND status = 'active'
+       GROUP BY product_id`,
+      [uniqueProductIds]
+    );
+    avgResult.rows.forEach((row) => {
+      const avg = Number(row.avg_price);
+      if (Number.isFinite(avg) && avg > 0) {
+        avgByProduct.set(row.product_id, avg);
+      }
+    });
+  }
+
+  let spent = 0;
+  let overpaid = 0;
+  let saved = 0;
+  let marketAverageTotal = 0;
+
+  const monthlyMap = new Map();
+  const storeMap = new Map();
+  const receiptSet = new Set();
+
+  for (const row of itemsResult.rows) {
+    const lineSpent = Number(row.total_price || 0);
+    if (!Number.isFinite(lineSpent)) continue;
+    spent += lineSpent;
+
+    const avg = row.matched_product_id ? avgByProduct.get(row.matched_product_id) : null;
+    if (avg != null) {
+      marketAverageTotal += avg;
+      const delta = lineSpent - avg;
+      if (delta > 0) overpaid += delta;
+      if (delta < 0) saved += Math.abs(delta);
+    }
+
+    const monthKey = new Date(row.created_at).toISOString().slice(0, 7);
+    const monthStat = monthlyMap.get(monthKey) || { month: monthKey, spent: 0, overpaid_vs_average: 0, saved_vs_average: 0 };
+    monthStat.spent += lineSpent;
+    if (avg != null) {
+      const delta = lineSpent - avg;
+      if (delta > 0) monthStat.overpaid_vs_average += delta;
+      if (delta < 0) monthStat.saved_vs_average += Math.abs(delta);
+    }
+    monthlyMap.set(monthKey, monthStat);
+
+    const chainKey = row.store_chain || 'Unknown';
+    const storeStat = storeMap.get(chainKey) || { store_chain: chainKey, spent: 0, overpaid_vs_average: 0, saved_vs_average: 0, lines: 0 };
+    storeStat.spent += lineSpent;
+    if (avg != null) {
+      const delta = lineSpent - avg;
+      if (delta > 0) storeStat.overpaid_vs_average += delta;
+      if (delta < 0) storeStat.saved_vs_average += Math.abs(delta);
+    }
+    storeStat.lines += 1;
+    storeMap.set(chainKey, storeStat);
+
+    receiptSet.add(row.receipt_id);
+  }
+
+  const monthly = [...monthlyMap.values()]
+    .map((row) => ({
+      month: row.month,
+      spent: Number(row.spent.toFixed(2)),
+      overpaid_vs_average: Number(row.overpaid_vs_average.toFixed(2)),
+      saved_vs_average: Number(row.saved_vs_average.toFixed(2))
+    }))
+    .sort((a, b) => b.month.localeCompare(a.month));
+
+  const byStoreChain = [...storeMap.values()]
+    .map((row) => ({
+      ...row,
+      spent: Number(row.spent.toFixed(2)),
+      overpaid_vs_average: Number(row.overpaid_vs_average.toFixed(2)),
+      saved_vs_average: Number(row.saved_vs_average.toFixed(2))
+    }))
+    .sort((a, b) => b.spent - a.spent);
+
+  return {
+    totals: {
+      spent: Number(spent.toFixed(2)),
+      overpaid_vs_average: Number(overpaid.toFixed(2)),
+      saved_vs_average: Number(saved.toFixed(2)),
+      market_average_total: Number(marketAverageTotal.toFixed(2))
+    },
+    monthly,
+    by_store_chain: byStoreChain,
+    receipts_count: receiptSet.size
+  };
+}
+
+async function getUserLoyaltyCards(userId) {
+  await ensureLoyaltyCardsTable();
+  const result = await query(
+    `SELECT id, store_chain, card_label, card_last4, is_active, created_at, updated_at
+     FROM user_loyalty_cards
+     WHERE user_id = $1
+       AND is_active = true
+     ORDER BY store_chain ASC, created_at DESC`,
+    [userId]
+  );
+  return result.rows;
+}
+
+async function getUserLoyaltyChains(userId) {
+  await ensureLoyaltyCardsTable();
+  const result = await query(
+    `SELECT DISTINCT lower(store_chain) AS chain
+     FROM user_loyalty_cards
+     WHERE user_id = $1
+       AND is_active = true`,
+    [userId]
+  );
+  return result.rows.map((row) => row.chain).filter(Boolean);
+}
+
+async function upsertUserLoyaltyCard(userId, payload) {
+  await ensureLoyaltyCardsTable();
+  const storeChain = String(payload.store_chain || '').trim();
+  const cardLabel = payload.card_label ? String(payload.card_label).trim() : null;
+  const cardLast4 = payload.card_last4 ? String(payload.card_last4).replace(/[^\d]/g, '').slice(-4) : null;
+
+  const existing = await query(
+    `SELECT id
+     FROM user_loyalty_cards
+     WHERE user_id = $1
+       AND lower(store_chain) = lower($2)
+       AND coalesce(card_last4, '') = coalesce($3, '')
+       AND is_active = true
+     LIMIT 1`,
+    [userId, storeChain, cardLast4]
+  );
+
+  if (existing.rows.length) {
+    const updated = await query(
+      `UPDATE user_loyalty_cards
+       SET card_label = $1,
+           updated_at = NOW()
+       WHERE id = $2
+       RETURNING id, store_chain, card_label, card_last4, is_active, created_at, updated_at`,
+      [cardLabel, existing.rows[0].id]
+    );
+    return updated.rows[0];
+  }
+
+  const inserted = await query(
+    `INSERT INTO user_loyalty_cards (user_id, store_chain, card_label, card_last4, is_active)
+     VALUES ($1, $2, $3, $4, true)
+     RETURNING id, store_chain, card_label, card_last4, is_active, created_at, updated_at`,
+    [userId, storeChain, cardLabel, cardLast4]
+  );
+  return inserted.rows[0];
+}
+
+async function deactivateUserLoyaltyCard(userId, loyaltyCardId) {
+  await ensureLoyaltyCardsTable();
+  const result = await query(
+    `UPDATE user_loyalty_cards
+     SET is_active = false,
+         updated_at = NOW()
+     WHERE id = $1
+       AND user_id = $2
+       AND is_active = true
+     RETURNING id`,
+    [loyaltyCardId, userId]
+  );
+  return result.rows.length > 0;
 }
 
 module.exports = {
@@ -494,5 +781,10 @@ module.exports = {
   getBasketItems,
   findProductByName,
   getReceiptStatus,
-  getReceiptReport
+  getReceiptReport,
+  getUserReceiptsAnalytics,
+  getUserLoyaltyCards,
+  upsertUserLoyaltyCard,
+  deactivateUserLoyaltyCard,
+  getUserLoyaltyChains
 };
