@@ -52,15 +52,21 @@ function validateExtraction(data) {
 }
 
 function sanitizeExtraction(data = {}) {
+  const numericOrNull = (value) => {
+    if (value === null || value === undefined || value === '') return null;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  };
+
   const cleanItems = (Array.isArray(data.line_items) ? data.line_items : [])
     .map((item, index) => ({
       raw_name: String(item?.raw_name || '').trim(),
       quantity: Number(item?.quantity) > 0 ? Number(item.quantity) : 1,
-      unit_price: Number.isFinite(Number(item?.unit_price)) ? Number(item.unit_price) : null,
-      total_price: Number.isFinite(Number(item?.total_price)) ? Number(item.total_price) : null,
+      unit_price: numericOrNull(item?.unit_price),
+      total_price: numericOrNull(item?.total_price),
       line_number: Number.isFinite(Number(item?.line_number)) ? Number(item.line_number) : (index + 1),
       barcode: item?.barcode ? String(item.barcode).trim() : null,
-      discount: Number.isFinite(Number(item?.discount)) ? Number(item.discount) : null
+      discount: numericOrNull(item?.discount)
     }))
     .filter((item) => {
       if (!item.raw_name) return false;
@@ -108,29 +114,35 @@ async function extractReceipt(imageBuffer, options = {}) {
   let lastError = null;
 
   for (const { name, fn } of providers) {
-    try {
-      console.log(`Trying provider: ${name}`);
-      const result = await fn(processedBuffer, options);
-      const sanitized = sanitizeExtraction(result.data);
-      
-      // Validate result
-      const validation = validateExtraction(sanitized);
-      
-      if (strictMode && !validation.valid) {
-        console.warn(`Provider ${name} validation failed:`, validation.issues);
-        lastError = new Error(`Validation failed: ${validation.issues.join(', ')}`);
-        continue;
-      }
+    const candidateBuffers = name === 'openai'
+      ? [processedBuffer, imageBuffer] // Retry once on original image if preprocessing hurt OCR.
+      : [processedBuffer];
 
-      console.log(`Successfully extracted with ${name}`);
-      return {
-        ...result,
-        data: sanitized,
-        confidence: sanitized.confidence || result.confidence || 0.6
-      };
-    } catch (error) {
-      console.error(`Provider ${name} failed:`, error.message);
-      lastError = error;
+    for (let attempt = 0; attempt < candidateBuffers.length; attempt += 1) {
+      try {
+        console.log(`Trying provider: ${name} (attempt ${attempt + 1}/${candidateBuffers.length})`);
+        const result = await fn(candidateBuffers[attempt], options);
+        const sanitized = sanitizeExtraction(result.data);
+        
+        // Validate result
+        const validation = validateExtraction(sanitized);
+        
+        if (strictMode && !validation.valid) {
+          console.warn(`Provider ${name} validation failed:`, validation.issues);
+          lastError = new Error(`Validation failed: ${validation.issues.join(', ')}`);
+          continue;
+        }
+
+        console.log(`Successfully extracted with ${name}`);
+        return {
+          ...result,
+          data: sanitized,
+          confidence: sanitized.confidence || result.confidence || 0.6
+        };
+      } catch (error) {
+        console.error(`Provider ${name} failed:`, error.message);
+        lastError = error;
+      }
     }
   }
 
@@ -140,5 +152,6 @@ async function extractReceipt(imageBuffer, options = {}) {
 module.exports = {
   extractReceipt,
   preprocessImage,
-  validateExtraction
+  validateExtraction,
+  sanitizeExtraction
 };

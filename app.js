@@ -144,11 +144,31 @@
       report_items_head: 'Receipt items',
       report_best_store: 'Best price at',
       report_ok_price: '✓ Good price',
+      receipt_review_queue_title: 'Needs review',
+      receipt_review_queue_empty: 'No receipts need manual review.',
+      receipt_review_queue_open: 'Open',
+      receipt_recent_title: 'Recent receipts',
+      receipt_quality_title: 'Receipt quality',
+      receipt_quality_window: 'Last {days} days',
+      receipt_quality_avg_confidence: 'Avg confidence',
+      receipt_quality_matched_ratio: 'Matched lines',
+      receipt_quality_review_rate: 'Needs review',
+      receipt_quality_feedback: 'Feedback sent',
+      receipt_quality_flagged_chains: 'Most flagged chains',
+      receipt_line_status_matched: 'Matched',
+      receipt_line_status_candidates: 'Needs choice',
+      receipt_line_status_unmatched: 'Unmatched',
       receipt_feedback_bad_scan_btn: 'Not scanned correctly',
+      receipt_rescan_btn: 'Rescan with AI',
+      receipt_rescan_done: 'Rescan complete.',
       receipt_feedback_bad_scan_sent: 'Thanks. Marked for manual review.',
       receipt_fix_scan_btn: 'Fix scan lines',
       receipt_fix_intro: 'Edit lines that were read incorrectly, then save.',
       receipt_fix_row_confirm: 'Confirm',
+      receipt_fix_apply_suggestions_btn: 'Apply suggestions',
+      receipt_fix_confirm_all_btn: 'Confirm all',
+      receipt_fix_clear_all_btn: 'Clear confirmations',
+      receipt_fix_unresolved_only_btn: 'Show unresolved only',
       receipt_fix_save_btn: 'Save corrections',
       receipt_fix_saved: 'Corrections saved.',
       overpaid_report_title: 'Overpaid report',
@@ -448,11 +468,31 @@
       report_items_head: 'Čekio pozicijos',
       report_best_store: 'Geriausia kaina',
       report_ok_price: '✓ Gera kaina',
+      receipt_review_queue_title: 'Reikia peržiūros',
+      receipt_review_queue_empty: 'Nėra čekių, kuriems reikia rankinės peržiūros.',
+      receipt_review_queue_open: 'Atidaryti',
+      receipt_recent_title: 'Naujausi čekiai',
+      receipt_quality_title: 'Čekių kokybė',
+      receipt_quality_window: 'Paskutinės {days} dienos',
+      receipt_quality_avg_confidence: 'Vid. pasitikėjimas',
+      receipt_quality_matched_ratio: 'Sutapę eilutės',
+      receipt_quality_review_rate: 'Reikia peržiūros',
+      receipt_quality_feedback: 'Išsiųsta atsiliepimų',
+      receipt_quality_flagged_chains: 'Dažniausiai pažymėtos parduotuvės',
+      receipt_line_status_matched: 'Sutapatinta',
+      receipt_line_status_candidates: 'Reikia pasirinkimo',
+      receipt_line_status_unmatched: 'Nesutapatinta',
       receipt_feedback_bad_scan_btn: 'Nuskaityta neteisingai',
+      receipt_rescan_btn: 'Peranalizuoti su AI',
+      receipt_rescan_done: 'Pakartotinis nuskaitymas baigtas.',
       receipt_feedback_bad_scan_sent: 'Ačiū. Pažymėta rankinei peržiūrai.',
       receipt_fix_scan_btn: 'Pataisyti eilutes',
       receipt_fix_intro: 'Pataisyk neteisingai nuskaitytas eilutes ir išsaugok.',
       receipt_fix_row_confirm: 'Patvirtinti',
+      receipt_fix_apply_suggestions_btn: 'Pritaikyti pasiūlymus',
+      receipt_fix_confirm_all_btn: 'Patvirtinti viską',
+      receipt_fix_clear_all_btn: 'Atžymėti viską',
+      receipt_fix_unresolved_only_btn: 'Rodyti tik neaiškias',
       receipt_fix_save_btn: 'Išsaugoti pataisymus',
       receipt_fix_saved: 'Pataisymai išsaugoti.',
       overpaid_report_title: 'Permokėjimo ataskaita',
@@ -767,6 +807,7 @@
     activeBasketId: null,
     activeBasketItems: [],
     lastReceiptId: null,
+    activeReceiptId: null,
     activeHouseholdId: '',
     familyLists: [],
     familyEventCursor: 0,
@@ -1000,10 +1041,10 @@
       }
       await Promise.allSettled([
         refreshAuthedPanels(),
-        loadMapStores(),
-        loadGlobalLeaderboard(),
-        loadPlusFeatures(),
-        loadRankCatalog()
+        loadMapStores({ silent: true }),
+        loadGlobalLeaderboard({ silent: true }),
+        loadPlusFeatures({ silent: true }),
+        loadRankCatalog({ silent: true })
       ]);
       state.appBootstrapped = true;
     } else if (state.map) {
@@ -1517,6 +1558,10 @@
         loadBudgetAnalytics().catch(() => {});
         loadLoyaltyCards().catch(() => {});
       }
+      if (viewName === 'receipts' && state.token) {
+        loadReceiptQualitySummary().catch(() => {});
+        loadReceiptReviewQueue().catch(() => {});
+      }
       updateAuthGateUi();
       updateContextTip(viewName);
       animateView(viewName);
@@ -1830,6 +1875,8 @@
       renderGamification(null);
       renderLedgerPreview([]);
       renderLoyaltyCards([]);
+      renderReceiptQualitySummary(null);
+      renderReceiptReviewQueue([], []);
       return;
     }
 
@@ -1847,6 +1894,8 @@
       renderLedgerPreview(ledger);
       if (state.currentView === 'budget') {
         await Promise.allSettled([loadBudgetAnalytics(), loadLoyaltyCards()]);
+      } else if (state.currentView === 'receipts') {
+        await Promise.allSettled([loadReceiptQualitySummary(), loadReceiptReviewQueue()]);
       }
     } catch (error) {
       renderGamification(null);
@@ -1922,7 +1971,8 @@
     state.mapMarkers = [];
   }
 
-  async function loadMapStores() {
+  async function loadMapStores(options = {}) {
+    const silent = Boolean(options.silent);
     if (!state.map) return;
     const query = new URLSearchParams();
     if (state.mapFilters.cityId) {
@@ -1979,7 +2029,7 @@
         state.map.fitBounds(bounds, { padding: [40, 40] });
       }
     } catch (error) {
-      showToast(`Map failed: ${toApiErrorLabel(error)}`, 'error');
+      if (!silent) showToast(`Map failed: ${toApiErrorLabel(error)}`, 'error');
     }
   }
 
@@ -2318,6 +2368,119 @@
     return null;
   }
 
+  function renderReceiptReviewQueue(reviewRows, historyRows = []) {
+    const container = $('receiptReviewQueue');
+    if (!container) return;
+    const list = Array.isArray(reviewRows) ? reviewRows : [];
+    const history = Array.isArray(historyRows) ? historyRows : [];
+
+    container.innerHTML = `
+      <div class="receipt-review-queue">
+        <div class="rrq-head">${t('receipt_review_queue_title')}</div>
+        <div class="rrq-list">
+          ${list.length ? list.map((row) => `
+            <div class="rrq-item">
+              <div>
+                <strong>${sanitize(row.store_chain || 'Store')}</strong>
+                <div class="muted small">${formatDate(row.updated_at)} · ${formatMoney(row.total || 0)}</div>
+              </div>
+              <button class="btn ghost" type="button" data-open-receipt-id="${sanitize(String(row.id))}">
+                ${t('receipt_review_queue_open')}
+              </button>
+            </div>
+          `).join('') : `<div class="muted small">${t('receipt_review_queue_empty')}</div>`}
+        </div>
+        ${history.length ? `
+          <div class="rrq-head" style="margin-top:0.55rem">${t('receipt_recent_title')}</div>
+          <div class="rrq-list">
+            ${history.map((row) => `
+              <div class="rrq-item">
+                <div>
+                  <strong>${sanitize(row.store_chain || 'Store')}</strong>
+                  <div class="muted small">${formatDate(row.created_at)} · ${formatMoney(row.total || 0)} · ${sanitize(row.status || '')}</div>
+                </div>
+                <button class="btn ghost" type="button" data-open-receipt-id="${sanitize(String(row.id))}">
+                  ${t('receipt_review_queue_open')}
+                </button>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }
+
+  function renderReceiptQualitySummary(summary) {
+    const container = $('receiptQualitySummary');
+    if (!container) return;
+    if (!summary || !summary.totals || !summary.lines) {
+      container.innerHTML = '';
+      return;
+    }
+
+    const days = Number(summary.window_days || 90);
+    const totals = summary.totals || {};
+    const lines = summary.lines || {};
+    const topChains = Array.isArray(summary.top_flagged_chains) ? summary.top_flagged_chains : [];
+    const reviewRate = Number(totals.receipts || 0) > 0
+      ? Number(((Number(totals.needs_confirmation || 0) / Number(totals.receipts || 1)) * 100).toFixed(1))
+      : 0;
+    const matchedRatio = Number((Number(lines.matched_ratio || 0) * 100).toFixed(1));
+    const avgConfidence = Number((Number(totals.avg_confidence || 0) * 100).toFixed(1));
+
+    container.innerHTML = `
+      <div class="receipt-quality-summary">
+        <div class="rrq-head">${t('receipt_quality_title')}</div>
+        <div class="muted small">${t('receipt_quality_window', { days })}</div>
+        <div class="kpi-grid" style="margin-top:0.5rem">
+          <div class="kpi"><span>${t('receipt_quality_avg_confidence')}</span><strong>${formatNumber(avgConfidence)}%</strong></div>
+          <div class="kpi"><span>${t('receipt_quality_matched_ratio')}</span><strong>${formatNumber(matchedRatio)}%</strong></div>
+          <div class="kpi"><span>${t('receipt_quality_review_rate')}</span><strong>${formatNumber(reviewRate)}%</strong></div>
+          <div class="kpi"><span>${t('receipt_quality_feedback')}</span><strong>${formatNumber(totals.feedback_count || 0)}</strong></div>
+        </div>
+        ${topChains.length ? `
+          <div class="rrq-head" style="margin-top:0.55rem">${t('receipt_quality_flagged_chains')}</div>
+          <div class="quality-chain-list">
+            ${topChains.map((row) => `
+              <span class="quality-chain-chip">${sanitize(row.store_chain || 'Unknown')} · ${formatNumber(row.flagged_receipts || 0)}</span>
+            `).join('')}
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }
+
+  async function loadReceiptQualitySummary() {
+    const container = $('receiptQualitySummary');
+    if (!container) return;
+    if (!state.token) {
+      renderReceiptQualitySummary(null);
+      return;
+    }
+    try {
+      const summary = await apiRequest('/me/receipts/quality-summary?days=90');
+      renderReceiptQualitySummary(summary);
+    } catch (_) {
+      renderReceiptQualitySummary(null);
+    }
+  }
+
+  async function loadReceiptReviewQueue() {
+    if (!state.token) {
+      renderReceiptReviewQueue([], []);
+      return;
+    }
+    try {
+      const [queueRows, historyRows] = await Promise.all([
+        apiRequest('/me/receipts/review-queue?limit=12'),
+        apiRequest('/me/receipts/history?limit=8')
+      ]);
+      renderReceiptReviewQueue(queueRows, historyRows);
+    } catch (_) {
+      renderReceiptReviewQueue([], []);
+    }
+  }
+
   function renderReceiptReport(report) {
     const container = $('receiptReport');
     const emptyEl = $('receiptReportEmpty');
@@ -2326,11 +2489,14 @@
     if (emptyEl) emptyEl.style.display = 'none';
 
     if (!report) {
+      state.activeReceiptId = null;
       container.innerHTML = `<div class="empty">${t('empty_report') || 'No data.'}</div>`;
       return;
     }
+    state.activeReceiptId = report.receipt_id || state.lastReceiptId || null;
 
     const lines = Array.isArray(report.line_items) ? report.line_items : [];
+    const receiptStatus = String(report.receipt_status || '').toLowerCase();
     const overpaid = Array.isArray(report.overpaid_items) ? report.overpaid_items : [];
     const savings = Number(report.savings_total || 0);
     const verifiedRatio = Number(report.verified_ratio || 0);
@@ -2374,6 +2540,9 @@
     `;
     const feedbackActions = `
       <div class="receipt-feedback-actions">
+        <button class="btn ghost" type="button" data-receipt-rescan="1">
+          ${t('receipt_rescan_btn')}
+        </button>
         <button class="btn ghost" type="button" data-receipt-open-fix-editor="1">
           ${t('receipt_fix_scan_btn')}
         </button>
@@ -2392,6 +2561,12 @@
           const isOverpaid = sav > 0;
           const icon = isOverpaid ? '⚠️' : '✅';
           const cls = isOverpaid ? 'overpaid' : 'ok';
+          const matchStatus = String(item.match_status || '').toLowerCase();
+          const matchLabel = matchStatus === 'matched'
+            ? t('receipt_line_status_matched')
+            : matchStatus === 'candidates'
+              ? t('receipt_line_status_candidates')
+              : t('receipt_line_status_unmatched');
           const store = item.store_chain ? `${t('report_best_store')}: ${sanitize(item.store_chain)}` : '';
           const bestP = item.best_offer_price != null ? ` · €${Number(item.best_offer_price).toFixed(2)}` : '';
           return `
@@ -2399,6 +2574,7 @@
               <div class="report-item-icon">${icon}</div>
               <div class="report-item-body">
                 <div class="report-item-name">${sanitize(item.product_name || item.receipt_name || 'Item')}</div>
+                <div class="report-item-match ${sanitize(matchStatus || 'unmatched')}">${sanitize(matchLabel)}</div>
                 ${store ? `<div class="report-item-store">${store}${bestP}</div>` : ''}
               </div>
               <div class="report-item-prices">
@@ -2411,30 +2587,60 @@
             </div>`;
         }).join('');
 
-    const fixEditor = renderReceiptFixEditor(lines);
+    const fixEditor = renderReceiptFixEditor(lines, {
+      expanded: receiptStatus === 'needs_confirmation',
+      unresolvedOnly: receiptStatus === 'needs_confirmation' && lines.length >= 12
+    });
     container.innerHTML = summaryHtml + verBar + avgComparison + feedbackActions + fixEditor + head + itemsHtml;
   }
 
-  function renderReceiptFixEditor(lines) {
+  function renderReceiptFixEditor(lines, options = {}) {
     const editable = (Array.isArray(lines) ? lines : []).filter((row) => row && row.receipt_line_id);
     if (!editable.length) return '';
+    const expanded = Boolean(options.expanded);
+    const unresolvedOnly = Boolean(options.unresolvedOnly);
+    const editorClasses = [
+      'receipt-fix-editor',
+      expanded ? '' : 'is-collapsed',
+      unresolvedOnly ? 'is-unresolved-only' : ''
+    ].filter(Boolean).join(' ');
 
     return `
-      <div class="receipt-fix-editor is-collapsed" id="receiptFixEditor">
+      <div class="${editorClasses}" id="receiptFixEditor">
         <div class="muted small">${t('receipt_fix_intro')}</div>
+        <div class="receipt-fix-actions">
+          <button class="btn ghost" type="button" data-receipt-apply-suggestions="1">${t('receipt_fix_apply_suggestions_btn')}</button>
+          <button class="btn ghost" type="button" data-receipt-confirm-all="1">${t('receipt_fix_confirm_all_btn')}</button>
+          <button class="btn ghost" type="button" data-receipt-clear-all="1">${t('receipt_fix_clear_all_btn')}</button>
+          <button class="btn ghost" type="button" data-receipt-toggle-unresolved="1">${t('receipt_fix_unresolved_only_btn')}</button>
+        </div>
         <div class="receipt-fix-rows">
           ${editable.map((item) => `
-            <div class="receipt-fix-row">
+            <div class="receipt-fix-row" data-line-match-status="${sanitize(String(item.match_status || 'unmatched').toLowerCase())}">
               <input
                 class="receipt-fix-input"
                 type="text"
                 value="${sanitize(item.receipt_name || item.product_name || '')}"
                 data-receipt-line-id="${sanitize(String(item.receipt_line_id))}"
+                data-selected-product-id=""
               />
               <label class="receipt-fix-check">
                 <input type="checkbox" checked data-receipt-confirm-id="${sanitize(String(item.receipt_line_id))}" />
                 <span>${t('receipt_fix_row_confirm')}</span>
               </label>
+              ${Array.isArray(item.candidate_products) && item.candidate_products.length ? `
+                <div class="receipt-fix-candidates">
+                  ${item.candidate_products.slice(0, 3).map((candidate) => `
+                    <button
+                      class="btn ghost"
+                      type="button"
+                      data-receipt-candidate-for="${sanitize(String(item.receipt_line_id))}"
+                      data-receipt-candidate-product-id="${sanitize(String(candidate.product_id || ''))}"
+                      data-receipt-candidate-name="${sanitize(candidate.product_name || '')}"
+                    >${sanitize(candidate.product_name || '')}</button>
+                  `).join('')}
+                </div>
+              ` : ''}
             </div>
           `).join('')}
         </div>
@@ -2446,7 +2652,7 @@
   }
 
   async function submitBadReceiptFeedback() {
-    const receiptId = state.lastReceiptId;
+    const receiptId = state.activeReceiptId || state.lastReceiptId;
     if (!receiptId) {
       showToast('No receipt loaded yet.', 'warning');
       return;
@@ -2464,13 +2670,50 @@
         }
       });
       showToast(t('receipt_feedback_bad_scan_sent'), 'success');
+      await loadReceiptQualitySummary();
+      await loadReceiptReviewQueue();
     } catch (error) {
       showToast(`Feedback failed: ${toApiErrorLabel(error)}`, 'error');
     }
   }
 
+  async function retryReceiptProcessing() {
+    const receiptId = state.activeReceiptId || state.lastReceiptId;
+    if (!receiptId) {
+      showToast('No receipt loaded yet.', 'warning');
+      return;
+    }
+
+    try {
+      await apiRequest(`/receipts/${encodeURIComponent(receiptId)}/reprocess`, {
+        method: 'POST'
+      });
+
+      receiptSetStep(2);
+      receiptSetStatus(`${t('rp_scanning')}…`);
+      showToast('Rescan started.', 'info');
+
+      const finalStatus = await pollReceiptUntilComplete(receiptId);
+      if (!finalStatus) {
+        showToast(t('still_processing') || 'Still processing…', 'info');
+        return;
+      }
+
+      const report = await apiRequest(`/receipts/${encodeURIComponent(receiptId)}/report`);
+      state.activeReceiptId = receiptId;
+      renderReceiptReport(report);
+      await loadReceiptQualitySummary();
+      await loadReceiptReviewQueue();
+      receiptSetStep(4);
+      receiptSetStatus(t('receipt_analysis_complete') || 'Done!', 'success');
+      showToast(t('receipt_rescan_done'), 'success');
+    } catch (error) {
+      showToast(`Rescan failed: ${toApiErrorLabel(error)}`, 'error');
+    }
+  }
+
   async function submitReceiptCorrections() {
-    const receiptId = state.lastReceiptId;
+    const receiptId = state.activeReceiptId || state.lastReceiptId;
     if (!receiptId) {
       showToast('No receipt loaded yet.', 'warning');
       return;
@@ -2485,11 +2728,13 @@
       .map((input) => {
         const id = input.getAttribute('data-receipt-line-id');
         const corrected = String(input.value || '').trim();
+        const selectedProductId = String(input.getAttribute('data-selected-product-id') || '').trim() || null;
         if (!id || !corrected) return null;
         return {
           original_line_id: id,
           corrected_name: corrected,
-          user_confirmed: checks.get(id) !== false
+          user_confirmed: checks.get(id) !== false,
+          selected_product_id: selectedProductId
         };
       })
       .filter(Boolean);
@@ -2507,6 +2752,8 @@
       showToast(t('receipt_fix_saved'), 'success');
       const report = await apiRequest(`/receipts/${encodeURIComponent(receiptId)}/report`);
       renderReceiptReport(report);
+      await loadReceiptQualitySummary();
+      await loadReceiptReviewQueue();
     } catch (error) {
       showToast(`Save corrections failed: ${toApiErrorLabel(error)}`, 'error');
     }
@@ -2553,6 +2800,8 @@
       receiptSetStep(4);
       receiptSetStatus(t('receipt_analysis_complete') || 'Done!', 'success');
       renderReceiptReport(report);
+      await loadReceiptQualitySummary();
+      await loadReceiptReviewQueue();
       showToast(t('receipt_analysis_complete') || 'Analysis complete!', 'success');
     } catch (error) {
       const msg = toApiErrorLabel(error);
@@ -3002,13 +3251,14 @@
     `;
   }
 
-  async function loadGlobalLeaderboard() {
+  async function loadGlobalLeaderboard(options = {}) {
+    const silent = Boolean(options.silent);
     try {
       const rows = await apiRequest('/leaderboard/global?limit=50');
       renderLeaderboard($('globalLeaderboard'), rows);
     } catch (error) {
       renderError($('globalLeaderboard'), toApiErrorLabel(error));
-      showToast(`Global leaderboard failed: ${toApiErrorLabel(error)}`, 'error');
+      if (!silent) showToast(`Global leaderboard failed: ${toApiErrorLabel(error)}`, 'error');
     }
   }
 
@@ -3077,13 +3327,14 @@
     `).join('');
   }
 
-  async function loadPlusFeatures() {
+  async function loadPlusFeatures(options = {}) {
+    const silent = Boolean(options.silent);
     try {
       const rows = await apiRequest('/plus/features');
       renderPlusFeatures(rows);
     } catch (error) {
       renderError($('plusFeatures'), toApiErrorLabel(error));
-      showToast(`Load plus features failed: ${toApiErrorLabel(error)}`, 'error');
+      if (!silent) showToast(`Load plus features failed: ${toApiErrorLabel(error)}`, 'error');
     }
   }
 
@@ -3432,7 +3683,8 @@
     }
   }
 
-  async function loadRankCatalog() {
+  async function loadRankCatalog(options = {}) {
+    const silent = Boolean(options.silent);
     const container = $('rankCatalog');
     if (!container) return;
     setLoading(container, t('loading_ranks'));
@@ -3452,15 +3704,15 @@
       `).join('');
     } catch (error) {
       renderError(container, toApiErrorLabel(error));
-      showToast(`Load ranks failed: ${toApiErrorLabel(error)}`, 'error');
+      if (!silent) showToast(`Load ranks failed: ${toApiErrorLabel(error)}`, 'error');
     }
   }
 
   async function refreshAll() {
     await Promise.allSettled([
       refreshAuthedPanels(),
-      loadMapStores(),
-      loadGlobalLeaderboard(),
+      loadMapStores({ silent: true }),
+      loadGlobalLeaderboard({ silent: true }),
       state.token ? loadPlusStatus() : Promise.resolve(),
       state.token ? loadBudgetAnalytics() : Promise.resolve()
     ]);
@@ -3537,12 +3789,72 @@
     $('receiptReport')?.addEventListener('click', (event) => {
       const target = event.target;
       if (!(target instanceof HTMLElement)) return;
+      if (target.closest('[data-receipt-apply-suggestions]')) {
+        document.querySelectorAll('#receiptFixEditor [data-receipt-candidate-for]')
+          .forEach((button) => {
+            if (!(button instanceof HTMLElement)) return;
+            const lineId = button.getAttribute('data-receipt-candidate-for');
+            if (!lineId) return;
+            const input = document.querySelector(`#receiptFixEditor [data-receipt-line-id="${lineId}"]`);
+            if (!(input instanceof HTMLInputElement)) return;
+            if (input.getAttribute('data-selected-product-id')) return;
+            const candidateName = button.getAttribute('data-receipt-candidate-name') || '';
+            const productId = button.getAttribute('data-receipt-candidate-product-id') || '';
+            input.value = candidateName;
+            input.setAttribute('data-selected-product-id', productId);
+            button.classList.add('active');
+          });
+        return;
+      }
+      if (target.closest('[data-receipt-confirm-all]')) {
+        document.querySelectorAll('#receiptFixEditor [data-receipt-confirm-id]')
+          .forEach((el) => {
+            if (el instanceof HTMLInputElement) el.checked = true;
+          });
+        return;
+      }
+      if (target.closest('[data-receipt-clear-all]')) {
+        document.querySelectorAll('#receiptFixEditor [data-receipt-confirm-id]')
+          .forEach((el) => {
+            if (el instanceof HTMLInputElement) el.checked = false;
+          });
+        return;
+      }
+      if (target.closest('[data-receipt-toggle-unresolved]')) {
+        const editor = $('receiptFixEditor');
+        if (!editor) return;
+        editor.classList.toggle('is-unresolved-only');
+        target.classList.toggle('active', editor.classList.contains('is-unresolved-only'));
+        return;
+      }
+      const candidateButton = target.closest('[data-receipt-candidate-for]');
+      if (candidateButton instanceof HTMLElement) {
+        const lineId = candidateButton.getAttribute('data-receipt-candidate-for');
+        const name = candidateButton.getAttribute('data-receipt-candidate-name') || '';
+        const productId = candidateButton.getAttribute('data-receipt-candidate-product-id') || '';
+        if (lineId) {
+          const input = document.querySelector(`#receiptFixEditor [data-receipt-line-id="${lineId}"]`);
+          if (input instanceof HTMLInputElement) {
+            input.value = name;
+            input.setAttribute('data-selected-product-id', productId);
+            input.focus();
+          }
+          document.querySelectorAll(`#receiptFixEditor [data-receipt-candidate-for="${lineId}"]`)
+            .forEach((btn) => btn.classList.remove('active'));
+          candidateButton.classList.add('active');
+        }
+        return;
+      }
       if (target.closest('[data-receipt-open-fix-editor]')) {
         const editor = $('receiptFixEditor');
         if (editor) {
           editor.classList.toggle('is-collapsed');
           editor.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
+        return;
+      }
+      if (target.closest('[data-receipt-rescan]')) {
+        retryReceiptProcessing().catch(() => {});
         return;
       }
       if (!target.closest('[data-receipt-feedback-bad-scan]')) return;
@@ -3553,6 +3865,30 @@
       if (!(target instanceof HTMLElement)) return;
       if (!target.closest('[data-receipt-save-corrections]')) return;
       submitReceiptCorrections().catch(() => {});
+    });
+    $('receiptReport')?.addEventListener('input', (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement)) return;
+      const lineId = target.getAttribute('data-receipt-line-id');
+      if (!lineId) return;
+      target.setAttribute('data-selected-product-id', '');
+      document.querySelectorAll(`#receiptFixEditor [data-receipt-candidate-for="${lineId}"]`)
+        .forEach((btn) => btn.classList.remove('active'));
+    });
+    $('receiptReviewQueue')?.addEventListener('click', async (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const button = target.closest('[data-open-receipt-id]');
+      if (!(button instanceof HTMLElement)) return;
+      const receiptId = button.getAttribute('data-open-receipt-id');
+      if (!receiptId) return;
+      try {
+        const report = await apiRequest(`/receipts/${encodeURIComponent(receiptId)}/report`);
+        state.activeReceiptId = receiptId;
+        renderReceiptReport(report);
+      } catch (error) {
+        showToast(`Open receipt failed: ${toApiErrorLabel(error)}`, 'error');
+      }
     });
 
     $('createFamilyBtn')?.addEventListener('click', () => { createFamily().catch(() => {}); });

@@ -22,14 +22,16 @@ const {
   insertBasketItems,
   getBasketItems,
   findProductByName,
-  getReceiptStatus,
   getReceiptReport,
   getUserReceiptsAnalytics,
   getUserLoyaltyCards,
   upsertUserLoyaltyCard,
   deactivateUserLoyaltyCard,
   getUserLoyaltyChains,
-  createReceiptScanFeedback
+  createReceiptScanFeedback,
+  getUserReceiptReviewQueue,
+  getUserReceiptHistory,
+  getUserReceiptQualitySummary
 } = require('./queries');
 const { publishReceiptJob } = require('./queue');
 const { optimizeSingleStore } = require('./optimizer');
@@ -302,6 +304,41 @@ app.get('/me/receipts/analytics', auth.requireUser, async (req, res) => {
   } catch (error) {
     console.error('Receipt analytics failed:', error);
     res.status(500).json({ error: 'receipt_analytics_failed' });
+  }
+});
+
+app.get('/me/receipts/review-queue', auth.requireUser, async (req, res) => {
+  try {
+    const limit = Number.parseInt(req.query.limit, 10);
+    const rows = await getUserReceiptReviewQueue(req.user.id, Number.isFinite(limit) ? limit : 12);
+    res.json(rows);
+  } catch (error) {
+    console.error('Receipt review queue failed:', error);
+    res.status(500).json({ error: 'receipt_review_queue_failed' });
+  }
+});
+
+app.get('/me/receipts/history', auth.requireUser, async (req, res) => {
+  try {
+    const limit = Number.parseInt(req.query.limit, 10);
+    const rows = await getUserReceiptHistory(req.user.id, Number.isFinite(limit) ? limit : 20);
+    res.json(rows);
+  } catch (error) {
+    console.error('Receipt history failed:', error);
+    res.status(500).json({ error: 'receipt_history_failed' });
+  }
+});
+
+app.get('/me/receipts/quality-summary', auth.requireUser, async (req, res) => {
+  try {
+    const days = Number.parseInt(req.query.days, 10);
+    const summary = await getUserReceiptQualitySummary(req.user.id, {
+      days: Number.isFinite(days) ? days : 90
+    });
+    res.json(summary);
+  } catch (error) {
+    console.error('Receipt quality summary failed:', error);
+    res.status(500).json({ error: 'receipt_quality_summary_failed' });
   }
 });
 
@@ -1095,17 +1132,32 @@ app.post('/receipts/upload', auth.optionalAuthMiddleware, upload.single('file'),
   }
 });
 
-app.get('/receipts/:id/status', async (req, res) => {
+app.get('/receipts/:id/status', auth.optionalAuthMiddleware, async (req, res) => {
   try {
-    const status = await getReceiptStatus(req.params.id);
-    if (!status) {
+    const receiptResult = await query(
+      `SELECT id, status, user_id, guest_session_id
+       FROM receipts
+       WHERE id = $1
+       LIMIT 1`,
+      [req.params.id]
+    );
+    if (!receiptResult.rows.length) {
       res.status(404).json({ error: 'receipt_not_found' });
       return;
     }
+    const receipt = receiptResult.rows[0];
+    if (receipt.user_id) {
+      if (!req.user?.id) {
+        return res.status(401).json({ error: 'login_required' });
+      }
+      if (receipt.user_id !== req.user.id) {
+        return res.status(403).json({ error: 'receipt_access_denied' });
+      }
+    }
     res.json({
-      receipt_id: status.id,
-      status: status.status,
-      progress: statusToProgress(status.status)
+      receipt_id: receipt.id,
+      status: receipt.status,
+      progress: statusToProgress(receipt.status)
     });
   } catch (error) {
     res.status(500).json({ error: 'receipt_status_unavailable' });
@@ -1114,10 +1166,25 @@ app.get('/receipts/:id/status', async (req, res) => {
 
 app.get('/receipts/:id/report', auth.optionalAuthMiddleware, async (req, res) => {
   try {
-    const status = await getReceiptStatus(req.params.id);
-    if (!status) {
+    const receiptResult = await query(
+      `SELECT id, user_id, status
+       FROM receipts
+       WHERE id = $1
+       LIMIT 1`,
+      [req.params.id]
+    );
+    if (!receiptResult.rows.length) {
       res.status(404).json({ error: 'receipt_not_found' });
       return;
+    }
+    const receipt = receiptResult.rows[0];
+    if (receipt.user_id) {
+      if (!req.user?.id) {
+        return res.status(401).json({ error: 'login_required' });
+      }
+      if (receipt.user_id !== req.user.id) {
+        return res.status(403).json({ error: 'receipt_access_denied' });
+      }
     }
     const report = await getReceiptReport(req.params.id);
 
@@ -1136,7 +1203,7 @@ app.get('/receipts/:id/report', auth.optionalAuthMiddleware, async (req, res) =>
 
     res.json({
       receipt_id: req.params.id,
-      receipt_status: status.status,
+      receipt_status: receipt.status,
       overpaid_items: report.items.filter((item) => item.savings_eur > 0),
       line_items: report.items,
       savings_total: report.savings_total,
@@ -1145,6 +1212,50 @@ app.get('/receipts/:id/report', auth.optionalAuthMiddleware, async (req, res) =>
     });
   } catch (error) {
     res.status(500).json({ error: 'receipt_report_unavailable' });
+  }
+});
+
+app.post('/receipts/:id/reprocess', auth.requireUser, async (req, res) => {
+  try {
+    const receiptResult = await query(
+      `SELECT id, user_id, image_object_key, store_chain
+       FROM receipts
+       WHERE id = $1
+       LIMIT 1`,
+      [req.params.id]
+    );
+    if (!receiptResult.rows.length) {
+      return res.status(404).json({ error: 'receipt_not_found' });
+    }
+
+    const receipt = receiptResult.rows[0];
+    if (!receipt.user_id || receipt.user_id !== req.user.id) {
+      return res.status(403).json({ error: 'receipt_access_denied' });
+    }
+    if (!receipt.image_object_key) {
+      return res.status(400).json({ error: 'receipt_image_missing' });
+    }
+
+    const imagePath = ensureUploadPath(receipt.image_object_key);
+    if (!fs.existsSync(imagePath)) {
+      return res.status(404).json({ error: 'receipt_image_not_found' });
+    }
+
+    const imageBuffer = fs.readFileSync(imagePath);
+    await query(`UPDATE receipts SET status = 'processing', updated_at = NOW() WHERE id = $1`, [receipt.id]);
+
+    processReceiptInline(receipt.id, imageBuffer, receipt.store_chain).catch((err) => {
+      console.error('Receipt reprocess failed:', err.message);
+    });
+
+    return res.json({
+      receipt_id: receipt.id,
+      status: 'processing',
+      progress: statusToProgress('processing')
+    });
+  } catch (error) {
+    console.error('Receipt reprocess failed:', error);
+    return res.status(500).json({ error: 'receipt_reprocess_failed' });
   }
 });
 
@@ -1224,11 +1335,15 @@ app.post('/receipts/:id/confirm', auth.requireUser, async (req, res) => {
     }
     
     const { query } = require('./queries');
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     const sanitizedConfirmations = confirmations
       .map((confirmation) => ({
         original_line_id: String(confirmation?.original_line_id || '').trim(),
         corrected_name: String(confirmation?.corrected_name || '').trim(),
-        user_confirmed: confirmation?.user_confirmed !== false
+        user_confirmed: confirmation?.user_confirmed !== false,
+        selected_product_id: confirmation?.selected_product_id
+          ? String(confirmation.selected_product_id).trim()
+          : null
       }))
       .filter((row) => row.original_line_id && row.corrected_name);
 
@@ -1239,15 +1354,29 @@ app.post('/receipts/:id/confirm', auth.requireUser, async (req, res) => {
     // Update each confirmed item
     let updatedCount = 0;
     for (const confirmation of sanitizedConfirmations) {
-      const { original_line_id, corrected_name, user_confirmed } = confirmation;
+      const { original_line_id, corrected_name, user_confirmed, selected_product_id } = confirmation;
+      if (selected_product_id && !uuidPattern.test(selected_product_id)) {
+        return res.status(400).json({ error: 'invalid_selected_product_id' });
+      }
+      const isConfirmedMatch = Boolean(user_confirmed && selected_product_id);
       
       const updateResult = await query(
         `UPDATE receipt_items 
          SET raw_name = $1, 
+             normalized_name = lower($1),
              confidence = CASE WHEN $2 THEN 1.0 ELSE confidence END,
-             match_status = CASE WHEN $2 THEN 'matched' ELSE match_status END
-         WHERE id = $3 AND receipt_id = $4`,
-        [corrected_name, user_confirmed, original_line_id, receiptId]
+             matched_product_id = CASE
+               WHEN $2 THEN $3::uuid
+               WHEN NOT $4 THEN NULL
+               ELSE matched_product_id
+             END,
+             match_status = CASE
+               WHEN $2 THEN 'matched'
+               WHEN $4 THEN 'candidates'
+               ELSE 'unmatched'
+             END
+         WHERE id = $5 AND receipt_id = $6`,
+        [corrected_name, isConfirmedMatch, selected_product_id, user_confirmed, original_line_id, receiptId]
       );
       updatedCount += Number(updateResult.rowCount || 0);
     }
@@ -1256,13 +1385,21 @@ app.post('/receipts/:id/confirm', auth.requireUser, async (req, res) => {
       return res.status(400).json({ error: 'no_items_updated' });
     }
     
-    // Update receipt status to finalized
-    await query(
-      `UPDATE receipts SET status = 'finalized', updated_at = NOW() WHERE id = $1`,
+    const unresolvedResult = await query(
+      `SELECT COUNT(*)::int AS unresolved_count
+       FROM receipt_items
+       WHERE receipt_id = $1
+         AND match_status <> 'matched'`,
       [receiptId]
     );
+    const unresolvedCount = Number(unresolvedResult.rows[0]?.unresolved_count || 0);
+    const nextStatus = unresolvedCount > 0 ? 'needs_confirmation' : 'finalized';
+    await query(
+      `UPDATE receipts SET status = $2, updated_at = NOW() WHERE id = $1`,
+      [receiptId, nextStatus]
+    );
     
-    res.json({ success: true, confirmed_count: updatedCount });
+    res.json({ success: true, confirmed_count: updatedCount, status: nextStatus, unresolved_count: unresolvedCount });
   } catch (error) {
     console.error('Confirmation error:', error);
     res.status(500).json({ error: 'confirmation_failed' });

@@ -17,6 +17,11 @@ const CHAIN_SYNONYMS = [
   { canonical: 'Ermitažas', aliases: ['ermitazas', 'ermitažas'] }
 ];
 
+const TOKEN_STOPWORDS = new Set([
+  'vnt', 'kg', 'g', 'gr', 'ml', 'l', 'lt', 'eur', 'akcija', 'nuolaida',
+  'kortele', 'kortelė', 'nuol', 'x', 'pakuote', 'pak', 'svor'
+]);
+
 function clamp01(value) {
   const n = Number(value);
   if (!Number.isFinite(n)) return 0;
@@ -55,6 +60,27 @@ function normalizeItemName(value) {
     .replace(/\s+/g, ' ')
     .replace(/[|*_]/g, ' ')
     .trim();
+}
+
+function normalizeProductQuery(value) {
+  const base = normalizeText(value)
+    // Remove likely numeric fragments, multipliers and size tokens.
+    .replace(/\b\d+[xх]\d+\b/g, ' ')
+    .replace(/\b\d+(?:[.,]\d+)?\s?(?:kg|g|gr|ml|l|vnt|pak|eur)\b/g, ' ')
+    .replace(/\b\d+(?:[.,]\d+)?\b/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const tokens = base
+    .split(' ')
+    .map((t) => t.trim())
+    .filter((t) => t.length >= 2 && !TOKEN_STOPWORDS.has(t))
+    .slice(0, 8);
+
+  return {
+    text: tokens.join(' '),
+    tokens
+  };
 }
 
 function classifyReceiptLine(rawName, totalPrice) {
@@ -284,8 +310,11 @@ function tokenOverlapScore(aTokens, bTokens) {
 async function matchProductFromReceiptLine(item) {
   const barcode = item?.barcode || null;
   const rawName = item?.raw_name || '';
-  const normalized = normalizeText(item?.normalized_name || rawName);
-  const tokens = normalized.split(' ').filter((t) => t.length >= 3).slice(0, 6);
+  const normalized = normalizeProductQuery(item?.normalized_name || rawName);
+  const normalizedText = normalized.text || normalizeText(item?.normalized_name || rawName);
+  const tokens = normalized.tokens.length
+    ? normalized.tokens
+    : normalizedText.split(' ').filter((t) => t.length >= 3).slice(0, 8);
 
   if (barcode) {
     const eanMatch = await query(
@@ -306,7 +335,7 @@ async function matchProductFromReceiptLine(item) {
     }
   }
 
-  if (!normalized || !tokens.length) {
+  if (!normalizedText || !tokens.length) {
     return {
       matched_product_id: null,
       match_status: 'unmatched',
@@ -335,20 +364,31 @@ async function matchProductFromReceiptLine(item) {
 
   const scoredByProduct = new Map();
   for (const row of rows.rows) {
-    const rowNameNorm = normalizeText(row.name);
-    const aliasNorm = normalizeText(row.alias_name);
-    const rowTokens = rowNameNorm.split(' ').filter((t) => t.length >= 3);
-    const nameScore = diceCoefficient(normalized, rowNameNorm);
-    const aliasScore = aliasNorm ? diceCoefficient(normalized, aliasNorm) : 0;
-    const overlap = tokenOverlapScore(tokens, rowTokens);
-    const score = Number((Math.max(nameScore, aliasScore) * 0.7 + overlap * 0.3).toFixed(3));
+    const rowNameNorm = normalizeProductQuery(row.name);
+    const aliasNorm = normalizeProductQuery(row.alias_name);
+    const rowText = rowNameNorm.text || normalizeText(row.name);
+    const aliasText = aliasNorm.text || normalizeText(row.alias_name);
+    const rowTokens = rowNameNorm.tokens.length
+      ? rowNameNorm.tokens
+      : rowText.split(' ').filter((t) => t.length >= 3);
+    const aliasTokens = aliasNorm.tokens.length
+      ? aliasNorm.tokens
+      : aliasText.split(' ').filter((t) => t.length >= 3);
+
+    const nameScore = diceCoefficient(normalizedText, rowText);
+    const aliasScore = aliasText ? diceCoefficient(normalizedText, aliasText) : 0;
+    const overlapName = tokenOverlapScore(tokens, rowTokens);
+    const overlapAlias = aliasTokens.length ? tokenOverlapScore(tokens, aliasTokens) : 0;
+    const overlap = Math.max(overlapName, overlapAlias);
+    const score = Number((Math.max(nameScore, aliasScore) * 0.6 + overlap * 0.4).toFixed(3));
 
     const prev = scoredByProduct.get(row.id);
     if (!prev || score > prev.score) {
       scoredByProduct.set(row.id, {
         id: row.id,
         name: row.name,
-        score
+        score,
+        overlap: Number(overlap.toFixed(3))
       });
     }
   }
@@ -364,7 +404,9 @@ async function matchProductFromReceiptLine(item) {
   }
 
   const best = ranked[0];
-  if (best.score >= 0.78) {
+  const strongOverlap = best.overlap >= 0.5;
+  const mediumOverlap = best.overlap >= 0.35;
+  if ((best.score >= 0.78 && mediumOverlap) || (best.score >= 0.68 && strongOverlap)) {
     return {
       matched_product_id: best.id,
       match_status: 'matched',
@@ -377,7 +419,7 @@ async function matchProductFromReceiptLine(item) {
     };
   }
 
-  if (best.score >= 0.55) {
+  if (best.score >= 0.5) {
     return {
       matched_product_id: null,
       match_status: 'candidates',

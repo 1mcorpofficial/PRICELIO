@@ -424,6 +424,7 @@ async function getReceiptReport(receiptId) {
        ri.total_price,
        ri.confidence,
        ri.match_status,
+       ri.candidates,
        ri.matched_product_id,
        p.name AS matched_product_name,
        o.price_value AS best_offer_price,
@@ -455,6 +456,38 @@ async function getReceiptReport(receiptId) {
   let savedVsAverageTotal = 0;
   let matchedItems = 0;
 
+  const matchedProductIds = [...new Set(
+    items.rows
+      .map((row) => row.matched_product_id)
+      .filter(Boolean)
+  )];
+
+  const truthSourcesByProduct = new Map();
+  if (matchedProductIds.length) {
+    const truthRows = await query(
+      `SELECT product_id, price, source_type, "timestamp", is_verified
+       FROM (
+         SELECT o.product_id,
+                o.price_value AS price,
+                o.source_type,
+                o.updated_at AS "timestamp",
+                o.is_verified,
+                ROW_NUMBER() OVER (PARTITION BY o.product_id ORDER BY o.updated_at DESC) AS rn
+         FROM offers o
+         WHERE o.product_id = ANY($1::uuid[])
+           AND o.status = 'active'
+       ) ranked
+       WHERE rn <= 60`,
+      [matchedProductIds]
+    );
+
+    for (const row of truthRows.rows) {
+      const list = truthSourcesByProduct.get(row.product_id) || [];
+      list.push(row);
+      truthSourcesByProduct.set(row.product_id, list);
+    }
+  }
+
   const mapped = [];
   for (const row of items.rows) {
     const receiptPrice = row.total_price != null ? Number(row.total_price) : null;
@@ -463,24 +496,13 @@ async function getReceiptReport(receiptId) {
     let avgMarketPrice = null;
 
     if (row.matched_product_id) {
-      const truthSources = await query(
-        `SELECT o.price_value AS price,
-                o.source_type,
-                o.updated_at AS timestamp,
-                o.is_verified
-         FROM offers o
-         WHERE o.product_id = $1
-           AND o.status = 'active'
-         ORDER BY o.updated_at DESC
-         LIMIT 60`,
-        [row.matched_product_id]
-      );
-      const truthPrice = computeWeightedTruthPrice(truthSources.rows);
+      const truthSources = truthSourcesByProduct.get(row.matched_product_id) || [];
+      const truthPrice = computeWeightedTruthPrice(truthSources);
       if (truthPrice != null) {
         bestOfferPrice = truthPrice;
       }
 
-      const numericPrices = truthSources.rows
+      const numericPrices = truthSources
         .map((source) => Number(source.price))
         .filter((value) => Number.isFinite(value) && value > 0);
       if (numericPrices.length) {
@@ -554,6 +576,17 @@ async function getReceiptReport(receiptId) {
       verified,
       confidence: row.confidence != null ? Number(row.confidence) : null
     };
+    if (Array.isArray(row.candidates)) {
+      item.candidate_products = row.candidates
+        .map((candidate) => ({
+          product_id: candidate.product_id || null,
+          product_name: candidate.product_name || null,
+          score: candidate.score != null ? Number(candidate.score) : null
+        }))
+        .filter((candidate) => candidate.product_name);
+    } else {
+      item.candidate_products = [];
+    }
     mapped.push(item);
   }
 
@@ -789,6 +822,134 @@ async function deactivateUserLoyaltyCard(userId, loyaltyCardId) {
   return result.rows.length > 0;
 }
 
+async function getUserReceiptReviewQueue(userId, limit = 12) {
+  await ensureReceiptFeedbackTable();
+  const safeLimit = Number.isFinite(Number(limit))
+    ? Math.min(Math.max(Number(limit), 1), 50)
+    : 12;
+  const result = await query(
+    `SELECT
+       r.id,
+       r.status,
+       r.confidence,
+       r.store_chain,
+       r.total,
+       r.updated_at,
+       COUNT(f.id)::int AS feedback_count
+     FROM receipts r
+     LEFT JOIN receipt_scan_feedback f ON f.receipt_id = r.id
+     WHERE r.user_id = $1
+       AND r.status = 'needs_confirmation'
+     GROUP BY r.id
+     ORDER BY r.updated_at DESC
+     LIMIT $2`,
+    [userId, safeLimit]
+  );
+  return result.rows;
+}
+
+async function getUserReceiptHistory(userId, limit = 20) {
+  const safeLimit = Number.isFinite(Number(limit))
+    ? Math.min(Math.max(Number(limit), 1), 100)
+    : 20;
+  const result = await query(
+    `SELECT id, status, confidence, store_chain, total, created_at, updated_at
+     FROM receipts
+     WHERE user_id = $1
+     ORDER BY created_at DESC
+     LIMIT $2`,
+    [userId, safeLimit]
+  );
+  return result.rows;
+}
+
+async function getUserReceiptQualitySummary(userId, options = {}) {
+  await ensureReceiptFeedbackTable();
+  const days = Number.isFinite(Number(options.days))
+    ? Math.min(Math.max(Number(options.days), 7), 365)
+    : 90;
+
+  const receiptsResult = await query(
+    `SELECT
+       COUNT(*)::int AS total_receipts,
+       COUNT(*) FILTER (WHERE status = 'needs_confirmation')::int AS needs_confirmation_count,
+       COUNT(*) FILTER (WHERE status IN ('processed', 'finalized'))::int AS auto_processed_count,
+       COALESCE(AVG(confidence), 0)::numeric(10,4) AS avg_confidence
+     FROM receipts
+     WHERE user_id = $1
+       AND created_at >= NOW() - ($2::int * INTERVAL '1 day')`,
+    [userId, days]
+  );
+
+  const linesResult = await query(
+    `SELECT
+       COUNT(*)::int AS total_lines,
+       COUNT(*) FILTER (WHERE ri.match_status = 'matched')::int AS matched_lines,
+       COUNT(*) FILTER (WHERE ri.match_status = 'candidates')::int AS candidate_lines,
+       COUNT(*) FILTER (WHERE ri.match_status = 'unmatched')::int AS unmatched_lines
+     FROM receipt_items ri
+     JOIN receipts r ON r.id = ri.receipt_id
+     WHERE r.user_id = $1
+       AND r.created_at >= NOW() - ($2::int * INTERVAL '1 day')`,
+    [userId, days]
+  );
+
+  const feedbackResult = await query(
+    `SELECT COUNT(*)::int AS feedback_count
+     FROM receipt_scan_feedback
+     WHERE user_id = $1
+       AND created_at >= NOW() - ($2::int * INTERVAL '1 day')`,
+    [userId, days]
+  );
+
+  const chainsResult = await query(
+    `SELECT
+       COALESCE(store_chain, 'Unknown') AS store_chain,
+       COUNT(*)::int AS flagged_receipts
+     FROM receipts
+     WHERE user_id = $1
+       AND status = 'needs_confirmation'
+       AND created_at >= NOW() - ($2::int * INTERVAL '1 day')
+     GROUP BY COALESCE(store_chain, 'Unknown')
+     ORDER BY flagged_receipts DESC, store_chain ASC
+     LIMIT 5`,
+    [userId, days]
+  );
+
+  const rec = receiptsResult.rows[0] || {};
+  const lines = linesResult.rows[0] || {};
+  const feedback = feedbackResult.rows[0] || {};
+  const totalReceipts = Number(rec.total_receipts || 0);
+  const needsConfirmation = Number(rec.needs_confirmation_count || 0);
+  const autoProcessed = Number(rec.auto_processed_count || 0);
+  const avgConfidence = Number(rec.avg_confidence || 0);
+  const totalLines = Number(lines.total_lines || 0);
+  const matchedLines = Number(lines.matched_lines || 0);
+  const candidateLines = Number(lines.candidate_lines || 0);
+  const unmatchedLines = Number(lines.unmatched_lines || 0);
+  const feedbackCount = Number(feedback.feedback_count || 0);
+
+  return {
+    window_days: days,
+    totals: {
+      receipts: totalReceipts,
+      needs_confirmation: needsConfirmation,
+      auto_processed: autoProcessed,
+      avg_confidence: Number(avgConfidence.toFixed(3)),
+      feedback_count: feedbackCount
+    },
+    lines: {
+      total: totalLines,
+      matched: matchedLines,
+      candidates: candidateLines,
+      unmatched: unmatchedLines,
+      matched_ratio: totalLines > 0 ? Number((matchedLines / totalLines).toFixed(3)) : 0,
+      unresolved_ratio: totalLines > 0 ? Number(((candidateLines + unmatchedLines) / totalLines).toFixed(3)) : 0
+    },
+    top_flagged_chains: chainsResult.rows
+  };
+}
+
 async function createReceiptScanFeedback(receiptId, userId, payload = {}) {
   await ensureReceiptFeedbackTable();
   const issueType = String(payload.issue_type || 'incorrect_scan').trim().slice(0, 64) || 'incorrect_scan';
@@ -822,5 +983,8 @@ module.exports = {
   upsertUserLoyaltyCard,
   deactivateUserLoyaltyCard,
   getUserLoyaltyChains,
-  createReceiptScanFeedback
+  createReceiptScanFeedback,
+  getUserReceiptReviewQueue,
+  getUserReceiptHistory,
+  getUserReceiptQualitySummary
 };
