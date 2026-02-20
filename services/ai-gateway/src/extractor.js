@@ -1,6 +1,11 @@
 const sharp = require('sharp');
 const { extractWithOpenAI, extractWithAnthropic, extractWithTesseract } = require('./providers');
 
+const SUMMARY_TOKENS = [
+  'viso', 'total', 'subtotal', 'suma', 'sum', 'moketi', 'mokėta', 'pvm', 'vat',
+  'grynieji', 'kortele', 'kortelė', 'cash', 'card', 'change', 'nuolaida kortelei'
+];
+
 // Preprocess image for better OCR results
 async function preprocessImage(imageBuffer) {
   try {
@@ -46,6 +51,39 @@ function validateExtraction(data) {
   };
 }
 
+function sanitizeExtraction(data = {}) {
+  const cleanItems = (Array.isArray(data.line_items) ? data.line_items : [])
+    .map((item, index) => ({
+      raw_name: String(item?.raw_name || '').trim(),
+      quantity: Number(item?.quantity) > 0 ? Number(item.quantity) : 1,
+      unit_price: Number.isFinite(Number(item?.unit_price)) ? Number(item.unit_price) : null,
+      total_price: Number.isFinite(Number(item?.total_price)) ? Number(item.total_price) : null,
+      line_number: Number.isFinite(Number(item?.line_number)) ? Number(item.line_number) : (index + 1),
+      barcode: item?.barcode ? String(item.barcode).trim() : null,
+      discount: Number.isFinite(Number(item?.discount)) ? Number(item.discount) : null
+    }))
+    .filter((item) => {
+      if (!item.raw_name) return false;
+      const name = item.raw_name.toLowerCase();
+      const isSummaryLike = SUMMARY_TOKENS.some((token) => name.includes(token));
+      const hasAnyPrice = item.total_price != null || item.unit_price != null || item.discount != null;
+      // Keep discount rows even if summary-like, but drop obvious non-product summary lines.
+      if (isSummaryLike && !hasAnyPrice) return false;
+      return true;
+    });
+
+  const confidence = Number(data?.confidence);
+  const correctedConfidence = Number.isFinite(confidence)
+    ? Math.max(0.25, Math.min(0.99, confidence))
+    : 0.6;
+
+  return {
+    ...data,
+    line_items: cleanItems,
+    confidence: correctedConfidence
+  };
+}
+
 // Main extraction with provider cascade
 async function extractReceipt(imageBuffer, options = {}) {
   const { provider = 'openai', strictMode = true } = options;
@@ -73,9 +111,10 @@ async function extractReceipt(imageBuffer, options = {}) {
     try {
       console.log(`Trying provider: ${name}`);
       const result = await fn(processedBuffer, options);
+      const sanitized = sanitizeExtraction(result.data);
       
       // Validate result
-      const validation = validateExtraction(result.data);
+      const validation = validateExtraction(sanitized);
       
       if (strictMode && !validation.valid) {
         console.warn(`Provider ${name} validation failed:`, validation.issues);
@@ -84,7 +123,11 @@ async function extractReceipt(imageBuffer, options = {}) {
       }
 
       console.log(`Successfully extracted with ${name}`);
-      return result;
+      return {
+        ...result,
+        data: sanitized,
+        confidence: sanitized.confidence || result.confidence || 0.6
+      };
     } catch (error) {
       console.error(`Provider ${name} failed:`, error.message);
       lastError = error;

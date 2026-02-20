@@ -535,9 +535,11 @@ async function getReceiptReport(receiptId) {
           : 'equal';
 
     const item = {
+      receipt_line_id: row.id,
       product_id: row.matched_product_id || null,
       product_name: row.matched_product_name || row.raw_name,
       receipt_name: row.raw_name,
+      match_status: row.match_status || 'unmatched',
       price: receiptPrice,
       best_offer_price: bestOfferPrice,
       average_market_price: avgMarketPrice,

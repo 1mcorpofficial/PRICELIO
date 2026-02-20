@@ -64,6 +64,8 @@ JSON format:
 }
 
 Rules:
+- Do NOT invent products, prices, totals, dates, barcodes, or store names. Use null when unclear.
+- Keep only true line items. Do NOT put summary/payment lines into line_items (e.g. VISO, PVM, MOKĖTI, CARD, CASH).
 - LOOK CAREFULLY for a QR code on the receipt — read it and extract the full URL into vmi_url
 - Look for barcode numbers printed on the receipt
 - Extract EVERY product line item (including discounted items with negative prices)
@@ -86,7 +88,8 @@ Rules:
             {
               type: 'image_url',
               image_url: {
-                url: `data:${mimeType};base64,${base64Image}`
+                url: `data:${mimeType};base64,${base64Image}`,
+                detail: 'high'
               }
             }
           ]

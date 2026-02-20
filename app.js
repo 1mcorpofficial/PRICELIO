@@ -146,6 +146,11 @@
       report_ok_price: '✓ Good price',
       receipt_feedback_bad_scan_btn: 'Not scanned correctly',
       receipt_feedback_bad_scan_sent: 'Thanks. Marked for manual review.',
+      receipt_fix_scan_btn: 'Fix scan lines',
+      receipt_fix_intro: 'Edit lines that were read incorrectly, then save.',
+      receipt_fix_row_confirm: 'Confirm',
+      receipt_fix_save_btn: 'Save corrections',
+      receipt_fix_saved: 'Corrections saved.',
       overpaid_report_title: 'Overpaid report',
       family_household_title: 'Family household',
       create_family_btn: 'Create Family',
@@ -445,6 +450,11 @@
       report_ok_price: '✓ Gera kaina',
       receipt_feedback_bad_scan_btn: 'Nuskaityta neteisingai',
       receipt_feedback_bad_scan_sent: 'Ačiū. Pažymėta rankinei peržiūrai.',
+      receipt_fix_scan_btn: 'Pataisyti eilutes',
+      receipt_fix_intro: 'Pataisyk neteisingai nuskaitytas eilutes ir išsaugok.',
+      receipt_fix_row_confirm: 'Patvirtinti',
+      receipt_fix_save_btn: 'Išsaugoti pataisymus',
+      receipt_fix_saved: 'Pataisymai išsaugoti.',
       overpaid_report_title: 'Permokėjimo ataskaita',
       family_household_title: 'Šeimos namų ūkis',
       create_family_btn: 'Sukurti šeimą',
@@ -769,7 +779,8 @@
     appBootstrapped: false,
     onboardingReady: false,
     setView: null,
-    setAuthTab: null
+    setAuthTab: null,
+    toastHistory: new Map()
   };
 
   function resolveApiBase() {
@@ -1268,6 +1279,16 @@
   function showToast(message, type = 'info') {
     const root = $('toastRoot');
     if (!root) return;
+    const dedupeKey = `${type}:${String(message || '').trim()}`;
+    const now = Date.now();
+    const previousAt = state.toastHistory.get(dedupeKey) || 0;
+    if (now - previousAt < 2500) return;
+    state.toastHistory.set(dedupeKey, now);
+    if (state.toastHistory.size > 80) {
+      for (const [key, ts] of state.toastHistory.entries()) {
+        if (now - ts > 120000) state.toastHistory.delete(key);
+      }
+    }
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
     toast.textContent = message;
@@ -2353,6 +2374,9 @@
     `;
     const feedbackActions = `
       <div class="receipt-feedback-actions">
+        <button class="btn ghost" type="button" data-receipt-open-fix-editor="1">
+          ${t('receipt_fix_scan_btn')}
+        </button>
         <button class="btn ghost" type="button" data-receipt-feedback-bad-scan="1">
           ${t('receipt_feedback_bad_scan_btn')}
         </button>
@@ -2387,7 +2411,38 @@
             </div>`;
         }).join('');
 
-    container.innerHTML = summaryHtml + verBar + avgComparison + feedbackActions + head + itemsHtml;
+    const fixEditor = renderReceiptFixEditor(lines);
+    container.innerHTML = summaryHtml + verBar + avgComparison + feedbackActions + fixEditor + head + itemsHtml;
+  }
+
+  function renderReceiptFixEditor(lines) {
+    const editable = (Array.isArray(lines) ? lines : []).filter((row) => row && row.receipt_line_id);
+    if (!editable.length) return '';
+
+    return `
+      <div class="receipt-fix-editor is-collapsed" id="receiptFixEditor">
+        <div class="muted small">${t('receipt_fix_intro')}</div>
+        <div class="receipt-fix-rows">
+          ${editable.map((item) => `
+            <div class="receipt-fix-row">
+              <input
+                class="receipt-fix-input"
+                type="text"
+                value="${sanitize(item.receipt_name || item.product_name || '')}"
+                data-receipt-line-id="${sanitize(String(item.receipt_line_id))}"
+              />
+              <label class="receipt-fix-check">
+                <input type="checkbox" checked data-receipt-confirm-id="${sanitize(String(item.receipt_line_id))}" />
+                <span>${t('receipt_fix_row_confirm')}</span>
+              </label>
+            </div>
+          `).join('')}
+        </div>
+        <button class="btn primary" type="button" data-receipt-save-corrections="1">
+          ${t('receipt_fix_save_btn')}
+        </button>
+      </div>
+    `;
   }
 
   async function submitBadReceiptFeedback() {
@@ -2411,6 +2466,49 @@
       showToast(t('receipt_feedback_bad_scan_sent'), 'success');
     } catch (error) {
       showToast(`Feedback failed: ${toApiErrorLabel(error)}`, 'error');
+    }
+  }
+
+  async function submitReceiptCorrections() {
+    const receiptId = state.lastReceiptId;
+    if (!receiptId) {
+      showToast('No receipt loaded yet.', 'warning');
+      return;
+    }
+
+    const inputs = Array.from(document.querySelectorAll('#receiptFixEditor [data-receipt-line-id]'));
+    const checks = new Map(
+      Array.from(document.querySelectorAll('#receiptFixEditor [data-receipt-confirm-id]'))
+        .map((el) => [el.getAttribute('data-receipt-confirm-id'), !!el.checked])
+    );
+    const confirmations = inputs
+      .map((input) => {
+        const id = input.getAttribute('data-receipt-line-id');
+        const corrected = String(input.value || '').trim();
+        if (!id || !corrected) return null;
+        return {
+          original_line_id: id,
+          corrected_name: corrected,
+          user_confirmed: checks.get(id) !== false
+        };
+      })
+      .filter(Boolean);
+
+    if (!confirmations.length) {
+      showToast('No correction lines to save.', 'warning');
+      return;
+    }
+
+    try {
+      await apiRequest(`/receipts/${encodeURIComponent(receiptId)}/confirm`, {
+        method: 'POST',
+        body: { confirmations }
+      });
+      showToast(t('receipt_fix_saved'), 'success');
+      const report = await apiRequest(`/receipts/${encodeURIComponent(receiptId)}/report`);
+      renderReceiptReport(report);
+    } catch (error) {
+      showToast(`Save corrections failed: ${toApiErrorLabel(error)}`, 'error');
     }
   }
 
@@ -3439,8 +3537,22 @@
     $('receiptReport')?.addEventListener('click', (event) => {
       const target = event.target;
       if (!(target instanceof HTMLElement)) return;
+      if (target.closest('[data-receipt-open-fix-editor]')) {
+        const editor = $('receiptFixEditor');
+        if (editor) {
+          editor.classList.toggle('is-collapsed');
+          editor.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        return;
+      }
       if (!target.closest('[data-receipt-feedback-bad-scan]')) return;
       submitBadReceiptFeedback().catch(() => {});
+    });
+    $('receiptReport')?.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      if (!target.closest('[data-receipt-save-corrections]')) return;
+      submitReceiptCorrections().catch(() => {});
     });
 
     $('createFamilyBtn')?.addEventListener('click', () => { createFamily().catch(() => {}); });

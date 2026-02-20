@@ -1379,6 +1379,44 @@ textarea { resize: vertical; min-height: 110px; }
   background: #fff8f8;
 }
 
+.receipt-fix-editor {
+  border: 1px solid var(--ink-100);
+  border-radius: var(--radius-sm);
+  background: var(--bg-soft);
+  padding: 0.75rem;
+  margin: 0 0 0.9rem;
+}
+
+.receipt-fix-editor.is-collapsed .receipt-fix-rows,
+.receipt-fix-editor.is-collapsed [data-receipt-save-corrections] {
+  display: none;
+}
+
+.receipt-fix-rows {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.55rem 0 0.75rem;
+}
+
+.receipt-fix-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.receipt-fix-input {
+  min-width: 0;
+}
+
+.receipt-fix-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--ink-600);
+}
+
 /* Items list */
 .report-items-head {
   font-size: 0.78rem;

@@ -1136,6 +1136,7 @@ app.get('/receipts/:id/report', auth.optionalAuthMiddleware, async (req, res) =>
 
     res.json({
       receipt_id: req.params.id,
+      receipt_status: status.status,
       overpaid_items: report.items.filter((item) => item.savings_eur > 0),
       line_items: report.items,
       savings_total: report.savings_total,
@@ -1197,7 +1198,7 @@ app.post('/receipts/:id/feedback', auth.optionalAuthMiddleware, async (req, res)
   }
 });
 
-app.post('/receipts/:id/confirm', async (req, res) => {
+app.post('/receipts/:id/confirm', auth.requireUser, async (req, res) => {
   try {
     const { confirmations } = req.body;
     const receiptId = req.params.id;
@@ -1206,21 +1207,53 @@ app.post('/receipts/:id/confirm', async (req, res) => {
       res.status(400).json({ error: 'invalid_confirmations' });
       return;
     }
+
+    const receiptLookup = await query(
+      `SELECT id, user_id
+       FROM receipts
+       WHERE id = $1
+       LIMIT 1`,
+      [receiptId]
+    );
+    if (!receiptLookup.rows.length) {
+      return res.status(404).json({ error: 'receipt_not_found' });
+    }
+    const receipt = receiptLookup.rows[0];
+    if (!receipt.user_id || receipt.user_id !== req.user.id) {
+      return res.status(403).json({ error: 'receipt_access_denied' });
+    }
     
     const { query } = require('./queries');
+    const sanitizedConfirmations = confirmations
+      .map((confirmation) => ({
+        original_line_id: String(confirmation?.original_line_id || '').trim(),
+        corrected_name: String(confirmation?.corrected_name || '').trim(),
+        user_confirmed: confirmation?.user_confirmed !== false
+      }))
+      .filter((row) => row.original_line_id && row.corrected_name);
+
+    if (!sanitizedConfirmations.length) {
+      return res.status(400).json({ error: 'invalid_confirmations_payload' });
+    }
     
     // Update each confirmed item
-    for (const confirmation of confirmations) {
+    let updatedCount = 0;
+    for (const confirmation of sanitizedConfirmations) {
       const { original_line_id, corrected_name, user_confirmed } = confirmation;
       
-      await query(
+      const updateResult = await query(
         `UPDATE receipt_items 
          SET raw_name = $1, 
-             match_confidence = CASE WHEN $2 THEN 1.0 ELSE match_confidence END,
+             confidence = CASE WHEN $2 THEN 1.0 ELSE confidence END,
              match_status = CASE WHEN $2 THEN 'matched' ELSE match_status END
          WHERE id = $3 AND receipt_id = $4`,
         [corrected_name, user_confirmed, original_line_id, receiptId]
       );
+      updatedCount += Number(updateResult.rowCount || 0);
+    }
+
+    if (!updatedCount) {
+      return res.status(400).json({ error: 'no_items_updated' });
     }
     
     // Update receipt status to finalized
@@ -1229,7 +1262,7 @@ app.post('/receipts/:id/confirm', async (req, res) => {
       [receiptId]
     );
     
-    res.json({ success: true, confirmed_count: confirmations.length });
+    res.json({ success: true, confirmed_count: updatedCount });
   } catch (error) {
     console.error('Confirmation error:', error);
     res.status(500).json({ error: 'confirmation_failed' });
