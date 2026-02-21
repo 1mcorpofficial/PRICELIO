@@ -4,9 +4,11 @@ Flutter mobile app for iOS and Android.
 
 ## API
 
-Default backend URL is set in `lib/core/api/api_client.dart`:
+Backend URL and timeouts are provided via `--dart-define` (with safe defaults):
 
-`https://api.pricelio.app`
+- `API_BASE_URL` (default: `https://api.pricelio.app`)
+- `API_TIMEOUT_CONNECT_MS` (default: `10000`)
+- `API_TIMEOUT_RECEIVE_MS` (default: `15000`)
 
 ## Quick start (Mac + iPhone + Xcode)
 
@@ -16,6 +18,12 @@ Default backend URL is set in `lib/core/api/api_client.dart`:
 git clone https://github.com/1mcorpofficial/PRICELIO.git
 cd PRICELIO/apps/mobile
 flutter pub get
+```
+
+Optional run command with explicit API config:
+
+```bash
+flutter run --dart-define=API_BASE_URL=https://api.pricelio.app
 ```
 
 2. Generate iOS dependencies:
@@ -36,6 +44,13 @@ open ios/Runner.xcworkspace
 - Set your Apple Team in **Signing & Capabilities**.
 - Connect iPhone with cable and select the device.
 - Press **Run**.
+
+If Xcode reports missing `Generated.xcconfig`, run these commands in `apps/mobile` first:
+
+```bash
+flutter pub get
+flutter precache --ios
+```
 
 ## Project structure
 

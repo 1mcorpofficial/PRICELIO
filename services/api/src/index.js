@@ -3,8 +3,11 @@ require('dotenv').config();
 const express = require('express');
 const crypto = require('crypto');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const cors = require('cors');
+const helmet = require('helmet');
+const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
 const multer = require('multer');
 const FormData = require('form-data');
@@ -35,7 +38,11 @@ const {
 } = require('./queries');
 const { publishReceiptJob } = require('./queue');
 const { optimizeSingleStore } = require('./optimizer');
+const { buildVersionedKey, getJson: getCachedJson, setJson: setCachedJson, bumpCacheVersion, getCacheMetrics } = require('./cache');
+const sse = require('./sse');
 const ecosystem = require('./ecosystem');
+const alerts = require('./alerts');
+const projectBaskets = require('./project-baskets');
 const {
   normalizeExtractionPayload,
   resolveStoreFromExtraction,
@@ -45,9 +52,10 @@ const {
 
 const app = express();
 app.set('trust proxy', 1); // trust nginx reverse proxy for rate limiting
+app.disable('x-powered-by');
 const port = process.env.PORT || 3000;
 
-const ALLOWED_ORIGINS = new Set([
+const DEFAULT_ALLOWED_ORIGINS = [
   'https://pricelio.app',
   'https://www.pricelio.app',
   'http://localhost:8000',
@@ -55,33 +63,224 @@ const ALLOWED_ORIGINS = new Set([
   'http://127.0.0.1:8000',
   'http://38.242.217.82:8000',
   'http://38.242.217.82',
-]);
+];
+const ALLOWED_ORIGINS = new Set(
+  String(process.env.CORS_ALLOWLIST || DEFAULT_ALLOWED_ORIGINS.join(','))
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+);
+const CSRF_COOKIE_NAME = process.env.CSRF_COOKIE_NAME || 'pricelio_csrf_token';
+const REFRESH_COOKIE_NAME = process.env.REFRESH_COOKIE_NAME || 'refresh_token';
+const COOKIE_SECURE = String(process.env.COOKIE_SECURE || process.env.NODE_ENV === 'production').toLowerCase() === 'true';
+const COOKIE_SAME_SITE = process.env.COOKIE_SAME_SITE || 'lax';
+const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN || undefined;
+const INGEST_SERVICE_URL = process.env.INGEST_SERVICE_URL || 'http://localhost:3002';
+const ADMIN_API_KEY = process.env.ADMIN_API_KEY || '';
+const INTERNAL_CACHE_BUMP_TOKEN = process.env.INTERNAL_CACHE_BUMP_TOKEN || '';
+const allowedUploadMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
+
+const latencyByEndpoint = new Map();
+const authBackoffState = new Map();
+
+function normalizeLatencyPath(rawPath) {
+  return String(rawPath || '/')
+    .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/ig, ':id')
+    .replace(/\/\d+/g, '/:id');
+}
+
+function trackEndpointLatency(label, durationMs) {
+  const key = String(label || 'unknown');
+  const list = latencyByEndpoint.get(key) || [];
+  list.push(durationMs);
+  if (list.length > 200) {
+    list.splice(0, list.length - 200);
+  }
+  latencyByEndpoint.set(key, list);
+}
+
+function computeP95(values) {
+  if (!values.length) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const index = Math.min(sorted.length - 1, Math.ceil(sorted.length * 0.95) - 1);
+  return Number(sorted[index].toFixed(2));
+}
+
+function getLatencySummary() {
+  const summary = {};
+  for (const [endpoint, values] of latencyByEndpoint.entries()) {
+    summary[endpoint] = {
+      samples: values.length,
+      p95_ms: computeP95(values)
+    };
+  }
+  return summary;
+}
+
+function buildCookieOptions(maxAgeMs) {
+  const options = {
+    httpOnly: true,
+    secure: COOKIE_SECURE,
+    sameSite: COOKIE_SAME_SITE,
+    path: '/',
+    maxAge: maxAgeMs
+  };
+  if (COOKIE_DOMAIN) {
+    options.domain = COOKIE_DOMAIN;
+  }
+  return options;
+}
+
+function setRefreshCookie(res, refreshToken) {
+  res.cookie(REFRESH_COOKIE_NAME, refreshToken, buildCookieOptions(7 * 24 * 60 * 60 * 1000));
+}
+
+function clearRefreshCookie(res) {
+  const options = buildCookieOptions(0);
+  delete options.maxAge;
+  res.clearCookie(REFRESH_COOKIE_NAME, options);
+}
+
+function setCsrfCookie(res, value = crypto.randomUUID()) {
+  const options = {
+    httpOnly: false,
+    secure: COOKIE_SECURE,
+    sameSite: COOKIE_SAME_SITE,
+    path: '/',
+    maxAge: 7 * 24 * 60 * 60 * 1000
+  };
+  if (COOKIE_DOMAIN) {
+    options.domain = COOKIE_DOMAIN;
+  }
+  res.cookie(CSRF_COOKIE_NAME, value, options);
+  return value;
+}
+
+function validateCsrfToken(req) {
+  const cookieToken = req.cookies?.[CSRF_COOKIE_NAME];
+  const headerToken = req.get('x-csrf-token');
+  return Boolean(cookieToken && headerToken && cookieToken === headerToken);
+}
+
+function createTraceId() {
+  return crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(12).toString('hex');
+}
+
+function getAuthThrottleKey(req) {
+  const email = String(req.body?.email || '').trim().toLowerCase().slice(0, 120);
+  return `${req.ip || 'ip'}:${email || 'anonymous'}`;
+}
+
+function getAuthBackoffMs(key) {
+  const entry = authBackoffState.get(key);
+  if (!entry || !entry.failures) return 0;
+  return Math.min(8000, 250 * (2 ** Math.max(entry.failures - 1, 0)));
+}
+
+function recordAuthFailure(key) {
+  const entry = authBackoffState.get(key) || { failures: 0, updatedAt: Date.now() };
+  entry.failures += 1;
+  entry.updatedAt = Date.now();
+  authBackoffState.set(key, entry);
+}
+
+function clearAuthFailures(key) {
+  authBackoffState.delete(key);
+}
+
+async function applyAuthBackoff(req) {
+  const key = getAuthThrottleKey(req);
+  const delayMs = getAuthBackoffMs(key);
+  if (delayMs > 0) {
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
+  return key;
+}
+
+function normalizeErrorPayload(payload, traceId) {
+  if (!payload || typeof payload !== 'object') {
+    return {
+      error: {
+        code: 'unknown_error',
+        message: 'Unknown error',
+        trace_id: traceId
+      }
+    };
+  }
+
+  if (payload.error && typeof payload.error === 'object' && payload.error.code) {
+    return {
+      ...payload,
+      error: {
+        ...payload.error,
+        trace_id: payload.error.trace_id || traceId
+      }
+    };
+  }
+
+  if (typeof payload.error === 'string') {
+    return {
+      ...payload,
+      error: {
+        code: payload.error,
+        message: payload.message || payload.error,
+        trace_id: traceId
+      }
+    };
+  }
+
+  return {
+    error: {
+      code: payload.code || 'request_failed',
+      message: payload.message || 'Request failed',
+      trace_id: traceId
+    }
+  };
+}
+
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, curl, Postman)
     if (!origin) return callback(null, true);
     if (ALLOWED_ORIGINS.has(origin)) return callback(null, true);
-    // Allow any subdomain of pricelio.app
     if (/^https:\/\/([a-z0-9-]+\.)?pricelio\.app$/.test(origin)) return callback(null, true);
     callback(new Error(`CORS: origin ${origin} not allowed`));
   },
   credentials: true
 }));
+app.use(cookieParser());
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginResourcePolicy: { policy: 'cross-origin' }
+}));
 app.use(express.json({ limit: '1mb' }));
-
-// Security headers
 app.use((req, res, next) => {
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  req.traceId = createTraceId();
+  res.setHeader('x-trace-id', req.traceId);
+  next();
+});
+app.use((req, res, next) => {
+  const startedAt = process.hrtime.bigint();
+  res.on('finish', () => {
+    const elapsedMs = Number(process.hrtime.bigint() - startedAt) / 1e6;
+    const routePath = req.route?.path || normalizeLatencyPath(req.path);
+    trackEndpointLatency(`${req.method} ${routePath}`, elapsedMs);
+  });
+  next();
+});
+app.use((req, res, next) => {
+  const originalJson = res.json.bind(res);
+  res.json = (payload) => {
+    if (res.statusCode >= 400) {
+      return originalJson(normalizeErrorPayload(payload, req.traceId));
+    }
+    return originalJson(payload);
+  };
   next();
 });
 
-// Rate limiting
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: Number(process.env.RATE_LIMIT_AUTH_MAX || 20),
   message: { error: 'too_many_requests' },
   standardHeaders: true,
   legacyHeaders: false
@@ -89,7 +288,7 @@ const authLimiter = rateLimit({
 
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 120,
+  max: Number(process.env.RATE_LIMIT_API_MAX || 200),
   message: { error: 'too_many_requests' },
   standardHeaders: true,
   legacyHeaders: false
@@ -97,8 +296,27 @@ const apiLimiter = rateLimit({
 
 const receiptActionLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 12,
+  max: Number(process.env.RATE_LIMIT_RECEIPTS_MAX || 16),
   message: { error: 'too_many_receipt_requests' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+const compareIpLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: Number(process.env.RATE_LIMIT_COMPARE_IP_MAX || 45),
+  keyGenerator: (req) => rateLimit.ipKeyGenerator(req.ip || ''),
+  message: { error: 'compare_rate_limit_ip' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+const compareUserLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: Number(process.env.RATE_LIMIT_COMPARE_USER_MAX || 90),
+  skip: (req) => !req.user?.id,
+  keyGenerator: (req) => `user:${req.user.id}`,
+  message: { error: 'compare_rate_limit_user' },
   standardHeaders: true,
   legacyHeaders: false
 });
@@ -107,7 +325,17 @@ app.use('/auth', authLimiter);
 app.use(apiLimiter);
 
 const nowIso = () => new Date().toISOString();
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, callback) => {
+    if (!allowedUploadMimeTypes.has(String(file.mimetype || '').toLowerCase())) {
+      callback(new Error('unsupported_file_type'));
+      return;
+    }
+    callback(null, true);
+  }
+});
 const uploadRoot = path.join(__dirname, '..', 'uploads');
 
 function ensureUploadPath(fileName) {
@@ -194,15 +422,156 @@ function requirePlusFeature(featureKey) {
   };
 }
 
+function cloneJson(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function readGuestSessionProof(req) {
+  return req.get('x-guest-session-proof') || req.query.guest_proof || req.body?.guest_proof || null;
+}
+
+async function enforceReceiptAccess(receipt, req) {
+  if (receipt.user_id) {
+    if (!req.user?.id) {
+      return { ok: false, status: 401, code: 'login_required' };
+    }
+    if (receipt.user_id !== req.user.id) {
+      return { ok: false, status: 403, code: 'receipt_access_denied' };
+    }
+    return { ok: true, mode: 'user' };
+  }
+
+  const proof = readGuestSessionProof(req);
+  if (!proof) {
+    return { ok: false, status: 401, code: 'guest_proof_required' };
+  }
+
+  const decoded = auth.verifyGuestSessionProof(proof);
+  if (!decoded || decoded.guest_session_id !== receipt.guest_session_id) {
+    return { ok: false, status: 403, code: 'guest_receipt_access_denied' };
+  }
+
+  return { ok: true, mode: 'guest' };
+}
+
+async function requireAdminAccess(req, res, next) {
+  if (ADMIN_API_KEY && req.get('x-admin-key') === ADMIN_API_KEY) {
+    req.adminContext = { type: 'api_key', actor: 'admin-key' };
+    return next();
+  }
+
+  if (!req.user?.id || !req.user?.email) {
+    return res.status(401).json({ error: 'admin_auth_required' });
+  }
+
+  try {
+    const result = await query(
+      `SELECT id, email
+       FROM admin_users
+       WHERE LOWER(email) = LOWER($1)
+         AND status = 'active'
+       LIMIT 1`,
+      [req.user.email]
+    );
+    if (!result.rows.length) {
+      return res.status(403).json({ error: 'admin_access_denied' });
+    }
+    req.adminContext = { type: 'user', actor: result.rows[0].email, admin_id: result.rows[0].id };
+    return next();
+  } catch (error) {
+    return res.status(500).json({ error: 'admin_check_failed' });
+  }
+}
+
+let adminAuditTableEnsured = false;
+async function ensureAdminAuditTable() {
+  if (adminAuditTableEnsured) return;
+  await query(
+    `CREATE TABLE IF NOT EXISTS admin_audit_log (
+       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+       actor text NOT NULL,
+       action text NOT NULL,
+       target_id text,
+       payload jsonb,
+       created_at timestamptz NOT NULL DEFAULT now()
+     )`
+  );
+  await query(
+    `CREATE INDEX IF NOT EXISTS admin_audit_log_created_idx
+     ON admin_audit_log (created_at DESC)`
+  );
+  adminAuditTableEnsured = true;
+}
+
+async function writeAdminAudit(action, actor, targetId = null, payload = null) {
+  await ensureAdminAuditTable();
+  await query(
+    `INSERT INTO admin_audit_log (actor, action, target_id, payload)
+     VALUES ($1, $2, $3, $4)`,
+    [actor, action, targetId, payload ? JSON.stringify(payload) : null]
+  );
+}
+
+async function fetchIngestConnectors() {
+  const response = await axios.get(`${INGEST_SERVICE_URL}/connectors`, { timeout: 6000 });
+  return Array.isArray(response.data) ? response.data : [];
+}
+
+async function forceRunIngestConnector(connectorId) {
+  const response = await axios.post(
+    `${INGEST_SERVICE_URL}/connectors/${encodeURIComponent(connectorId)}/run`,
+    {},
+    { timeout: 120000 }
+  );
+  return response.data;
+}
+
+async function fetchIngestHealth() {
+  const response = await axios.get(`${INGEST_SERVICE_URL}/health`, { timeout: 5000 });
+  return response.data || {};
+}
+
+alerts.setNotificationPublisher(async (userId, notification) => {
+  if (notification?.type !== 'PRICE_DROP') return;
+  sse.broadcastPriceDrop({
+    product_id: notification.productId || null,
+    store_chain: notification.store || null,
+    old_price: notification.oldPrice ?? null,
+    new_price: notification.price ?? null,
+    drop_percent: notification.oldPrice && notification.price
+      ? Number((((notification.oldPrice - notification.price) / notification.oldPrice) * 100).toFixed(2))
+      : null,
+    occurred_at: nowIso()
+  }, {
+    userIds: [userId]
+  });
+});
+
+app.get('/events/price-drops/stream', auth.requireUser, (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders?.();
+  res.write(`retry: 5000\n\n`);
+
+  const clientId = sse.registerClient(res, req.user.id, req.get('last-event-id'));
+  req.on('close', () => {
+    sse.unregisterClient(clientId);
+    res.end();
+  });
+});
+
 app.post('/auth/guest', async (req, res) => {
   try {
     const ipHash = crypto.createHash('sha256').update(req.ip || 'unknown').digest('hex');
     const guestSessionId = await auth.createGuestSession(ipHash);
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    const guestProof = auth.generateGuestSessionProof(guestSessionId);
     
     res.json({ 
       id: guestSessionId, 
-      expires_at: expiresAt.toISOString() 
+      expires_at: expiresAt.toISOString(),
+      guest_proof: guestProof
     });
   } catch (error) {
     res.status(500).json({ error: 'guest_session_failed' });
@@ -210,6 +579,7 @@ app.post('/auth/guest', async (req, res) => {
 });
 
 app.post('/auth/register', async (req, res) => {
+  const authKey = await applyAuthBackoff(req);
   try {
     const { email, password } = req.body;
     
@@ -223,8 +593,13 @@ app.post('/auth/register', async (req, res) => {
     
     const user = await auth.registerUser(email, password);
     await ecosystem.getGamification(user.id);
-    const accessToken = auth.generateAccessToken(user.id, user.email);
-    const refreshToken = auth.generateRefreshToken(user.id);
+    const { accessToken, refreshToken } = await auth.issueAuthTokens(user, {
+      userAgent: req.get('user-agent'),
+      ip: req.ip
+    });
+    setRefreshCookie(res, refreshToken);
+    setCsrfCookie(res);
+    clearAuthFailures(authKey);
     
     res.json({
       access_token: accessToken,
@@ -236,13 +611,16 @@ app.post('/auth/register', async (req, res) => {
     });
   } catch (error) {
     if (error.message === 'user_exists') {
+      recordAuthFailure(authKey);
       return res.status(409).json({ error: 'user_exists' });
     }
+    recordAuthFailure(authKey);
     res.status(500).json({ error: 'registration_failed' });
   }
 });
 
 app.post('/auth/login', async (req, res) => {
+  const authKey = await applyAuthBackoff(req);
   try {
     const { email, password } = req.body;
     
@@ -251,8 +629,13 @@ app.post('/auth/login', async (req, res) => {
     }
     
     const user = await auth.loginUser(email, password);
-    const accessToken = auth.generateAccessToken(user.id, user.email);
-    const refreshToken = auth.generateRefreshToken(user.id);
+    const { accessToken, refreshToken } = await auth.issueAuthTokens(user, {
+      userAgent: req.get('user-agent'),
+      ip: req.ip
+    });
+    setRefreshCookie(res, refreshToken);
+    setCsrfCookie(res);
+    clearAuthFailures(authKey);
     
     res.json({
       access_token: accessToken,
@@ -264,36 +647,62 @@ app.post('/auth/login', async (req, res) => {
     });
   } catch (error) {
     if (error.message === 'invalid_credentials' || error.message === 'account_disabled') {
+      recordAuthFailure(authKey);
       return res.status(401).json({ error: error.message });
     }
+    recordAuthFailure(authKey);
     res.status(500).json({ error: 'login_failed' });
   }
 });
 
-app.post('/auth/refresh', (req, res) => {
+app.post('/auth/refresh', async (req, res) => {
   try {
-    const { refresh_token } = req.body;
+    const refreshTokenFromCookie = req.cookies?.[REFRESH_COOKIE_NAME];
+    const refreshTokenFromBody = req.body?.refresh_token;
+    const refreshToken = refreshTokenFromCookie || refreshTokenFromBody;
     
-    if (!refresh_token) {
+    if (!refreshToken) {
       return res.status(400).json({ error: 'refresh_token_required' });
     }
-    
-    const decoded = auth.verifyToken(refresh_token);
-    
-    if (!decoded || decoded.type !== 'refresh') {
+
+    if (refreshTokenFromCookie && !validateCsrfToken(req)) {
+      return res.status(403).json({ error: 'csrf_validation_failed' });
+    }
+
+    const refreshed = await auth.refreshAuthTokens(refreshToken, {
+      userAgent: req.get('user-agent'),
+      ip: req.ip
+    });
+
+    if (!refreshed) {
       return res.status(401).json({ error: 'invalid_refresh_token' });
     }
-    
-    const accessToken = auth.generateAccessToken(decoded.user_id, decoded.email);
-    
-    res.json({ access_token: accessToken });
+
+    setRefreshCookie(res, refreshed.refreshToken);
+    setCsrfCookie(res);
+    res.json({
+      access_token: refreshed.accessToken,
+      refresh_token: refreshed.refreshToken,
+      user: refreshed.user
+    });
   } catch (error) {
     res.status(401).json({ error: 'token_refresh_failed' });
   }
 });
 
-app.post('/auth/logout', (req, res) => {
-  // In production, you'd blacklist the token or clear session
+app.post('/auth/logout', async (req, res) => {
+  const refreshTokenFromCookie = req.cookies?.[REFRESH_COOKIE_NAME];
+  const refreshTokenFromBody = req.body?.refresh_token;
+
+  if (refreshTokenFromCookie && !validateCsrfToken(req)) {
+    return res.status(403).json({ error: 'csrf_validation_failed' });
+  }
+
+  const refreshToken = refreshTokenFromCookie || refreshTokenFromBody;
+  if (refreshToken) {
+    await auth.revokeRefreshToken(refreshToken).catch(() => false);
+  }
+  clearRefreshCookie(res);
   res.status(204).send();
 });
 
@@ -610,21 +1019,44 @@ app.get('/city/:city/feed', async (req, res) => {
 });
 
 app.get('/search', async (req, res) => {
-  const query = (req.query.q || '').toString();
-  if (!query) {
+  const queryText = (req.query.q || '').toString().trim();
+  if (!queryText) {
     res.json([]);
     return;
   }
   try {
-    const results = await searchProducts(query);
-    res.json(results);
+    const city = String(req.query.city || '').trim().toLowerCase() || 'all';
+    const limit = Math.max(1, Math.min(50, Number.parseInt(req.query.limit, 10) || 20));
+    const cacheKey = await buildVersionedKey('search', [queryText, city, limit]);
+    const cached = await getCachedJson(cacheKey, 'search');
+    if (cached) {
+      return res.json(cached);
+    }
+
+    const results = await searchProducts(queryText);
+    const payload = results.slice(0, limit);
+    await setCachedJson(cacheKey, payload, 3600, 'search');
+    res.json(payload);
   } catch (error) {
     res.status(500).json({ error: 'search_unavailable' });
   }
 });
 
+function applyLoyaltyFlagsToComparePayload(payload, loyaltyChains) {
+  if (!loyaltyChains || !loyaltyChains.size) return payload;
+  return payload.map((product) => ({
+    ...product,
+    store_prices: Array.isArray(product.store_prices)
+      ? product.store_prices.map((row) => ({
+        ...row,
+        loyalty_card_available: row.chain ? loyaltyChains.has(String(row.chain).toLowerCase()) : false
+      }))
+      : []
+  }));
+}
+
 // Compare one product prices across many stores by name or barcode
-app.get('/products/compare', auth.optionalAuthMiddleware, async (req, res) => {
+app.get('/products/compare', auth.optionalAuthMiddleware, compareIpLimiter, compareUserLimiter, async (req, res) => {
   try {
     const q = String(req.query.q || '').trim();
     const limit = Math.max(1, Math.min(10, parseInt(req.query.limit, 10) || 5));
@@ -636,103 +1068,118 @@ app.get('/products/compare', auth.optionalAuthMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'query_required' });
     }
 
-    const products = await query(
-      `SELECT p.id,
-              p.name,
-              p.brand,
-              p.ean
-       FROM products p
-       WHERE p.is_active = true
-         AND (p.name ILIKE $1 OR p.ean = $2)
-       ORDER BY
-         CASE WHEN lower(p.name) = lower($2) THEN 0 ELSE 1 END,
-         CASE WHEN p.name ILIKE $3 THEN 0 ELSE 1 END,
-         p.name ASC
-       LIMIT $4`,
-      [`%${q}%`, q, `${q}%`, limit]
-    );
+    const cacheKey = await buildVersionedKey('product_compare', [
+      q,
+      hasGeo ? lat.toFixed(5) : 'na',
+      hasGeo ? lon.toFixed(5) : 'na',
+      radiusKm,
+      limit
+    ]);
+    let basePayload = await getCachedJson(cacheKey, 'product_compare');
 
-    if (!products.rows.length) {
-      return res.json([]);
+    if (!basePayload) {
+      const products = await query(
+        `SELECT p.id,
+                p.name,
+                p.brand,
+                p.ean
+         FROM products p
+         WHERE p.is_active = true
+           AND (p.name ILIKE $1 OR p.ean = $2)
+         ORDER BY
+           CASE WHEN lower(p.name) = lower($2) THEN 0 ELSE 1 END,
+           CASE WHEN p.name ILIKE $3 THEN 0 ELSE 1 END,
+           p.name ASC
+         LIMIT $4`,
+        [`%${q}%`, q, `${q}%`, limit]
+      );
+
+      if (!products.rows.length) {
+        await setCachedJson(cacheKey, [], 3600, 'product_compare');
+        return res.json([]);
+      }
+
+      const productIds = products.rows.map((p) => p.id);
+      const prices = await query(
+        `SELECT o.product_id,
+                s.id AS store_id,
+                s.chain,
+                s.name AS store_name,
+                s.lat,
+                s.lon,
+                MIN(o.price_value)::numeric(10,2) AS price,
+                BOOL_OR(o.is_verified) AS verified_any,
+                MAX(o.updated_at) AS updated_at
+         FROM offers o
+         JOIN stores s ON s.id = o.store_id
+         WHERE o.product_id = ANY($1::uuid[])
+           AND o.status = 'active'
+           AND s.is_active = true
+         GROUP BY o.product_id, s.id, s.chain, s.name
+         ORDER BY o.product_id, MIN(o.price_value) ASC`,
+        [productIds]
+      );
+
+      const pricesByProduct = new Map();
+      prices.rows.forEach((row) => {
+        const rowLat = Number(row.lat);
+        const rowLon = Number(row.lon);
+        const canMeasureDistance = hasGeo && Number.isFinite(rowLat) && Number.isFinite(rowLon);
+        const distanceKm = canMeasureDistance
+          ? calculateDistance(lat, lon, rowLat, rowLon)
+          : null;
+        const list = pricesByProduct.get(row.product_id) || [];
+        list.push({
+          store_id: row.store_id,
+          chain: row.chain,
+          store_name: row.store_name,
+          lat: Number.isFinite(rowLat) ? rowLat : null,
+          lon: Number.isFinite(rowLon) ? rowLon : null,
+          price: row.price == null ? null : Number(row.price),
+          distance_km: Number.isFinite(distanceKm) ? Number(distanceKm.toFixed(2)) : null,
+          verified: Boolean(row.verified_any),
+          updated_at: row.updated_at
+        });
+        pricesByProduct.set(row.product_id, list);
+      });
+
+      basePayload = products.rows.map((product) => {
+        const allStorePrices = (pricesByProduct.get(product.id) || []).sort((a, b) => (a.price || 0) - (b.price || 0));
+        const nearbyStorePrices = hasGeo
+          ? allStorePrices.filter((row) => row.distance_km != null && row.distance_km <= radiusKm)
+          : allStorePrices;
+        const bestNearby = nearbyStorePrices.length ? nearbyStorePrices[0] : null;
+        return {
+          product_id: product.id,
+          name: product.name,
+          brand: product.brand || null,
+          ean: product.ean || null,
+          best_price: allStorePrices.length ? allStorePrices[0].price : null,
+          best_nearby_price: bestNearby ? bestNearby.price : null,
+          best_nearby_store: bestNearby ? {
+            store_id: bestNearby.store_id,
+            chain: bestNearby.chain,
+            store_name: bestNearby.store_name,
+            lat: bestNearby.lat,
+            lon: bestNearby.lon,
+            distance_km: bestNearby.distance_km
+          } : null,
+          radius_km: hasGeo ? radiusKm : null,
+          store_prices: nearbyStorePrices.map((row) => ({
+            ...row,
+            loyalty_card_available: false
+          }))
+        };
+      });
+      await setCachedJson(cacheKey, basePayload, 3600, 'product_compare');
     }
 
-    const productIds = products.rows.map((p) => p.id);
-    const prices = await query(
-      `SELECT o.product_id,
-              s.id AS store_id,
-              s.chain,
-              s.name AS store_name,
-              s.lat,
-              s.lon,
-              MIN(o.price_value)::numeric(10,2) AS price,
-              BOOL_OR(o.is_verified) AS verified_any,
-              MAX(o.updated_at) AS updated_at
-       FROM offers o
-       JOIN stores s ON s.id = o.store_id
-       WHERE o.product_id = ANY($1::uuid[])
-         AND o.status = 'active'
-         AND s.is_active = true
-       GROUP BY o.product_id, s.id, s.chain, s.name
-       ORDER BY o.product_id, MIN(o.price_value) ASC`,
-      [productIds]
-    );
+    if (!req.user?.id) {
+      return res.json(basePayload);
+    }
 
-    const pricesByProduct = new Map();
-    prices.rows.forEach((row) => {
-      const rowLat = Number(row.lat);
-      const rowLon = Number(row.lon);
-      const canMeasureDistance = hasGeo && Number.isFinite(rowLat) && Number.isFinite(rowLon);
-      const distanceKm = canMeasureDistance
-        ? calculateDistance(lat, lon, rowLat, rowLon)
-        : null;
-      const list = pricesByProduct.get(row.product_id) || [];
-      list.push({
-        store_id: row.store_id,
-        chain: row.chain,
-        store_name: row.store_name,
-        lat: Number.isFinite(rowLat) ? rowLat : null,
-        lon: Number.isFinite(rowLon) ? rowLon : null,
-        price: row.price == null ? null : Number(row.price),
-        distance_km: Number.isFinite(distanceKm) ? Number(distanceKm.toFixed(2)) : null,
-        verified: Boolean(row.verified_any),
-        updated_at: row.updated_at
-      });
-      pricesByProduct.set(row.product_id, list);
-    });
-
-    const loyaltyChains = req.user?.id
-      ? new Set(await getUserLoyaltyChains(req.user.id))
-      : new Set();
-
-    const payload = products.rows.map((product) => {
-      const allStorePrices = (pricesByProduct.get(product.id) || []).sort((a, b) => (a.price || 0) - (b.price || 0));
-      const nearbyStorePrices = hasGeo
-        ? allStorePrices.filter((row) => row.distance_km != null && row.distance_km <= radiusKm)
-        : allStorePrices;
-      const bestNearby = nearbyStorePrices.length ? nearbyStorePrices[0] : null;
-      return {
-        product_id: product.id,
-        name: product.name,
-        brand: product.brand || null,
-        ean: product.ean || null,
-        best_price: allStorePrices.length ? allStorePrices[0].price : null,
-        best_nearby_price: bestNearby ? bestNearby.price : null,
-        best_nearby_store: bestNearby ? {
-          store_id: bestNearby.store_id,
-          chain: bestNearby.chain,
-          store_name: bestNearby.store_name,
-          lat: bestNearby.lat,
-          lon: bestNearby.lon,
-          distance_km: bestNearby.distance_km
-        } : null,
-        radius_km: hasGeo ? radiusKm : null,
-        store_prices: nearbyStorePrices.map((row) => ({
-          ...row,
-          loyalty_card_available: row.chain ? loyaltyChains.has(String(row.chain).toLowerCase()) : false
-        }))
-      };
-    });
-
+    const loyaltyChains = new Set(await getUserLoyaltyChains(req.user.id));
+    const payload = applyLoyaltyFlagsToComparePayload(cloneJson(basePayload), loyaltyChains);
     return res.json(payload);
   } catch (error) {
     console.error('Product compare error:', error);
@@ -1095,11 +1542,13 @@ app.post('/receipts/upload', receiptActionLimiter, auth.optionalAuthMiddleware, 
 
     let userId = null;
     let guestSessionId = null;
+    let guestProof = null;
     if (req.user?.id) {
       userId = req.user.id;
     } else {
       const ipHash = crypto.createHash('sha256').update(req.ip || 'unknown').digest('hex');
       guestSessionId = await createGuestSession(ipHash);
+      guestProof = auth.generateGuestSessionProof(guestSessionId);
     }
     const receipt = await createReceipt({
       userId,
@@ -1141,7 +1590,8 @@ app.post('/receipts/upload', receiptActionLimiter, auth.optionalAuthMiddleware, 
       receipt_id: receipt.id,
       status: queuePublished ? receipt.status : 'processing',
       progress: queuePublished ? statusToProgress(receipt.status) : 10,
-      processing_priority: hasPriority ? 'priority' : 'standard'
+      processing_priority: hasPriority ? 'priority' : 'standard',
+      guest_proof: guestProof
     });
   } catch (error) {
     console.error('Receipt upload failed:', error);
@@ -1163,13 +1613,9 @@ app.get('/receipts/:id/status', auth.optionalAuthMiddleware, async (req, res) =>
       return;
     }
     const receipt = receiptResult.rows[0];
-    if (receipt.user_id) {
-      if (!req.user?.id) {
-        return res.status(401).json({ error: 'login_required' });
-      }
-      if (receipt.user_id !== req.user.id) {
-        return res.status(403).json({ error: 'receipt_access_denied' });
-      }
+    const access = await enforceReceiptAccess(receipt, req);
+    if (!access.ok) {
+      return res.status(access.status).json({ error: access.code });
     }
     res.json({
       receipt_id: receipt.id,
@@ -1184,7 +1630,7 @@ app.get('/receipts/:id/status', auth.optionalAuthMiddleware, async (req, res) =>
 app.get('/receipts/:id/report', auth.optionalAuthMiddleware, async (req, res) => {
   try {
     const receiptResult = await query(
-      `SELECT id, user_id, status
+      `SELECT id, user_id, guest_session_id, status
        FROM receipts
        WHERE id = $1
        LIMIT 1`,
@@ -1195,18 +1641,29 @@ app.get('/receipts/:id/report', auth.optionalAuthMiddleware, async (req, res) =>
       return;
     }
     const receipt = receiptResult.rows[0];
-    if (receipt.user_id) {
-      if (!req.user?.id) {
-        return res.status(401).json({ error: 'login_required' });
-      }
-      if (receipt.user_id !== req.user.id) {
-        return res.status(403).json({ error: 'receipt_access_denied' });
-      }
+    const access = await enforceReceiptAccess(receipt, req);
+    if (!access.ok) {
+      return res.status(access.status).json({ error: access.code });
     }
-    const report = await getReceiptReport(req.params.id);
+    const cacheKey = await buildVersionedKey('receipt_report', [req.params.id, receipt.status]);
+    let payload = await getCachedJson(cacheKey, 'receipt_report');
+    if (!payload) {
+      const report = await getReceiptReport(req.params.id);
+      payload = {
+        receipt_id: req.params.id,
+        receipt_status: receipt.status,
+        overpaid_items: report.items.filter((item) => item.savings_eur > 0),
+        line_items: report.items,
+        savings_total: report.savings_total,
+        verified_ratio: report.verified_ratio,
+        summary: report.summary || null
+      };
+      await setCachedJson(cacheKey, payload, 600, 'receipt_report');
+    }
 
     if (req.user?.id) {
-      const hasHighSavingsFind = report.items.some((item) => Number(item.savings_percent || 0) >= 50);
+      const hasHighSavingsFind = Array.isArray(payload.line_items)
+        && payload.line_items.some((item) => Number(item.savings_percent || 0) >= 50);
       if (hasHighSavingsFind) {
         await ecosystem.awardPoints(req.user.id, {
           eventType: 'high_savings_find',
@@ -1218,15 +1675,7 @@ app.get('/receipts/:id/report', auth.optionalAuthMiddleware, async (req, res) =>
       }
     }
 
-    res.json({
-      receipt_id: req.params.id,
-      receipt_status: receipt.status,
-      overpaid_items: report.items.filter((item) => item.savings_eur > 0),
-      line_items: report.items,
-      savings_total: report.savings_total,
-      verified_ratio: report.verified_ratio,
-      summary: report.summary || null
-    });
+    res.json(payload);
   } catch (error) {
     res.status(500).json({ error: 'receipt_report_unavailable' });
   }
@@ -1426,9 +1875,24 @@ app.post('/receipts/:id/confirm', auth.requireUser, async (req, res) => {
   }
 });
 
-// Get nutritional analysis for receipt
-app.get('/receipts/:id/nutrition', async (req, res) => {
+// Get nutritional analysis for receipt (owner only)
+app.get('/receipts/:id/nutrition', auth.requireUser, async (req, res) => {
   try {
+    const receiptLookup = await query(
+      `SELECT id, user_id
+       FROM receipts
+       WHERE id = $1
+       LIMIT 1`,
+      [req.params.id]
+    );
+
+    if (!receiptLookup.rows.length) {
+      return res.status(404).json({ error: 'receipt_not_found' });
+    }
+    if (!receiptLookup.rows[0].user_id || receiptLookup.rows[0].user_id !== req.user.id) {
+      return res.status(403).json({ error: 'receipt_access_denied' });
+    }
+
     const result = await query(
       `SELECT * FROM receipt_nutritional_analysis WHERE receipt_id = $1`,
       [req.params.id]
@@ -1464,6 +1928,12 @@ app.get('/receipts/:id/nutrition', async (req, res) => {
 // Get all store chains
 app.get('/chains', async (req, res) => {
   try {
+    const cacheKey = await buildVersionedKey('categories_all', ['all']);
+    const cached = await getCachedJson(cacheKey, 'categories_all');
+    if (cached) {
+      return res.json(cached);
+    }
+
     const result = await query(
       `SELECT DISTINCT chain, 
               COUNT(DISTINCT id) as store_count,
@@ -1473,7 +1943,7 @@ app.get('/chains', async (req, res) => {
        GROUP BY chain
        ORDER BY chain ASC`
     );
-    
+    await setCachedJson(cacheKey, result.rows, 86400, 'categories_all');
     res.json(result.rows);
   } catch (error) {
     console.error('Chains fetch error:', error);
@@ -1589,9 +2059,6 @@ app.get('/offers', async (req, res) => {
 // ==============================================
 // NEW FEATURES - All Missing Functions
 // ==============================================
-
-const alerts = require('./alerts');
-const projectBaskets = require('./project-baskets');
 
 // ALERTS & NOTIFICATIONS
 app.post('/alerts/price', auth.requireUser, async (req, res) => {
@@ -1974,6 +2441,176 @@ app.get('/insights/analytics/spending', auth.requireUser, requirePlusFeature('ad
   } catch (error) {
     res.status(500).json({ error: 'advanced_analytics_failed' });
   }
+});
+
+app.get('/admin/scrapers/status', auth.optionalAuthMiddleware, requireAdminAccess, async (req, res) => {
+  try {
+    const connectors = await fetchIngestConnectors();
+    const now = Date.now();
+    const rows = connectors.map((connector) => {
+      const lastRun = connector.last_run || connector.lastRun || null;
+      const lastRunMs = lastRun ? new Date(lastRun).getTime() : null;
+      const stale = !lastRunMs || now - lastRunMs > 12 * 60 * 60 * 1000;
+      const sourceStatus = String(connector.last_status || connector.lastStatus || '').toLowerCase();
+      const status = sourceStatus === 'failed'
+        ? 'error'
+        : stale
+          ? 'warning'
+          : 'healthy';
+      return {
+        id: connector.id,
+        name: connector.name,
+        chain: connector.chain || null,
+        type: connector.type || null,
+        enabled: connector.enabled !== false,
+        status,
+        last_run: lastRun,
+        source_status: sourceStatus || null
+      };
+    });
+    return res.json(rows);
+  } catch (error) {
+    try {
+      const fallback = await query(
+        `SELECT
+           COALESCE(store_chain, 'unknown') AS chain,
+           COUNT(*)::int AS offers_count,
+           MAX(updated_at) AS last_updated_at
+         FROM offers
+         WHERE status = 'active'
+         GROUP BY COALESCE(store_chain, 'unknown')
+         ORDER BY chain ASC`
+      );
+      return res.json(fallback.rows.map((row) => ({
+        id: String(row.chain || '').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        name: row.chain,
+        chain: row.chain,
+        type: 'offer_ingest',
+        enabled: true,
+        status: row.last_updated_at ? 'warning' : 'error',
+        last_run: row.last_updated_at,
+        source_status: 'db_fallback',
+        offers_count: row.offers_count
+      })));
+    } catch (fallbackError) {
+      return res.status(500).json({ error: 'admin_scraper_status_failed' });
+    }
+  }
+});
+
+app.get('/admin/system/health', auth.optionalAuthMiddleware, requireAdminAccess, async (req, res) => {
+  try {
+    const [dbHealth, ingestHealth] = await Promise.allSettled([
+      query('SELECT NOW() AS db_now'),
+      fetchIngestHealth()
+    ]);
+    const memory = process.memoryUsage();
+    const redisMetrics = getCacheMetrics();
+    const latency = getLatencySummary();
+    const sseStats = sse.getSseStats();
+
+    const queueLag = await query(
+      `SELECT COUNT(*)::int AS queued
+       FROM receipts
+       WHERE status IN ('uploaded', 'processing')`
+    ).catch(() => ({ rows: [{ queued: null }] }));
+
+    return res.json({
+      api: {
+        uptime_seconds: Number(process.uptime().toFixed(1)),
+        pid: process.pid,
+        node: process.version
+      },
+      system: {
+        load_avg: os.loadavg(),
+        total_mem_mb: Math.round(os.totalmem() / 1024 / 1024),
+        free_mem_mb: Math.round(os.freemem() / 1024 / 1024)
+      },
+      process: {
+        rss_mb: Math.round(memory.rss / 1024 / 1024),
+        heap_used_mb: Math.round(memory.heapUsed / 1024 / 1024),
+        heap_total_mb: Math.round(memory.heapTotal / 1024 / 1024)
+      },
+      database: {
+        status: dbHealth.status === 'fulfilled' ? 'ok' : 'error',
+        time: dbHealth.status === 'fulfilled' ? dbHealth.value.rows[0]?.db_now : null
+      },
+      ingest: ingestHealth.status === 'fulfilled'
+        ? ingestHealth.value
+        : { status: 'unreachable' },
+      queue: {
+        receipt_queue_lag: Number(queueLag.rows[0]?.queued ?? 0)
+      },
+      cache: redisMetrics,
+      latency,
+      realtime: sseStats
+    });
+  } catch (error) {
+    return res.status(500).json({ error: 'admin_system_health_failed' });
+  }
+});
+
+app.get('/admin/audit-log', auth.optionalAuthMiddleware, requireAdminAccess, async (req, res) => {
+  try {
+    await ensureAdminAuditTable();
+    const limit = Math.min(200, Math.max(1, Number(req.query.limit || 50)));
+    const result = await query(
+      `SELECT id, actor, action, target_id, payload, created_at
+       FROM admin_audit_log
+       ORDER BY created_at DESC
+       LIMIT $1`,
+      [limit]
+    );
+    return res.json(result.rows);
+  } catch (error) {
+    return res.status(500).json({ error: 'admin_audit_log_failed' });
+  }
+});
+
+app.post('/admin/scrapers/:id/force-sync', auth.optionalAuthMiddleware, requireAdminAccess, async (req, res) => {
+  try {
+    const connectorId = String(req.params.id || '').trim();
+    if (!connectorId) {
+      return res.status(400).json({ error: 'connector_id_required' });
+    }
+
+    const result = await forceRunIngestConnector(connectorId);
+    const nextCacheVersion = await bumpCacheVersion();
+    await writeAdminAudit(
+      'force_sync',
+      req.adminContext?.actor || 'unknown',
+      connectorId,
+      { result, cache_version: nextCacheVersion, trace_id: req.traceId }
+    ).catch(() => {});
+
+    return res.json({
+      ok: true,
+      connector_id: connectorId,
+      cache_version: nextCacheVersion,
+      ingest_result: result
+    });
+  } catch (error) {
+    return res.status(500).json({ error: 'admin_force_sync_failed' });
+  }
+});
+
+app.post('/internal/cache/bump', async (req, res) => {
+  if (!INTERNAL_CACHE_BUMP_TOKEN || req.get('x-internal-token') !== INTERNAL_CACHE_BUMP_TOKEN) {
+    return res.status(401).json({ error: 'internal_token_required' });
+  }
+  const next = await bumpCacheVersion();
+  return res.json({ ok: true, cache_version: next });
+});
+
+app.use((error, req, res, next) => {
+  if (error?.message === 'unsupported_file_type') {
+    return res.status(400).json({ error: 'unsupported_file_type' });
+  }
+  if (error?.message && String(error.message).startsWith('CORS:')) {
+    return res.status(403).json({ error: 'cors_not_allowed' });
+  }
+  console.error('Unhandled API error:', error?.message || error);
+  return res.status(500).json({ error: 'internal_server_error' });
 });
 
 app.listen(port, () => {

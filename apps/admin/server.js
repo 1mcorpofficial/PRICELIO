@@ -5,6 +5,7 @@ const cors = require('cors');
 const path = require('path');
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
+const axios = require('axios');
 const { getClient } = require('./db');
 
 const app = express();
@@ -16,6 +17,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH;
+const API_SERVICE_URL = process.env.API_SERVICE_URL || 'http://localhost:3000';
+const ADMIN_API_KEY = process.env.ADMIN_API_KEY || '';
 const SESSION_COOKIE = 'admin_session';
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
 
@@ -27,6 +30,17 @@ const PLUS_FEATURES = [
   'priority_scan',
   'family_plus'
 ];
+
+async function callApiAdmin(method, endpoint, body = null) {
+  const response = await axios({
+    method,
+    url: `${API_SERVICE_URL}${endpoint}`,
+    data: body,
+    timeout: 15000,
+    headers: ADMIN_API_KEY ? { 'x-admin-key': ADMIN_API_KEY } : undefined
+  });
+  return response.data;
+}
 
 function parseCookies(req) {
   const header = req.headers.cookie || '';
@@ -381,14 +395,38 @@ app.post('/api/products/create-mapping', async (req, res) => {
 // Connector health
 app.get('/api/connectors/health', async (req, res) => {
   try {
-    // Mock connector health - would call ingest service in production
-    res.json([
-      { name: 'Maxima', status: 'healthy', last_run: new Date().toISOString(), offers_count: 245 },
-      { name: 'Rimi', status: 'healthy', last_run: new Date().toISOString(), offers_count: 189 },
-      { name: 'Iki', status: 'warning', last_run: new Date(Date.now() - 86400000).toISOString(), offers_count: 156 }
-    ]);
+    const rows = await callApiAdmin('GET', '/admin/scrapers/status');
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message || 'connector_health_failed' });
+  }
+});
+
+app.get('/api/system/health', async (req, res) => {
+  try {
+    const payload = await callApiAdmin('GET', '/admin/system/health');
+    res.json(payload);
+  } catch (error) {
+    res.status(500).json({ error: error.message || 'system_health_failed' });
+  }
+});
+
+app.post('/api/connectors/:id/force-sync', async (req, res) => {
+  try {
+    const payload = await callApiAdmin('POST', `/admin/scrapers/${encodeURIComponent(req.params.id)}/force-sync`, {});
+    res.json(payload);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/admin/audit-log', async (req, res) => {
+  try {
+    const limit = Math.min(200, Math.max(1, parseInt(req.query.limit, 10) || 50));
+    const payload = await callApiAdmin('GET', `/admin/audit-log?limit=${limit}`);
+    res.json(payload);
+  } catch (error) {
+    res.status(500).json({ error: error.message || 'admin_audit_log_failed' });
   }
 });
 

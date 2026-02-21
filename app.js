@@ -782,7 +782,7 @@
   }
 
   const state = {
-    token: localStorage.getItem(STORAGE_TOKEN_KEY) || '',
+    token: '',
     user: (() => {
       const raw = localStorage.getItem(STORAGE_USER_KEY);
       if (!raw) return null;
@@ -819,6 +819,8 @@
     experienceStarted: false,
     appBootstrapped: false,
     onboardingReady: false,
+    refreshPromise: null,
+    guestReceiptProofs: new Map(),
     setView: null,
     setAuthTab: null,
     toastHistory: new Map()
@@ -1240,13 +1242,86 @@
     return headers;
   }
 
+  function getCookieValue(name) {
+    const prefix = `${name}=`;
+    const parts = String(document.cookie || '').split(';');
+    for (const part of parts) {
+      const trimmed = part.trim();
+      if (trimmed.startsWith(prefix)) {
+        return decodeURIComponent(trimmed.substring(prefix.length));
+      }
+    }
+    return '';
+  }
+
+  function getCsrfToken() {
+    return getCookieValue('pricelio_csrf_token') || getCookieValue('csrf_token');
+  }
+
+  async function refreshAccessToken({ silent = false } = {}) {
+    if (state.refreshPromise) {
+      return state.refreshPromise;
+    }
+
+    state.refreshPromise = (async () => {
+      try {
+        const csrfToken = getCsrfToken();
+        const headers = { 'Content-Type': 'application/json' };
+        if (csrfToken) {
+          headers['X-CSRF-Token'] = csrfToken;
+        }
+        const response = await fetch(`${API_BASE}/auth/refresh`, {
+          method: 'POST',
+          credentials: 'include',
+          headers,
+          body: JSON.stringify({})
+        });
+        if (!response.ok) {
+          return false;
+        }
+        const payload = await response.json().catch(() => null);
+        if (!payload?.access_token) {
+          return false;
+        }
+        setAuthState(payload.access_token, payload.user || state.user || null);
+        return true;
+      } catch (_) {
+        return false;
+      } finally {
+        state.refreshPromise = null;
+      }
+    })();
+
+    const refreshed = await state.refreshPromise;
+    if (!refreshed) {
+      clearAuthState();
+      if (!silent) {
+        showToast('Session expired. Please login again.', 'warning');
+      }
+    }
+    return refreshed;
+  }
+
   async function apiRequest(path, options = {}) {
     const method = options.method || 'GET';
     const url = `${API_BASE}${path}`;
     const init = {
       method,
+      credentials: 'include',
       headers: options.formData ? getAuthHeaders(false) : getAuthHeaders(true)
     };
+
+    if (options.headers && typeof options.headers === 'object') {
+      Object.assign(init.headers, options.headers);
+    }
+
+    const methodUpper = String(method).toUpperCase();
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(methodUpper)) {
+      const csrfToken = getCsrfToken();
+      if (csrfToken && !init.headers['X-CSRF-Token']) {
+        init.headers['X-CSRF-Token'] = csrfToken;
+      }
+    }
 
     if (options.formData) {
       init.body = options.formData;
@@ -1270,10 +1345,16 @@
     }
 
     if (!response.ok) {
-      if (response.status === 401 && state.token) {
+      if (response.status === 401 && !options.skipAuthRefresh && !String(path).startsWith('/auth/')) {
+        const refreshed = await refreshAccessToken({ silent: true });
+        if (refreshed) {
+          return apiRequest(path, { ...options, skipAuthRefresh: true });
+        }
+      }
+      if (response.status === 401) {
         clearAuthState();
       }
-      const message = payload?.error || payload?.message || `Request failed (${response.status})`;
+      const message = payload?.error?.message || payload?.error?.code || payload?.error || payload?.message || `Request failed (${response.status})`;
       throw new ApiError(message, response.status, payload);
     }
 
@@ -1283,11 +1364,7 @@
   function setAuthState(token, user) {
     state.token = token || '';
     state.user = user || null;
-    if (state.token) {
-      localStorage.setItem(STORAGE_TOKEN_KEY, state.token);
-    } else {
-      localStorage.removeItem(STORAGE_TOKEN_KEY);
-    }
+    localStorage.removeItem(STORAGE_TOKEN_KEY);
     if (state.user) {
       localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(state.user));
     } else {
@@ -1297,6 +1374,7 @@
   }
 
   function clearAuthState() {
+    state.refreshPromise = null;
     setAuthState('', null);
     state.activeHouseholdId = '';
     state.familyLists = [];
@@ -1510,8 +1588,12 @@
     }
     if (error.status === 401) return 'Login required';
     if (error.status === 402) return 'Plus feature required';
-    if (error.status === 403) return error.data?.flag ? `Feature disabled: ${error.data.flag}` : 'Access denied';
-    return error.data?.error || error.message || 'Request failed';
+    if (error.status === 403) {
+      if (error.data?.flag) return `Feature disabled: ${error.data.flag}`;
+      if (error.data?.error?.code) return error.data.error.code;
+      return 'Access denied';
+    }
+    return error.data?.error?.message || error.data?.error?.code || error.data?.error || error.message || 'Request failed';
   }
 
   function bindNavigation() {
@@ -1872,12 +1954,15 @@
 
   async function refreshAuthedPanels() {
     if (!state.token) {
-      renderGamification(null);
-      renderLedgerPreview([]);
-      renderLoyaltyCards([]);
-      renderReceiptQualitySummary(null);
-      renderReceiptReviewQueue([], []);
-      return;
+      const refreshed = await refreshAccessToken({ silent: true });
+      if (!refreshed) {
+        renderGamification(null);
+        renderLedgerPreview([]);
+        renderLoyaltyCards([]);
+        renderReceiptQualitySummary(null);
+        renderReceiptReviewQueue([], []);
+        return;
+      }
     }
 
     try {
@@ -2351,11 +2436,24 @@
     });
   }
 
+  function rememberGuestReceiptProof(receiptId, guestProof) {
+    if (!receiptId || !guestProof) return;
+    state.guestReceiptProofs.set(String(receiptId), String(guestProof));
+  }
+
+  function getReceiptGuestHeaders(receiptId) {
+    if (state.token) return {};
+    const proof = state.guestReceiptProofs.get(String(receiptId || ''));
+    return proof ? { 'X-Guest-Session-Proof': proof } : {};
+  }
+
   async function pollReceiptUntilComplete(receiptId, maxAttempts = 16) {
     for (let i = 0; i < maxAttempts; i += 1) {
       await new Promise((r) => setTimeout(r, 1200));
       try {
-        const status = await apiRequest(`/receipts/${receiptId}/status`);
+        const status = await apiRequest(`/receipts/${receiptId}/status`, {
+          headers: getReceiptGuestHeaders(receiptId)
+        });
         const s = status.status || '';
         const pct = status.progress || 0;
         receiptSetStatus(`${t('rp_scanning')}… ${pct}%`);
@@ -2699,7 +2797,9 @@
         return;
       }
 
-      const report = await apiRequest(`/receipts/${encodeURIComponent(receiptId)}/report`);
+      const report = await apiRequest(`/receipts/${encodeURIComponent(receiptId)}/report`, {
+        headers: getReceiptGuestHeaders(receiptId)
+      });
       state.activeReceiptId = receiptId;
       renderReceiptReport(report);
       await loadReceiptQualitySummary();
@@ -2750,7 +2850,9 @@
         body: { confirmations }
       });
       showToast(t('receipt_fix_saved'), 'success');
-      const report = await apiRequest(`/receipts/${encodeURIComponent(receiptId)}/report`);
+      const report = await apiRequest(`/receipts/${encodeURIComponent(receiptId)}/report`, {
+        headers: getReceiptGuestHeaders(receiptId)
+      });
       renderReceiptReport(report);
       await loadReceiptQualitySummary();
       await loadReceiptReviewQueue();
@@ -2779,6 +2881,7 @@
 
       const upload = await apiRequest('/receipts/upload', { method: 'POST', formData });
       state.lastReceiptId = upload.receipt_id;
+      rememberGuestReceiptProof(upload.receipt_id, upload.guest_proof);
 
       receiptSetStep(2);
       receiptSetStatus(`${t('rp_scanning')}…`);
@@ -2795,7 +2898,9 @@
         return;
       }
 
-      const report = await apiRequest(`/receipts/${upload.receipt_id}/report`);
+      const report = await apiRequest(`/receipts/${upload.receipt_id}/report`, {
+        headers: getReceiptGuestHeaders(upload.receipt_id)
+      });
 
       receiptSetStep(4);
       receiptSetStatus(t('receipt_analysis_complete') || 'Done!', 'success');
@@ -3883,7 +3988,9 @@
       const receiptId = button.getAttribute('data-open-receipt-id');
       if (!receiptId) return;
       try {
-        const report = await apiRequest(`/receipts/${encodeURIComponent(receiptId)}/report`);
+        const report = await apiRequest(`/receipts/${encodeURIComponent(receiptId)}/report`, {
+          headers: getReceiptGuestHeaders(receiptId)
+        });
         state.activeReceiptId = receiptId;
         renderReceiptReport(report);
       } catch (error) {
@@ -4000,6 +4107,8 @@
     animateSavingsCounter();
     initScrollReveal();
     bindControls();
+    localStorage.removeItem(STORAGE_TOKEN_KEY);
+    await refreshAccessToken({ silent: true });
     renderAuthState();
 
     renderEmpty($('searchResults'), t('search_placeholder'));

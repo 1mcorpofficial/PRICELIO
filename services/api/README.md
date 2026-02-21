@@ -3,7 +3,7 @@
 Responsibilities:
 - Auth and guest sessions.
 - Map, search, products, basket, receipts endpoints.
-- Rate limiting and auth middleware.
+- Rate limiting, Redis cache, SSE stream, and auth middleware.
 
 ## Local run
 - Install deps: `npm install`
@@ -24,3 +24,11 @@ Notes:
 - API contracts are documented in `docs/spec/23-api.md`.
 - OpenAPI spec lives in `services/api/openapi.yaml`.
 - Alert delivery supports DB notifications and optional webhook (`ALERT_WEBHOOK_URL`).
+
+## Phase 1 stabilization endpoints
+
+- `POST /auth/refresh` supports both web cookie refresh and mobile body refresh token.
+- `GET /events/price-drops/stream` SSE channel (auth required).
+- `GET /admin/scrapers/status` admin-only connector status.
+- `GET /admin/system/health` admin-only runtime health.
+- `POST /admin/scrapers/:id/force-sync` admin-only connector run + cache bump.

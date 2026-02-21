@@ -6,6 +6,12 @@
 const { query } = require('./db');
 const axios = require('axios');
 
+let notificationPublisher = null;
+
+function setNotificationPublisher(publisher) {
+  notificationPublisher = typeof publisher === 'function' ? publisher : null;
+}
+
 /**
  * Alert types:
  * - PRICE_DROP: When a favorite product price drops
@@ -179,6 +185,14 @@ async function sendNotification(userId, notification) {
       JSON.stringify(notification)
     ]
   );
+
+  if (notificationPublisher) {
+    try {
+      await notificationPublisher(userId, notification);
+    } catch (error) {
+      console.error('Notification publisher failed:', error.message);
+    }
+  }
   
   // Optional webhook delivery for real external notifications.
   // Configure ALERT_WEBHOOK_URL to forward notification payloads.
@@ -241,6 +255,7 @@ module.exports = {
   checkBasketAlerts,
   checkExpiringDeals,
   sendNotification,
+  setNotificationPublisher,
   getUserNotifications,
   markNotificationRead,
   deleteAlert

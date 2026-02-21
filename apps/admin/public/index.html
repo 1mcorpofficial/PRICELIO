@@ -240,6 +240,13 @@
       font-family: var(--font-display);
     }
 
+    .stat-card .tiny {
+      margin-top: 0.2rem;
+      color: var(--ink-500);
+      font-size: 0.76rem;
+      line-height: 1.25;
+    }
+
     .panel {
       background: var(--card);
       border: 1px solid #e2e8f0;
@@ -299,6 +306,20 @@
       border: 1px solid #e2e8f0;
       border-radius: 12px;
       background: #fff;
+    }
+
+    .connector-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.7rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.76rem;
+      color: #0f172a;
+      word-break: break-all;
     }
 
     table {
@@ -564,18 +585,60 @@
         </div>
 
         <div id="tab-connectors" class="tab-content">
+          <div class="connector-grid">
+            <article class="stat-card">
+              <h3>API Uptime</h3>
+              <div class="value" id="sysApiUptime">-</div>
+              <div class="tiny" id="sysApiNode">-</div>
+            </article>
+            <article class="stat-card">
+              <h3>Queue Lag</h3>
+              <div class="value" id="sysQueueLag">-</div>
+              <div class="tiny">Receipts waiting/processing</div>
+            </article>
+            <article class="stat-card">
+              <h3>Redis Hit Ratio</h3>
+              <div class="value" id="sysCacheHitRatio">-</div>
+              <div class="tiny" id="sysCacheOps">-</div>
+            </article>
+            <article class="stat-card">
+              <h3>SSE Clients</h3>
+              <div class="value" id="sysSseClients">-</div>
+              <div class="tiny" id="sysSseEvents">-</div>
+            </article>
+          </div>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
                   <th>Connector</th>
+                  <th>Type</th>
                   <th>Status</th>
+                  <th>Enabled</th>
+                  <th>Source</th>
                   <th>Last Run</th>
-                  <th>Offers Count</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody id="connectorsTableBody">
-                <tr><td colspan="4">Loading...</td></tr>
+                <tr><td colspan="7">Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="height: 0.85rem;"></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Actor</th>
+                  <th>Action</th>
+                  <th>Target</th>
+                  <th>Trace</th>
+                </tr>
+              </thead>
+              <tbody id="auditTableBody">
+                <tr><td colspan="5">Loading audit log...</td></tr>
               </tbody>
             </table>
           </div>
@@ -689,7 +752,11 @@
       }
 
       if (!response.ok) {
-        const errorText = payload?.error || `api_error_${response.status}`;
+        const errorText = payload?.error?.message
+          || payload?.error?.code
+          || payload?.error
+          || payload?.message
+          || `api_error_${response.status}`;
         throw new Error(errorText);
       }
 
@@ -724,6 +791,17 @@
         hour: '2-digit',
         minute: '2-digit'
       });
+    }
+
+    function formatSeconds(secondsValue) {
+      const seconds = Number(secondsValue);
+      if (!Number.isFinite(seconds)) return '-';
+      if (seconds < 60) return `${Math.round(seconds)}s`;
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.round(seconds % 60);
+      if (mins < 60) return `${mins}m ${secs}s`;
+      const hours = Math.floor(mins / 60);
+      return `${hours}h ${mins % 60}m`;
     }
 
     async function login(email, password) {
@@ -824,11 +902,11 @@
 
     async function loadConnectorHealth() {
       const tbody = qs('#connectorsTableBody');
-      tbody.innerHTML = '<tr><td colspan="4">Loading connector health...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7">Loading connector health...</td></tr>';
 
       const rows = await apiCall('/connectors/health');
       if (!rows.length) {
-        tbody.innerHTML = '<tr><td colspan="4">No connector data.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7">No connector data.</td></tr>';
         return;
       }
 
@@ -838,9 +916,51 @@
         return `
           <tr>
             <td>${escapeHtml(row.name || '-')}</td>
+            <td>${escapeHtml(row.type || '-')}</td>
             <td><span class="badge ${badgeClass}">${escapeHtml(row.status || '-')}</span></td>
+            <td>${row.enabled === false ? '<span class="badge badge-danger">disabled</span>' : '<span class="badge badge-success">enabled</span>'}</td>
+            <td>${escapeHtml(row.source_status || '-')}</td>
             <td>${formatDate(row.last_run)}</td>
-            <td>${Number(row.offers_count || 0).toLocaleString('en-US')}</td>
+            <td><button class="btn btn-primary" type="button" data-force-sync-id="${escapeHtml(row.id)}">Force Sync</button></td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function loadSystemHealth() {
+      const payload = await apiCall('/system/health');
+      qs('#sysApiUptime').textContent = formatSeconds(payload?.api?.uptime_seconds);
+      qs('#sysApiNode').textContent = `${payload?.api?.node || '-'} / pid ${payload?.api?.pid || '-'}`;
+      qs('#sysQueueLag').textContent = Number(payload?.queue?.receipt_queue_lag || 0).toLocaleString('en-US');
+      const cacheHits = Number(payload?.cache?.hits || 0);
+      const cacheMisses = Number(payload?.cache?.misses || 0);
+      const totalCacheOps = cacheHits + cacheMisses;
+      const hitRatio = totalCacheOps ? ((cacheHits / totalCacheOps) * 100).toFixed(1) : '0.0';
+      qs('#sysCacheHitRatio').textContent = `${hitRatio}%`;
+      qs('#sysCacheOps').textContent = `hits ${cacheHits.toLocaleString('en-US')} / miss ${cacheMisses.toLocaleString('en-US')}`;
+      qs('#sysSseClients').textContent = Number(payload?.realtime?.active_clients || 0).toLocaleString('en-US');
+      qs('#sysSseEvents').textContent = `${Number(payload?.realtime?.events_sent || 0).toLocaleString('en-US')} events sent`;
+    }
+
+    async function loadAdminAuditLog() {
+      const tbody = qs('#auditTableBody');
+      tbody.innerHTML = '<tr><td colspan="5">Loading audit log...</td></tr>';
+
+      const rows = await apiCall('/admin/audit-log?limit=30');
+      if (!Array.isArray(rows) || !rows.length) {
+        tbody.innerHTML = '<tr><td colspan="5">No audit events yet.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = rows.map((row) => {
+        const traceId = row?.payload?.trace_id || row?.payload?.traceId || '-';
+        return `
+          <tr>
+            <td>${formatDate(row.created_at)}</td>
+            <td>${escapeHtml(row.actor || '-')}</td>
+            <td>${escapeHtml(row.action || '-')}</td>
+            <td>${escapeHtml(row.target_id || '-')}</td>
+            <td class="mono">${escapeHtml(traceId)}</td>
           </tr>
         `;
       }).join('');
@@ -851,7 +971,9 @@
         loadStats(),
         loadLowConfidenceReceipts(),
         loadUnmatchedProducts(),
-        loadConnectorHealth()
+        loadConnectorHealth(),
+        loadSystemHealth(),
+        loadAdminAuditLog()
       ]);
     }
 
@@ -922,6 +1044,16 @@
 
       showToast('Mapping created and unmatched items updated.', 'success');
       await Promise.all([loadUnmatchedProducts(), loadStats()]);
+    }
+
+    async function forceSyncConnector(connectorId) {
+      if (!connectorId) return;
+      await apiCall(`/connectors/${encodeURIComponent(connectorId)}/force-sync`, {
+        method: 'POST',
+        body: JSON.stringify({})
+      });
+      showToast(`Force sync queued for ${connectorId}.`, 'success');
+      await Promise.all([loadConnectorHealth(), loadSystemHealth(), loadAdminAuditLog()]);
     }
 
     async function grantPlusForUser(userId, durationDays, featureKeys) {
@@ -1017,6 +1149,15 @@
         const productId = input?.value?.trim();
         createMapping(rawName, productId)
           .catch((error) => showToast(error.message || 'Create mapping failed', 'error'));
+      });
+
+      qs('#connectorsTableBody').addEventListener('click', (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) return;
+        const connectorId = target.dataset.forceSyncId;
+        if (!connectorId) return;
+        forceSyncConnector(connectorId)
+          .catch((error) => showToast(error.message || 'Force sync failed', 'error'));
       });
 
       qs('#grantPlusForm').addEventListener('submit', (event) => {
