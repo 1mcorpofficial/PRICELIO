@@ -839,12 +839,15 @@
 
     const isLikelyStaticDevPort = port === '8000' || port === '8080' || port === '4173' || port === '5173';
     if (isHttp && isLikelyStaticDevPort) {
+      if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        return 'https://api.pricelio.app';
+      }
       const scheme = protocol === 'https:' ? 'https' : 'http';
       return `${scheme}://${hostname}:3000`;
     }
 
     if (isHttp && (hostname === 'localhost' || hostname === '127.0.0.1')) {
-      return 'http://localhost:3000';
+      return 'https://api.pricelio.app';
     }
 
     // VPS or bare IP without explicit port → API runs on :3000

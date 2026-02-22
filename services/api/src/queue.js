@@ -6,7 +6,7 @@ let channel;
 
 async function getChannel() {
   if (channel) return channel;
-  const url = process.env.RABBITMQ_URL || 'amqp://receiptradar:receiptradar_dev@localhost:5672';
+  const url = process.env.RABBITMQ_URL || 'amqp://receiptradar:receiptradar_dev@127.0.0.1:5672';
   connection = await amqp.connect(url);
   channel = await connection.createChannel();
   await channel.assertQueue(QUEUE_NAME, { durable: true });

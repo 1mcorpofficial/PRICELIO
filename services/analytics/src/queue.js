@@ -1,7 +1,7 @@
 const amqp = require('amqplib');
 const { trackEvent } = require('./tracker');
 
-const RABBITMQ_URL = process.env.RABBITMQ_URL || 'amqp://localhost';
+const RABBITMQ_URL = process.env.RABBITMQ_URL || 'amqp://127.0.0.1';
 const ANALYTICS_QUEUE = 'analytics_events';
 
 let connection = null;

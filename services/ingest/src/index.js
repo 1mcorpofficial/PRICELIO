@@ -8,7 +8,7 @@ const { runConnector, getAllConnectors } = require('./scheduler');
 
 const app = express();
 const port = process.env.PORT || 3002;
-const API_SERVICE_URL = process.env.API_SERVICE_URL || 'http://localhost:3000';
+const API_SERVICE_URL = process.env.API_SERVICE_URL || 'https://api.pricelio.app';
 const INTERNAL_CACHE_BUMP_TOKEN = process.env.INTERNAL_CACHE_BUMP_TOKEN || '';
 
 app.use(cors());

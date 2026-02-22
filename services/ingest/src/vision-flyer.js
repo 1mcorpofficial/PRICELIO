@@ -13,7 +13,7 @@ const pdfParse = require('pdf-parse');
 const FormData = require('form-data');
 const { pool } = require('./db');
 
-const AI_GATEWAY_URL = process.env.AI_GATEWAY_URL || 'http://localhost:3001';
+const AI_GATEWAY_URL = process.env.AI_GATEWAY_URL || 'http://127.0.0.1:3001';
 
 // ── helpers ────────────────────────────────────────────────────────────────
 

@@ -17,7 +17,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH;
-const API_SERVICE_URL = process.env.API_SERVICE_URL || 'http://localhost:3000';
+const API_SERVICE_URL = process.env.API_SERVICE_URL || 'https://api.pricelio.app';
 const ADMIN_API_KEY = process.env.ADMIN_API_KEY || '';
 const SESSION_COOKIE = 'admin_session';
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000;

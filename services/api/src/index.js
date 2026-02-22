@@ -58,9 +58,8 @@ const port = process.env.PORT || 3000;
 const DEFAULT_ALLOWED_ORIGINS = [
   'https://pricelio.app',
   'https://www.pricelio.app',
-  'http://localhost:8000',
-  'http://localhost:3000',
   'http://127.0.0.1:8000',
+  'http://127.0.0.1:3000',
   'http://38.242.217.82:8000',
   'http://38.242.217.82',
 ];
@@ -75,7 +74,7 @@ const REFRESH_COOKIE_NAME = process.env.REFRESH_COOKIE_NAME || 'refresh_token';
 const COOKIE_SECURE = String(process.env.COOKIE_SECURE || process.env.NODE_ENV === 'production').toLowerCase() === 'true';
 const COOKIE_SAME_SITE = process.env.COOKIE_SAME_SITE || 'lax';
 const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN || undefined;
-const INGEST_SERVICE_URL = process.env.INGEST_SERVICE_URL || 'http://localhost:3002';
+const INGEST_SERVICE_URL = process.env.INGEST_SERVICE_URL || 'http://127.0.0.1:3002';
 const ADMIN_API_KEY = process.env.ADMIN_API_KEY || '';
 const INTERNAL_CACHE_BUMP_TOKEN = process.env.INTERNAL_CACHE_BUMP_TOKEN || '';
 const allowedUploadMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
@@ -1397,7 +1396,7 @@ async function fetchVmiReceiptData(vmiUrl) {
 }
 
 async function processReceiptInline(receiptId, imageBuffer, storeChain) {
-  const AI_GATEWAY = process.env.AI_GATEWAY_URL || 'http://localhost:3001';
+  const AI_GATEWAY = process.env.AI_GATEWAY_URL || 'http://127.0.0.1:3001';
   try {
     await query(`UPDATE receipts SET status = 'processing', updated_at = NOW() WHERE id = $1`, [receiptId]);
 

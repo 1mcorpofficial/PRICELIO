@@ -5,7 +5,7 @@ const FormData = require('form-data');
 const { findProductByName, findProductByEAN, fuzzyMatchProduct } = require('./matcher');
 const { query } = require('./db');
 
-const AI_GATEWAY_URL = process.env.AI_GATEWAY_URL || 'http://localhost:3001';
+const AI_GATEWAY_URL = process.env.AI_GATEWAY_URL || 'http://127.0.0.1:3001';
 
 function validateUpload(meta) {
   const maxSize = 10 * 1024 * 1024; // 10MB

@@ -10,7 +10,7 @@ function firstDefined(...values) {
 }
 
 const pool = new Pool({
-  host: firstDefined(process.env.PGHOST, process.env.POSTGRES_HOST, 'localhost'),
+  host: firstDefined(process.env.PGHOST, process.env.POSTGRES_HOST, '127.0.0.1'),
   port: Number(firstDefined(process.env.PGPORT, process.env.POSTGRES_PORT, 5432)),
   user: firstDefined(process.env.PGUSER, process.env.POSTGRES_USER, 'receiptradar'),
   password: firstDefined(process.env.PGPASSWORD, process.env.POSTGRES_PASSWORD, 'receiptradar'),
