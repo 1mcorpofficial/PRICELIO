@@ -3,7 +3,8 @@ const assert = require('node:assert/strict');
 
 const {
   sanitizeExtraction,
-  evaluateExtractionQuality
+  evaluateExtractionQuality,
+  validateExtraction
 } = require('../services/ai-gateway/src/extractor');
 
 test('sanitizeExtraction filters summary-only lines and keeps product lines', () => {
@@ -58,4 +59,16 @@ test('evaluateExtractionQuality flags mismatch between line sum and total', () =
   const quality = evaluateExtractionQuality(data);
   assert.equal(quality.qualityFlags.includes('line_sum_mismatch'), true);
   assert.equal(quality.qualityScore < 0.9, true);
+});
+
+test('validateExtraction accepts discount-only line when discount value is present', () => {
+  const data = sanitizeExtraction({
+    confidence: 0.8,
+    line_items: [
+      { raw_name: 'Nuolaida lojalumo kortelei', line_type: 'discount', discount: 1.2 }
+    ]
+  });
+
+  const validation = validateExtraction(data);
+  assert.equal(validation.issues.some((issue) => issue.includes('missing prices')), false);
 });

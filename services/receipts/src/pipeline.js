@@ -108,6 +108,12 @@ async function matchProducts(lines) {
       candidates: []
     };
 
+    // Discount rows are not products and should not be matched against catalog.
+    if (String(line?.line_type || '').toLowerCase() === 'discount') {
+      matched.push(matchResult);
+      continue;
+    }
+
     try {
       // Try exact name match first
       let product = await findProductByName(line.raw_name);
@@ -155,15 +161,20 @@ function scoreConfidence(lines, extractionMeta = {}) {
     return { receipt_confidence: 0.0 };
   }
 
+  const effectiveLines = lines.filter(
+    (line) => String(line?.line_type || '').toLowerCase() !== 'discount'
+  );
+  const sourceLines = effectiveLines.length ? effectiveLines : lines;
+
   const extractionBase = Number(extractionMeta.extraction_quality_score ?? extractionMeta.extraction_confidence);
-  const extractionConfidences = lines.map((line) => {
+  const extractionConfidences = sourceLines.map((line) => {
     if (line.confidence != null) return Number(line.confidence) || 0.5;
     return Number.isFinite(extractionBase) ? extractionBase : 0.5;
   });
-  const matchConfidences = lines.map(l => l.match_confidence || 0.0);
+  const matchConfidences = sourceLines.map((line) => line.match_confidence || 0.0);
   
-  const avgExtraction = extractionConfidences.reduce((sum, c) => sum + c, 0) / lines.length;
-  const avgMatch = matchConfidences.reduce((sum, c) => sum + c, 0) / lines.length;
+  const avgExtraction = extractionConfidences.reduce((sum, c) => sum + c, 0) / sourceLines.length;
+  const avgMatch = matchConfidences.reduce((sum, c) => sum + c, 0) / sourceLines.length;
   
   // Weighted average: 60% extraction, 40% matching
   const overall = (avgExtraction * 0.6) + (avgMatch * 0.4);

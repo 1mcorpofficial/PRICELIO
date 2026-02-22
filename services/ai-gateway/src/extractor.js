@@ -209,7 +209,8 @@ function validateExtraction(data = {}) {
     if (!item.raw_name || item.raw_name.trim().length < 2) {
       issues.push(`Line ${index + 1}: invalid product name`);
     }
-    if (item.total_price == null && item.unit_price == null) {
+    const isDiscount = String(item.line_type || '').toLowerCase() === 'discount';
+    if (item.total_price == null && item.unit_price == null && !(isDiscount && item.discount != null)) {
       issues.push(`Line ${index + 1}: missing prices`);
     }
   });

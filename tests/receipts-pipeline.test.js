@@ -24,3 +24,13 @@ test('scoreConfidence calculates weighted confidence', () => {
   assert.equal(score.receipt_confidence, 0.76);
 });
 
+test('scoreConfidence ignores discount lines when product lines exist', () => {
+  const score = pipeline.scoreConfidence([
+    { line_type: 'product', confidence: 0.9, match_confidence: 0.8 },
+    { line_type: 'discount', confidence: 0.1, match_confidence: 0.0 }
+  ]);
+
+  assert.equal(score.extraction_confidence, 0.9);
+  assert.equal(score.matching_confidence, 0.8);
+  assert.equal(score.receipt_confidence, 0.86);
+});
