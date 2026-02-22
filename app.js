@@ -6,6 +6,8 @@
   const STORAGE_ONBOARDING_KEY = 'pricelio_onboarding_done_v1';
   const STORAGE_ONBOARDING_HINT_KEY = 'pricelio_onboarding_hint_seen_v1';
   const STORAGE_LANG_KEY = 'pricelio_lang';
+  const STORAGE_ACTIVE_MISSION_KEY = 'pricelio_active_mission_v1';
+  const STORAGE_MISSION_DRAFT_KEY = 'pricelio_mission_capture_draft_v1';
   const SUPPORTED_LANGS = ['lt', 'en', 'lv', 'et', 'ru', 'pl', 'be', 'uk'];
   const LANG_LABELS = {
     lt: 'Lietuvių',
@@ -28,6 +30,21 @@
       ov_chip_map: 'Explore Map',
       ov_chip_rank: 'Rankings',
       ov_chip_plus: 'Plus',
+      dashboard_greeting_kicker: 'Your savings board',
+      dashboard_greeting_default: 'Hello!',
+      dashboard_greeting_name: 'Hi, {name}!',
+      dashboard_rank_line_default: 'Login to start collecting XP.',
+      dashboard_rank_line: 'You are {rank} (Level {level}).',
+      dashboard_xp_to_next: 'Only {xp} XP left until {next}.',
+      dashboard_xp_max: 'Max level reached. Keep the streak alive.',
+      dashboard_scan_title: 'Scan new receipt',
+      dashboard_scan_subtitle: 'Fastest path to savings and XP',
+      dashboard_saved_label: 'Saved this month',
+      dashboard_mission_label: 'Mission status',
+      dashboard_mission_empty: 'New mission near your area!',
+      dashboard_recent_points_empty: 'No XP events yet',
+      scan_cta_short: 'Scan',
+      topbar_xp_balance: '⚡ {xp} XP',
       guest_mode: 'Guest mode',
       home_btn: 'Home',
       refresh: 'Refresh',
@@ -125,6 +142,11 @@
       best_plan_title: 'Best plan',
       upload_receipt_title: 'Receipt Scanner',
       receipt_subtitle: 'Upload or take a photo of your receipt',
+      receipt_core_cta: 'Scan receipt and claim XP',
+      receipt_core_hint: 'Fastest on mobile: open camera and capture receipt in one tap.',
+      receipt_magic_1: 'Reading your items...',
+      receipt_magic_2: 'Finding better prices in nearby stores...',
+      receipt_magic_3: 'Calculating your XP reward...',
       dropzone_hint: 'Drag & drop receipt here',
       dropzone_sub: 'or use the buttons below · JPEG, PNG up to 10MB',
       analyze_receipt_btn: 'Analyze',
@@ -155,6 +177,24 @@
       receipt_quality_review_rate: 'Needs review',
       receipt_quality_feedback: 'Feedback sent',
       receipt_quality_flagged_chains: 'Most flagged chains',
+      receipt_history_title: 'Recent scans',
+      receipt_history_empty: 'No scanned receipts yet. Start with your first scan.',
+      receipt_archive_title: 'Purchase history',
+      receipt_archive_subtitle: 'Your scanned receipts and earned XP',
+      receipt_detail_title: 'Receipt details',
+      receipt_detail_photo_label: 'Original receipt photo',
+      receipt_detail_time_label: 'Scanned at',
+      receipt_detail_photo_missing: 'Original receipt photo is unavailable.',
+      receipt_status_processed: 'Processed',
+      receipt_status_needs_confirmation: 'Needs review',
+      receipt_status_finalized: 'Finalized',
+      receipt_status_processing: 'Processing',
+      receipt_status_uploaded: 'Uploaded',
+      receipt_aha_title: 'Success! Scanned {count} items.',
+      receipt_aha_spent: 'Spent',
+      receipt_aha_saved: 'Could have saved',
+      receipt_aha_xp: 'Earned',
+      receipt_aha_open: 'Tap to see where to save',
       receipt_line_status_matched: 'Matched',
       receipt_line_status_candidates: 'Needs choice',
       receipt_line_status_unmatched: 'Unmatched',
@@ -182,11 +222,67 @@
       add_btn: 'Add',
       poll_family_events_btn: 'Poll Family Events',
       bounty_missions_title: 'Bounty missions',
+      mission_panel_subtitle: 'Find nearby missions and earn XP fast',
+      mission_flow_title: 'Mission flow',
+      mission_flow_subtitle: 'Accept a mission, then use the main camera button to capture proof.',
       nearby_btn: 'Nearby',
       submit_verify_title: 'Submit / verify proof',
+      mission_submit_subtitle: 'Submit simple proof and collect reward XP',
       submit_mission_btn: 'Submit Mission',
       verify_btn: 'Verify',
       status_btn: 'Status',
+      mission_geo_title: 'Missions around you',
+      mission_geo_idle: 'Allow location and load missions near you.',
+      mission_geo_requesting: 'Getting your location...',
+      mission_geo_ready: 'Using your location: {lat}, {lon}.',
+      mission_geo_missing: 'Location unavailable. Turn on GPS and try again.',
+      mission_geo_cta: 'I am here - Show missions',
+      mission_geo_refresh: 'Refresh list',
+      mission_selected_label: 'Selected mission',
+      mission_selected_empty: 'Choose a mission from the list.',
+      mission_selected_value: 'Mission #{id} selected · reward {xp} XP',
+      mission_start_btn: 'Start mission',
+      mission_use_btn: 'Use',
+      mission_verify_title: 'Community verification',
+      mission_verify_hint: 'After you submit, we will auto-fill verification details.',
+      mission_verify_ready: 'Submission {id} is ready for community vote.',
+      mission_verify_missing: 'Submit a mission first to unlock verification.',
+      mission_active_label: 'Active mission',
+      mission_active_empty: 'No active mission right now.',
+      mission_active_title: 'Mission active: {name} (+{xp} XP)',
+      mission_active_continue: 'Continue mission',
+      mission_active_cancel: 'Cancel',
+      mission_cancelled: 'Mission cancelled.',
+      mission_accept_title: 'Before you start mission',
+      mission_accept_next: 'Next',
+      mission_accept_got_it: 'Got it',
+      mission_accept_activate: 'Start mission',
+      mission_accept_cancel: 'Cancel',
+      mission_accept_step_1: 'You need to find this product and scan its price and composition.',
+      mission_accept_step_2_title: '3 photo rule:',
+      mission_accept_rule_1: '1. Product on shelf with visible price tag.',
+      mission_accept_rule_2: '2. Front side of the product.',
+      mission_accept_rule_3: '3. Back side with barcode and composition.',
+      mission_accept_step_3: 'Great. Mission will be marked active and ready for capture.',
+      mission_activated: 'Mission activated.',
+      scan_choice_title: 'What do we scan now?',
+      scan_choice_mission: 'Mission: {name}',
+      scan_choice_receipt: 'Regular receipt',
+      mission_capture_title: 'Mission photos',
+      mission_capture_product_label: 'Product name',
+      mission_capture_barcode_label: 'Barcode',
+      mission_capture_store_label: 'Store chain',
+      mission_capture_take_photo: 'Take photo',
+      mission_capture_retake: 'Retake',
+      mission_capture_next: 'Next',
+      mission_capture_submit: 'Submit mission',
+      mission_capture_hint_shelf: 'Take photo 1/3: product on shelf with visible price.',
+      mission_capture_hint_front: 'Take photo 2/3: product front.',
+      mission_capture_hint_back: 'Take photo 3/3: product back with barcode/composition.',
+      mission_capture_missing_photo: 'Please take required photo first.',
+      mission_capture_missing_fields: 'Product name and barcode are required.',
+      mission_capture_saved: 'Mission photo saved.',
+      mission_capture_submitting: 'Submitting mission proof...',
       global_leaderboard_title: 'Global leaderboard',
       friends_leaderboard_title: 'Friends leaderboard',
       refresh_global_btn: 'Refresh Global',
@@ -352,6 +448,21 @@
       ov_chip_map: 'Žemėlapis',
       ov_chip_rank: 'Reitingai',
       ov_chip_plus: 'Plus',
+      dashboard_greeting_kicker: 'Tavo taupymo lenta',
+      dashboard_greeting_default: 'Labas!',
+      dashboard_greeting_name: 'Labas, {name}!',
+      dashboard_rank_line_default: 'Prisijunk ir pradėk rinkti XP.',
+      dashboard_rank_line: 'Tu esi {rank} ({level} lygis).',
+      dashboard_xp_to_next: 'Iki {next} trūksta tik {xp} XP.',
+      dashboard_xp_max: 'Pasiektas aukščiausias lygis. Laikyk seriją.',
+      dashboard_scan_title: 'Skenuoti naują čekį',
+      dashboard_scan_subtitle: 'Greičiausias kelias į taupymą ir XP',
+      dashboard_saved_label: 'Šį mėnesį sutaupyta',
+      dashboard_mission_label: 'Misijos statusas',
+      dashboard_mission_empty: 'Nauja misija tavo rajone!',
+      dashboard_recent_points_empty: 'Kol kas nėra XP įvykių',
+      scan_cta_short: 'Skenuoti',
+      topbar_xp_balance: '⚡ {xp} XP',
       guest_mode: 'Svečio režimas',
       home_btn: 'Pradžia',
       refresh: 'Atnaujinti',
@@ -449,6 +560,11 @@
       best_plan_title: 'Geriausias planas',
       upload_receipt_title: 'Čekio skaitytuvas',
       receipt_subtitle: 'Įkelkite arba nufotografuokite čekį',
+      receipt_core_cta: 'Skenuoti čekį ir atsiimti XP',
+      receipt_core_hint: 'Greičiausia telefone: atsidaryk kamerą ir nufotografuok čekį.',
+      receipt_magic_1: 'Skaitome prekes...',
+      receipt_magic_2: 'Ieškome geriausių kainų konkurentų parduotuvėse...',
+      receipt_magic_3: 'Skaičiuojame tavo XP!',
       dropzone_hint: 'Tempkite čekį čia',
       dropzone_sub: 'arba naudokite mygtukus žemiau · JPEG, PNG iki 10MB',
       analyze_receipt_btn: 'Analizuoti',
@@ -479,6 +595,24 @@
       receipt_quality_review_rate: 'Reikia peržiūros',
       receipt_quality_feedback: 'Išsiųsta atsiliepimų',
       receipt_quality_flagged_chains: 'Dažniausiai pažymėtos parduotuvės',
+      receipt_history_title: 'Naujausi skenavimai',
+      receipt_history_empty: 'Kol kas neturi nuskenuotų čekių. Pradėk nuo pirmo čekio.',
+      receipt_archive_title: 'Pirkimų istorija',
+      receipt_archive_subtitle: 'Tavo nuskenuoti čekiai ir surinkti XP',
+      receipt_detail_title: 'Čekio detalės',
+      receipt_detail_photo_label: 'Originali čekio nuotrauka',
+      receipt_detail_time_label: 'Nuskenuota',
+      receipt_detail_photo_missing: 'Originali čekio nuotrauka nepasiekiama.',
+      receipt_status_processed: 'Apdorota',
+      receipt_status_needs_confirmation: 'Reikia peržiūros',
+      receipt_status_finalized: 'Patvirtinta',
+      receipt_status_processing: 'Apdorojama',
+      receipt_status_uploaded: 'Įkelta',
+      receipt_aha_title: 'Pavyko! Nuskenuota {count} prekių.',
+      receipt_aha_spent: 'Išleidai',
+      receipt_aha_saved: 'Galėjai sutaupyti',
+      receipt_aha_xp: 'Uždirbai',
+      receipt_aha_open: 'Paspausk čia, kad pamatytum kur sutaupyti',
       receipt_line_status_matched: 'Sutapatinta',
       receipt_line_status_candidates: 'Reikia pasirinkimo',
       receipt_line_status_unmatched: 'Nesutapatinta',
@@ -506,11 +640,67 @@
       add_btn: 'Pridėti',
       poll_family_events_btn: 'Atnaujinti šeimos įvykius',
       bounty_missions_title: 'Misijos',
+      mission_panel_subtitle: 'Rask misijas aplink save ir greitai rink XP',
+      mission_flow_title: 'Misijos eiga',
+      mission_flow_subtitle: 'Pirma priimk misiją, tada skenuok per pagrindinį kameros mygtuką.',
       nearby_btn: 'Aplink',
       submit_verify_title: 'Pateikimas / patvirtinimas',
-      submit_mission_btn: 'Pateikti misiją',
+      mission_submit_subtitle: 'Pateik paprastą įrodymą ir pasiimk XP',
+      submit_mission_btn: 'Pateikti misijos įrodymą',
       verify_btn: 'Patvirtinti',
       status_btn: 'Būsena',
+      mission_geo_title: 'Misijos aplink tave',
+      mission_geo_idle: 'Leisk vietą ir parodyk artimiausias misijas.',
+      mission_geo_requesting: 'Nustatome tavo vietą...',
+      mission_geo_ready: 'Naudojama vieta: {lat}, {lon}.',
+      mission_geo_missing: 'Nepavyko gauti vietos. Įjunk GPS ir bandyk dar kartą.',
+      mission_geo_cta: 'Aš esu čia - rodyti misijas',
+      mission_geo_refresh: 'Atnaujinti sąrašą',
+      mission_selected_label: 'Pasirinkta misija',
+      mission_selected_empty: 'Pasirink misiją iš sąrašo.',
+      mission_selected_value: 'Pasirinkta misija #{id} · atlygis {xp} XP',
+      mission_start_btn: 'Pradėti misiją',
+      mission_use_btn: 'Naudoti',
+      mission_verify_title: 'Bendruomenės patikra',
+      mission_verify_hint: 'Po pateikimo automatiškai užpildysime patikros duomenis.',
+      mission_verify_ready: 'Pateikimas {id} paruoštas bendruomenės balsavimui.',
+      mission_verify_missing: 'Pirmiausia pateik misiją, kad galėtum tikrinti.',
+      mission_active_label: 'Aktyvi misija',
+      mission_active_empty: 'Šiuo metu neturi aktyvios misijos.',
+      mission_active_title: 'Aktyvi misija: {name} (+{xp} XP)',
+      mission_active_continue: 'Tęsti misiją',
+      mission_active_cancel: 'Atšaukti',
+      mission_cancelled: 'Misija atšaukta.',
+      mission_accept_title: 'Prieš pradedant misiją',
+      mission_accept_next: 'Kitas',
+      mission_accept_got_it: 'Supratau',
+      mission_accept_activate: 'Pradėti misiją',
+      mission_accept_cancel: 'Atšaukti',
+      mission_accept_step_1: 'Tau reikės surasti šią prekę ir nuskenuoti jos kainą bei sudėtį.',
+      mission_accept_step_2_title: '3 nuotraukų taisyklė:',
+      mission_accept_rule_1: '1. Prekė lentynoje su aiškiai matoma kaina.',
+      mission_accept_rule_2: '2. Prekės priekis.',
+      mission_accept_rule_3: '3. Prekės nugara su barkodu ir sudėtimi.',
+      mission_accept_step_3: 'Puiku. Misija bus pažymėta aktyvi ir paruošta skenavimui.',
+      mission_activated: 'Misija aktyvuota.',
+      scan_choice_title: 'Ką dabar skenuojame?',
+      scan_choice_mission: 'Misija: {name}',
+      scan_choice_receipt: 'Paprastas čekis',
+      mission_capture_title: 'Misijos nuotraukos',
+      mission_capture_product_label: 'Prekės pavadinimas',
+      mission_capture_barcode_label: 'Barkodas',
+      mission_capture_store_label: 'Parduotuvės tinklas',
+      mission_capture_take_photo: 'Fotografuoti',
+      mission_capture_retake: 'Perfotografuoti',
+      mission_capture_next: 'Kitas',
+      mission_capture_submit: 'Pateikti misiją',
+      mission_capture_hint_shelf: 'Nuotrauka 1/3: prekė lentynoje su matoma kaina.',
+      mission_capture_hint_front: 'Nuotrauka 2/3: prekės priekis.',
+      mission_capture_hint_back: 'Nuotrauka 3/3: prekės nugara su barkodu/sudėtimi.',
+      mission_capture_missing_photo: 'Pirmiausia padaryk reikiamą nuotrauką.',
+      mission_capture_missing_fields: 'Prekės pavadinimas ir barkodas yra privalomi.',
+      mission_capture_saved: 'Misijos nuotrauka išsaugota.',
+      mission_capture_submitting: 'Pateikiamas misijos įrodymas...',
       global_leaderboard_title: 'Globalus reitingas',
       friends_leaderboard_title: 'Draugų reitingas',
       refresh_global_btn: 'Atnaujinti globalų',
@@ -781,6 +971,16 @@
     TRANSLATIONS[lang] = { ...TRANSLATIONS.en, ...overrides };
   }
 
+  function readStoredJson(key, fallback = null) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return fallback;
+      return JSON.parse(raw);
+    } catch (_) {
+      return fallback;
+    }
+  }
+
   const state = {
     token: '',
     user: (() => {
@@ -821,6 +1021,17 @@
     onboardingReady: false,
     refreshPromise: null,
     guestReceiptProofs: new Map(),
+    receiptMagicStop: null,
+    rankLevels: [],
+    overviewPulseLoadedAt: 0,
+    latestGamification: null,
+    latestLedger: [],
+    activeMission: readStoredJson(STORAGE_ACTIVE_MISSION_KEY, null),
+    missionCaptureDraft: readStoredJson(STORAGE_MISSION_DRAFT_KEY, null),
+    activeMissionCandidate: null,
+    missionAcceptStep: 1,
+    activeScanIntent: null,
+    activeSheetId: null,
     setView: null,
     setAuthTab: null,
     toastHistory: new Map()
@@ -956,6 +1167,9 @@
       helpTourBtn.setAttribute('aria-label', t('guide'));
     }
     renderAuthState();
+    renderGamification(state.latestGamification);
+    renderLedgerPreview(state.latestLedger);
+    renderActiveMissionBanner();
     if (typeof state.setView === 'function') {
       updateContextTip(state.currentView);
     }
@@ -1027,6 +1241,165 @@
         }
       }, 120);
     });
+  }
+
+  function persistActiveMission() {
+    try {
+      if (state.activeMission) {
+        localStorage.setItem(STORAGE_ACTIVE_MISSION_KEY, JSON.stringify(state.activeMission));
+      } else {
+        localStorage.removeItem(STORAGE_ACTIVE_MISSION_KEY);
+      }
+    } catch (_) {}
+  }
+
+  function persistMissionCaptureDraft() {
+    try {
+      if (state.missionCaptureDraft) {
+        localStorage.setItem(STORAGE_MISSION_DRAFT_KEY, JSON.stringify(state.missionCaptureDraft));
+      } else {
+        localStorage.removeItem(STORAGE_MISSION_DRAFT_KEY);
+      }
+    } catch (_) {}
+  }
+
+  function setMissionCaptureDraft(draft) {
+    state.missionCaptureDraft = draft || null;
+    persistMissionCaptureDraft();
+  }
+
+  function setActiveMission(mission, options = {}) {
+    const keepDraft = Boolean(options.keepDraft);
+    state.activeMission = mission ? { ...mission } : null;
+    if (!state.activeMission && !keepDraft) {
+      setMissionCaptureDraft(null);
+    }
+    persistActiveMission();
+    renderActiveMissionBanner();
+    updateScanChoiceMissionButton();
+  }
+
+  function getFocusableElements(root) {
+    if (!root) return [];
+    return Array.from(root.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
+      .filter((el) => !el.hasAttribute('disabled') && el.getAttribute('aria-hidden') !== 'true');
+  }
+
+  function closeSheet(sheetId) {
+    const sheet = $(sheetId);
+    if (!sheet) return;
+    sheet.classList.remove('active');
+    sheet.setAttribute('aria-hidden', 'true');
+    if (sheetId === 'missionAcceptSheet') {
+      state.activeMissionCandidate = null;
+      state.missionAcceptStep = 1;
+    }
+    if (sheetId === 'missionCaptureSheet' || sheetId === 'receiptScanSheet' || sheetId === 'scanChoiceSheet') {
+      state.activeScanIntent = null;
+    }
+    if (state.activeSheetId === sheetId) {
+      state.activeSheetId = null;
+    }
+    if (!document.querySelector('.app-sheet.active')) {
+      document.body.classList.remove('sheet-open');
+    }
+  }
+
+  function closeActiveSheet() {
+    if (!state.activeSheetId) return;
+    closeSheet(state.activeSheetId);
+  }
+
+  function openSheet(sheetId, options = {}) {
+    const sheet = $(sheetId);
+    if (!sheet) return;
+    if (state.activeSheetId && state.activeSheetId !== sheetId) {
+      closeSheet(state.activeSheetId);
+    }
+    sheet.classList.add('active');
+    sheet.setAttribute('aria-hidden', 'false');
+    state.activeSheetId = sheetId;
+    document.body.classList.add('sheet-open');
+    const focusTarget = options.focusId ? $(options.focusId) : getFocusableElements(sheet)[0];
+    window.setTimeout(() => {
+      if (focusTarget instanceof HTMLElement) focusTarget.focus();
+    }, 10);
+  }
+
+  function bindSheetControls() {
+    document.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const sheetId = target.getAttribute('data-sheet-close');
+      if (!sheetId) return;
+      closeSheet(sheetId);
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && state.activeSheetId) {
+        closeSheet(state.activeSheetId);
+        return;
+      }
+      if (event.key !== 'Tab' || !state.activeSheetId) return;
+      const sheet = $(state.activeSheetId);
+      const focusables = getFocusableElements(sheet);
+      if (!focusables.length) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+        return;
+      }
+      if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    });
+  }
+
+  function updateScanChoiceMissionButton() {
+    const button = $('scanChoiceMissionBtn');
+    if (!button) return;
+    const mission = state.activeMission;
+    if (!mission) {
+      button.disabled = true;
+      button.textContent = t('mission_active_empty');
+      return;
+    }
+    button.disabled = false;
+    button.textContent = t('scan_choice_mission', { name: mission.title || mission.id || 'Mission' });
+  }
+
+  function renderActiveMissionBanner() {
+    const banner = $('missionActiveBanner');
+    const title = $('missionActiveBannerTitle');
+    const mission = state.activeMission;
+    if (!banner || !title) return;
+
+    if (!mission) {
+      banner.hidden = true;
+      title.textContent = t('mission_active_empty');
+      if ($('missionSelectedValue')) $('missionSelectedValue').textContent = t('mission_selected_empty');
+      if ($('missionIdInput')) $('missionIdInput').value = '';
+      updateScanChoiceMissionButton();
+      return;
+    }
+
+    const rewardXp = formatNumber(Number(mission.rewardXp || 0), '0');
+    title.textContent = t('mission_active_title', { name: mission.title || mission.id || 'Mission', xp: rewardXp });
+    banner.hidden = false;
+
+    const selectedValue = $('missionSelectedValue');
+    if (selectedValue) {
+      selectedValue.textContent = t('mission_selected_value', {
+        id: mission.id || '-',
+        xp: rewardXp
+      });
+    }
+
+    if ($('missionIdInput')) $('missionIdInput').value = mission.id || '';
+    updateScanChoiceMissionButton();
   }
 
   function setExperienceMode(mode) {
@@ -1383,19 +1756,120 @@
     state.familyLists = [];
     state.familyEventCursor = 0;
     state.kidsSessionId = '';
+    setActiveMission(null);
+    closeActiveSheet();
   }
 
   function renderAuthState() {
     const authStatus = $('authStatus');
-    if (!authStatus) return;
-    if (state.user?.email) {
-      authStatus.textContent = t('signed_in_as', { email: state.user.email });
-      authStatus.classList.add('signed-in');
-    } else {
-      authStatus.textContent = t('guest_mode');
-      authStatus.classList.remove('signed-in');
+    document.body.dataset.auth = state.user?.email ? 'in' : 'guest';
+    if (authStatus) {
+      if (state.user?.email) {
+        authStatus.textContent = t('signed_in_as', { email: state.user.email });
+        authStatus.classList.add('signed-in');
+      } else {
+        authStatus.textContent = t('guest_mode');
+        authStatus.classList.remove('signed-in');
+      }
     }
     state.updateAuthGateUi?.();
+  }
+
+  function extractDisplayName(user) {
+    const email = String(user?.email || '').trim();
+    const local = email.split('@')[0] || '';
+    const normalized = local.replace(/[._-]+/g, ' ').trim();
+    if (!normalized) return 'Friend';
+    return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+  }
+
+  function setTopbarXpBalance(xp) {
+    const el = $('topbarXpBalance');
+    if (!el) return;
+    el.textContent = t('topbar_xp_balance', { xp: formatNumber(xp || 0, '0') });
+  }
+
+  function updateOverviewRecentPoints(rows) {
+    const label = $('overviewRecentPointsValue');
+    if (!label) return;
+    const first = Array.isArray(rows) && rows.length ? rows[0] : null;
+    const delta = Number(first?.xp_delta || 0);
+    if (!first) {
+      label.textContent = t('dashboard_recent_points_empty');
+      return;
+    }
+    label.textContent = `${delta >= 0 ? '+' : ''}${formatNumber(delta, '0')} XP`;
+  }
+
+  function computeRankProgress(data) {
+    const level = Number(data?.rank?.level || 1);
+    const xp = Number(data?.lifetime_xp || 0);
+    const levels = Array.isArray(state.rankLevels) ? state.rankLevels : [];
+    const current = levels.find((row) => Number(row.level) === level) || null;
+    const next = levels.find((row) => Number(row.level) === level + 1) || null;
+    const currentMin = Number(current?.min_xp ?? data?.rank?.min_xp ?? Math.max(0, (level - 1) * 500));
+    const nextMin = Number(next?.min_xp ?? (currentMin + 500));
+    const missingXp = Math.max(0, nextMin - xp);
+    const ratio = nextMin > currentMin ? (xp - currentMin) / (nextMin - currentMin) : 1;
+    return {
+      level,
+      xp,
+      current,
+      next,
+      currentMin,
+      nextMin,
+      missingXp,
+      progressPct: Math.max(0, Math.min(100, ratio * 100))
+    };
+  }
+
+  async function ensureRankLevels() {
+    if (Array.isArray(state.rankLevels) && state.rankLevels.length) {
+      return state.rankLevels;
+    }
+    try {
+      const levels = await apiRequest('/ranks');
+      state.rankLevels = Array.isArray(levels) ? levels : [];
+    } catch (error) {
+      state.rankLevels = [];
+    }
+    return state.rankLevels;
+  }
+
+  async function loadOverviewPulse(force = false) {
+    const savedEl = $('overviewSavedValue');
+    const missionEl = $('overviewMissionValue');
+    if (!savedEl || !missionEl) return;
+
+    if (!state.token) {
+      savedEl.textContent = '€0.00';
+      missionEl.textContent = t('dashboard_mission_empty');
+      return;
+    }
+
+    const now = Date.now();
+    if (!force && now - state.overviewPulseLoadedAt < 25000) return;
+    state.overviewPulseLoadedAt = now;
+
+    const [budgetRes, missionRes] = await Promise.allSettled([
+      apiRequest('/me/receipts/analytics?months=1'),
+      apiRequest('/missions/nearby?limit=1&app_foreground=true')
+    ]);
+
+    if (budgetRes.status === 'fulfilled') {
+      const saved = Number(budgetRes.value?.totals?.saved_vs_average || 0);
+      savedEl.textContent = formatMoney(saved, '€0.00');
+    } else {
+      savedEl.textContent = '€0.00';
+    }
+
+    if (missionRes.status === 'fulfilled' && Array.isArray(missionRes.value) && missionRes.value.length) {
+      const first = missionRes.value[0];
+      const reward = Number(first.reward_points || 0);
+      missionEl.textContent = `${String(first.title || 'Mission')} · +${formatNumber(reward, '0')} XP`;
+    } else {
+      missionEl.textContent = t('dashboard_mission_empty');
+    }
   }
 
   function showToast(message, type = 'info') {
@@ -1451,7 +1925,7 @@
         titleKey: 'tip_receipts_title',
         textKey: 'tip_receipts_text',
         ctaKey: 'tip_receipts_cta',
-        ctaAction: () => { analyzeReceipt().catch(() => {}); }
+        ctaAction: () => { openUniversalScannerFlow(); }
       },
       family: {
         titleKey: 'tip_family_title',
@@ -1517,9 +1991,14 @@
       </div>
     `;
 
-    const nav = document.querySelector('.view-nav');
-    if (nav?.parentNode) {
-      nav.parentNode.insertBefore(tip, nav.nextSibling);
+    const content = document.querySelector('.content');
+    if (content) {
+      content.insertBefore(tip, content.firstChild);
+    } else {
+      const nav = document.querySelector('.view-nav');
+      if (nav?.parentNode) {
+        nav.parentNode.insertBefore(tip, nav.nextSibling);
+      }
     }
 
     return tip;
@@ -1604,7 +2083,7 @@
     const views = Array.from(document.querySelectorAll('.view'));
 
     // Views that are always accessible, even without an account.
-    const GUEST_VIEWS = new Set(['overview', 'market', 'leaderboard', 'plus']);
+    const GUEST_VIEWS = new Set(['overview', 'market', 'receipts', 'leaderboard', 'plus']);
 
     function updateAuthGateUi() {
       const isAuthed = Boolean(state.token);
@@ -1639,13 +2118,18 @@
       if (viewName === 'market' && state.map) {
         state.map.invalidateSize();
       }
+      if (viewName === 'overview') {
+        loadOverviewPulse(false).catch(() => {});
+      }
       if (viewName === 'budget' && state.token) {
         loadBudgetAnalytics().catch(() => {});
         loadLoyaltyCards().catch(() => {});
       }
-      if (viewName === 'receipts' && state.token) {
-        loadReceiptQualitySummary().catch(() => {});
+      if (viewName === 'receipts') {
         loadReceiptReviewQueue().catch(() => {});
+      }
+      if (viewName === 'missions' && state.token) {
+        loadNearbyMissions({ silent: true }).catch(() => {});
       }
       updateAuthGateUi();
       updateContextTip(viewName);
@@ -1885,22 +2369,63 @@
   }
 
   function renderGamification(data) {
+    state.latestGamification = data || null;
     $('kpiRank').textContent = data?.rank?.rank_name || '-';
     $('kpiLevel').textContent = data?.rank?.level || '-';
     $('kpiXp').textContent = formatNumber(data?.lifetime_xp, '-');
     $('kpiPoints').textContent = formatNumber(data?.spendable_points, '-');
+
+    const greetingEl = $('overviewGreeting');
+    const rankLineEl = $('overviewRankLine');
+    const hintEl = $('overviewXpHint');
+    const fillEl = $('overviewXpProgressFill');
+    const barEl = document.querySelector('.overview-xp-progress');
+    const displayName = extractDisplayName(state.user);
+
+    if (!data) {
+      if (greetingEl) greetingEl.textContent = t('dashboard_greeting_default');
+      if (rankLineEl) rankLineEl.textContent = t('dashboard_rank_line_default');
+      if (hintEl) hintEl.textContent = t('dashboard_xp_to_next', { xp: 0, next: 'Level 2' });
+      if (fillEl) fillEl.style.width = '0%';
+      if (barEl) {
+        barEl.setAttribute('aria-valuenow', '0');
+        barEl.setAttribute('aria-valuemax', '100');
+      }
+      setTopbarXpBalance(0);
+      return;
+    }
+
+    const progress = computeRankProgress(data);
+    const rankName = data?.rank?.rank_name || `Level ${progress.level}`;
+    const nextName = progress.next?.rank_name || `Level ${progress.level + 1}`;
+
+    if (greetingEl) greetingEl.textContent = t('dashboard_greeting_name', { name: displayName });
+    if (rankLineEl) rankLineEl.textContent = t('dashboard_rank_line', { rank: rankName, level: progress.level });
+    if (hintEl) {
+      hintEl.textContent = progress.next
+        ? t('dashboard_xp_to_next', { xp: formatNumber(progress.missingXp, '0'), next: nextName })
+        : t('dashboard_xp_max');
+    }
+    if (fillEl) fillEl.style.width = `${progress.progressPct.toFixed(2)}%`;
+    if (barEl) {
+      barEl.setAttribute('aria-valuenow', String(Math.round(progress.progressPct)));
+      barEl.setAttribute('aria-valuemax', '100');
+    }
+    setTopbarXpBalance(progress.xp);
   }
 
   function renderLedgerPreview(rows) {
+    state.latestLedger = Array.isArray(rows) ? rows : [];
     const container = $('ledgerPreview');
+    updateOverviewRecentPoints(state.latestLedger);
     if (!container) return;
 
-    if (!rows || !rows.length) {
+    if (!state.latestLedger.length) {
       renderEmpty(container, t('empty_points_events'));
       return;
     }
 
-    container.innerHTML = rows.map((row) => {
+    container.innerHTML = state.latestLedger.map((row) => {
       const pointsDelta = Number(row.points_delta || 0);
       const xpDelta = Number(row.xp_delta || 0);
       const sign = pointsDelta >= 0 ? '+' : '';
@@ -1959,11 +2484,12 @@
     if (!state.token) {
       const refreshed = await refreshAccessToken({ silent: true });
       if (!refreshed) {
+        state.rankLevels = [];
         renderGamification(null);
         renderLedgerPreview([]);
         renderLoyaltyCards([]);
-        renderReceiptQualitySummary(null);
         renderReceiptReviewQueue([], []);
+        await loadOverviewPulse(true);
         return;
       }
     }
@@ -1974,16 +2500,18 @@
         apiRequest('/me/gamification'),
         apiRequest('/points/ledger?limit=8')
       ]);
+      await ensureRankLevels();
       if (!state.user && profile?.email) {
         setAuthState(state.token, { id: profile.id, email: profile.email });
       }
       renderProfile(profile);
       renderGamification(gamification);
       renderLedgerPreview(ledger);
+      await loadOverviewPulse(true);
       if (state.currentView === 'budget') {
         await Promise.allSettled([loadBudgetAnalytics(), loadLoyaltyCards()]);
       } else if (state.currentView === 'receipts') {
-        await Promise.allSettled([loadReceiptQualitySummary(), loadReceiptReviewQueue()]);
+        await Promise.allSettled([loadReceiptReviewQueue()]);
       }
     } catch (error) {
       renderGamification(null);
@@ -2190,6 +2718,22 @@
     }
   }
 
+  async function runGlobalSearch() {
+    const globalInput = $('globalSearchInput');
+    const marketInput = $('searchInput');
+    if (!globalInput || !marketInput) return;
+
+    const query = globalInput.value.trim();
+    if (!query) {
+      showToast(t('search_input_required'), 'warning');
+      return;
+    }
+
+    marketInput.value = query;
+    state.setView?.('market');
+    await runSearch();
+  }
+
   function parseBasketLines(input) {
     const lines = String(input || '')
       .split('\n')
@@ -2342,6 +2886,7 @@
   }
 
   function receiptResetProgress() {
+    stopReceiptMagicStatus();
     const prog = $('receiptProgress');
     if (prog) prog.style.display = 'none';
     ['rpStep1','rpStep2','rpStep3','rpStep4'].forEach((id) => {
@@ -2373,6 +2918,7 @@
   }
 
   function receiptResetUI() {
+    stopReceiptMagicStatus();
     const wrap = $('receiptPreviewWrap');
     const ph = $('dropzonePlaceholder');
     const dropzone = $('receiptDropzone');
@@ -2418,9 +2964,12 @@
     $('scanGalleryBtn')?.addEventListener('click', () => input?.click());
     $('changePhotoBtn')?.addEventListener('click', () => input?.click());
 
-    // Click on dropzone placeholder → gallery
+    // Click on dropzone → camera on mobile, gallery on desktop
     dropzone?.addEventListener('click', (e) => {
-      if (e.target.closest('.dropzone-placeholder')) {
+      if (e.target.closest('#changePhotoBtn')) return;
+      if (state.device === 'mobile') {
+        inputCamera?.click();
+      } else {
         input?.click();
       }
     });
@@ -2450,7 +2999,34 @@
     return proof ? { 'X-Guest-Session-Proof': proof } : {};
   }
 
-  async function pollReceiptUntilComplete(receiptId, maxAttempts = 16) {
+  function stopReceiptMagicStatus() {
+    if (typeof state.receiptMagicStop === 'function') {
+      state.receiptMagicStop();
+    }
+    state.receiptMagicStop = null;
+  }
+
+  function startReceiptMagicStatus() {
+    stopReceiptMagicStatus();
+    const el = $('scanMagicStatus');
+    if (!el) return;
+    const steps = [t('receipt_magic_1'), t('receipt_magic_2'), t('receipt_magic_3')];
+    let index = 0;
+    el.style.display = '';
+    el.textContent = steps[0];
+    const timer = window.setInterval(() => {
+      if (index < steps.length - 1) index += 1;
+      el.textContent = steps[index];
+    }, 1300);
+    state.receiptMagicStop = () => {
+      window.clearInterval(timer);
+      el.textContent = '';
+      el.style.display = 'none';
+    };
+  }
+
+  async function pollReceiptUntilComplete(receiptId, maxAttempts = 16, options = {}) {
+    const showProgress = options.showProgress !== false;
     for (let i = 0; i < maxAttempts; i += 1) {
       await new Promise((r) => setTimeout(r, 1200));
       try {
@@ -2459,7 +3035,9 @@
         });
         const s = status.status || '';
         const pct = status.progress || 0;
-        receiptSetStatus(`${t('rp_scanning')}… ${pct}%`);
+        if (showProgress) {
+          receiptSetStatus(`${t('rp_scanning')}… ${pct}%`);
+        }
         if (pct > 30) receiptSetStep(3);
         if (['processed', 'finalized', 'needs_confirmation'].includes(s)) {
           return status;
@@ -2469,101 +3047,83 @@
     return null;
   }
 
-  function renderReceiptReviewQueue(reviewRows, historyRows = []) {
-    const container = $('receiptReviewQueue');
+  function getChainBadge(chain) {
+    const normalized = String(chain || '').toLowerCase();
+    if (normalized.includes('maxima')) return '🟥';
+    if (normalized.includes('lidl')) return '🟦';
+    if (normalized.includes('rimi')) return '🟪';
+    if (normalized.includes('iki')) return '🟨';
+    if (normalized.includes('norfa')) return '🟩';
+    if (normalized.includes('silas') || normalized.includes('šilas')) return '🟢';
+    return '🏬';
+  }
+
+  function getReceiptStatusLabel(status) {
+    const value = String(status || '').toLowerCase();
+    if (!value) return '-';
+    const key = `receipt_status_${value}`;
+    const translated = t(key);
+    if (translated !== key.replace(/_/g, ' ')) return translated;
+    return value.replace(/_/g, ' ');
+  }
+
+  function getReceiptXpAward(receiptId, rows = state.latestLedger) {
+    const id = String(receiptId || '');
+    if (!id || !Array.isArray(rows)) return 0;
+    const sum = rows
+      .filter((row) => String(row.reference_type || '').toLowerCase() === 'receipt' && String(row.reference_id || '') === id)
+      .reduce((acc, row) => acc + Math.max(0, Number(row.xp_delta || 0)), 0);
+    if (sum > 0) return sum;
+    const fallback = rows.find((row) => String(row.event_type || '').toLowerCase() === 'receipt_upload');
+    return Math.max(0, Number(fallback?.xp_delta || 0));
+  }
+
+  function renderReceiptReviewQueue(_reviewRows, historyRows = [], ledgerRows = []) {
+    const container = $('receiptHistoryCards');
     if (!container) return;
-    const list = Array.isArray(reviewRows) ? reviewRows : [];
     const history = Array.isArray(historyRows) ? historyRows : [];
+    const ledger = Array.isArray(ledgerRows) ? ledgerRows : state.latestLedger;
+
+    if (!history.length) {
+      container.innerHTML = `
+        <div class="receipt-history-wrap">
+          <div class="receipt-history-head">${t('receipt_history_title')}</div>
+          <div class="muted small">${t('receipt_history_empty')}</div>
+        </div>
+      `;
+      return;
+    }
 
     container.innerHTML = `
-      <div class="receipt-review-queue">
-        <div class="rrq-head">${t('receipt_review_queue_title')}</div>
-        <div class="rrq-list">
-          ${list.length ? list.map((row) => `
-            <div class="rrq-item">
-              <div>
-                <strong>${sanitize(row.store_chain || 'Store')}</strong>
-                <div class="muted small">${formatDate(row.updated_at)} · ${formatMoney(row.total || 0)}</div>
-              </div>
-              <button class="btn ghost" type="button" data-open-receipt-id="${sanitize(String(row.id))}">
-                ${t('receipt_review_queue_open')}
-              </button>
-            </div>
-          `).join('') : `<div class="muted small">${t('receipt_review_queue_empty')}</div>`}
-        </div>
-        ${history.length ? `
-          <div class="rrq-head" style="margin-top:0.55rem">${t('receipt_recent_title')}</div>
-          <div class="rrq-list">
-            ${history.map((row) => `
-              <div class="rrq-item">
-                <div>
-                  <strong>${sanitize(row.store_chain || 'Store')}</strong>
-                  <div class="muted small">${formatDate(row.created_at)} · ${formatMoney(row.total || 0)} · ${sanitize(row.status || '')}</div>
+      <div class="receipt-history-wrap">
+        <div class="receipt-history-head">${t('receipt_history_title')}</div>
+        <div class="receipt-history-grid">
+          ${history.map((row) => {
+            const xp = getReceiptXpAward(row.id, ledger);
+            const status = getReceiptStatusLabel(row.status);
+            const badge = getChainBadge(row.store_chain);
+            const total = formatMoney(row.total || 0);
+            const when = formatDate(row.created_at || row.updated_at);
+            return `
+              <button class="receipt-history-card" type="button" data-open-receipt-id="${sanitize(String(row.id))}">
+                <div class="rh-left">
+                  <span class="rh-store-icon">${badge}</span>
+                  <div class="rh-main">
+                    <strong class="rh-store">${sanitize(row.store_chain || 'Store')}</strong>
+                    <span class="rh-date">${sanitize(when)}</span>
+                  </div>
                 </div>
-                <button class="btn ghost" type="button" data-open-receipt-id="${sanitize(String(row.id))}">
-                  ${t('receipt_review_queue_open')}
-                </button>
-              </div>
-            `).join('')}
-          </div>
-        ` : ''}
-      </div>
-    `;
-  }
-
-  function renderReceiptQualitySummary(summary) {
-    const container = $('receiptQualitySummary');
-    if (!container) return;
-    if (!summary || !summary.totals || !summary.lines) {
-      container.innerHTML = '';
-      return;
-    }
-
-    const days = Number(summary.window_days || 90);
-    const totals = summary.totals || {};
-    const lines = summary.lines || {};
-    const topChains = Array.isArray(summary.top_flagged_chains) ? summary.top_flagged_chains : [];
-    const reviewRate = Number(totals.receipts || 0) > 0
-      ? Number(((Number(totals.needs_confirmation || 0) / Number(totals.receipts || 1)) * 100).toFixed(1))
-      : 0;
-    const matchedRatio = Number((Number(lines.matched_ratio || 0) * 100).toFixed(1));
-    const avgConfidence = Number((Number(totals.avg_confidence || 0) * 100).toFixed(1));
-
-    container.innerHTML = `
-      <div class="receipt-quality-summary">
-        <div class="rrq-head">${t('receipt_quality_title')}</div>
-        <div class="muted small">${t('receipt_quality_window', { days })}</div>
-        <div class="kpi-grid" style="margin-top:0.5rem">
-          <div class="kpi"><span>${t('receipt_quality_avg_confidence')}</span><strong>${formatNumber(avgConfidence)}%</strong></div>
-          <div class="kpi"><span>${t('receipt_quality_matched_ratio')}</span><strong>${formatNumber(matchedRatio)}%</strong></div>
-          <div class="kpi"><span>${t('receipt_quality_review_rate')}</span><strong>${formatNumber(reviewRate)}%</strong></div>
-          <div class="kpi"><span>${t('receipt_quality_feedback')}</span><strong>${formatNumber(totals.feedback_count || 0)}</strong></div>
+                <div class="rh-right">
+                  <strong class="rh-total">${sanitize(total)}</strong>
+                  <span class="rh-xp">+${formatNumber(xp, '0')} XP</span>
+                  <span class="rh-status">${sanitize(status)}</span>
+                </div>
+              </button>
+            `;
+          }).join('')}
         </div>
-        ${topChains.length ? `
-          <div class="rrq-head" style="margin-top:0.55rem">${t('receipt_quality_flagged_chains')}</div>
-          <div class="quality-chain-list">
-            ${topChains.map((row) => `
-              <span class="quality-chain-chip">${sanitize(row.store_chain || 'Unknown')} · ${formatNumber(row.flagged_receipts || 0)}</span>
-            `).join('')}
-          </div>
-        ` : ''}
       </div>
     `;
-  }
-
-  async function loadReceiptQualitySummary() {
-    const container = $('receiptQualitySummary');
-    if (!container) return;
-    if (!state.token) {
-      renderReceiptQualitySummary(null);
-      return;
-    }
-    try {
-      const summary = await apiRequest('/me/receipts/quality-summary?days=90');
-      renderReceiptQualitySummary(summary);
-    } catch (_) {
-      renderReceiptQualitySummary(null);
-    }
   }
 
   async function loadReceiptReviewQueue() {
@@ -2572,14 +3132,56 @@
       return;
     }
     try {
-      const [queueRows, historyRows] = await Promise.all([
-        apiRequest('/me/receipts/review-queue?limit=12'),
-        apiRequest('/me/receipts/history?limit=8')
+      const [historyRows, ledgerRows] = await Promise.all([
+        apiRequest('/me/receipts/history?limit=12'),
+        apiRequest('/points/ledger?limit=80')
       ]);
-      renderReceiptReviewQueue(queueRows, historyRows);
+      state.latestLedger = Array.isArray(ledgerRows) ? ledgerRows : state.latestLedger;
+      renderReceiptReviewQueue([], historyRows, ledgerRows);
     } catch (_) {
       renderReceiptReviewQueue([], []);
     }
+  }
+
+  function getReceiptPhotoUrl(report) {
+    if (!report || typeof report !== 'object') return '';
+    const summary = report.summary && typeof report.summary === 'object' ? report.summary : {};
+    const candidates = [
+      report.receipt_image_url,
+      report.image_url,
+      report.photo_url,
+      report.uploaded_image_url,
+      summary.receipt_image_url,
+      summary.image_url,
+      summary.photo_url,
+      summary.uploaded_image_url
+    ];
+    const found = candidates.find((value) => typeof value === 'string' && /^https?:\/\//i.test(value));
+    return found || '';
+  }
+
+  function renderReceiptDetailMedia(report) {
+    const metaEl = $('receiptDetailMeta');
+    const photoEl = $('receiptDetailPhotoBlock');
+    if (!metaEl || !photoEl) return;
+
+    const summary = report?.summary || {};
+    const createdAt = report?.created_at || report?.updated_at || summary.created_at || summary.scanned_at || null;
+    const photoUrl = getReceiptPhotoUrl(report);
+
+    metaEl.innerHTML = `
+      <div class="line-item compact">
+        <span>${t('receipt_detail_time_label')}</span>
+        <strong>${sanitize(formatDate(createdAt))}</strong>
+      </div>
+    `;
+
+    photoEl.innerHTML = `
+      <h4>${t('receipt_detail_photo_label')}</h4>
+      ${photoUrl
+        ? `<img src="${sanitize(photoUrl)}" alt="Receipt photo" class="receipt-detail-photo" loading="lazy" />`
+        : `<div class="receipt-detail-photo-empty">${t('receipt_detail_photo_missing')}</div>`}
+    `;
   }
 
   function renderReceiptReport(report) {
@@ -2592,53 +3194,43 @@
     if (!report) {
       state.activeReceiptId = null;
       container.innerHTML = `<div class="empty">${t('empty_report') || 'No data.'}</div>`;
+      renderReceiptDetailMedia(null);
       return;
     }
     state.activeReceiptId = report.receipt_id || state.lastReceiptId || null;
+    renderReceiptDetailMedia(report);
 
     const lines = Array.isArray(report.line_items) ? report.line_items : [];
     const receiptStatus = String(report.receipt_status || '').toLowerCase();
     const overpaid = Array.isArray(report.overpaid_items) ? report.overpaid_items : [];
     const savings = Number(report.savings_total || 0);
-    const verifiedRatio = Number(report.verified_ratio || 0);
-    const verifiedPct = Math.round(verifiedRatio * 100);
     const summary = report.summary || {};
     const totalSpent = Number(summary.total_spent || 0);
-    const overpaidVsAverage = Number(summary.overpaid_vs_average_total || 0);
-    const savedVsAverage = Number(summary.saved_vs_average_total || 0);
+    const xpAwarded = getReceiptXpAward(state.activeReceiptId);
 
-    // Hero summary card
-    const savingsColor = savings > 0 ? '' : 'style="background:linear-gradient(135deg,#047857,#059669)"';
-    const summaryHtml = `
-      <div class="report-summary" ${savingsColor}>
-        <div class="report-savings-big">
-          <div class="label">${t('report_saved_label')}</div>
-          <div class="amount">${formatMoney(savings)}</div>
-          <div class="sub">${overpaid.length} ${t('report_overpaid_label')}</div>
+    const ahaHtml = `
+      <div class="receipt-aha-card">
+        <div class="receipt-aha-title">🎉 ${sanitize(t('receipt_aha_title', { count: formatNumber(lines.length, '0') }))}</div>
+        <div class="receipt-aha-metrics">
+          <div class="receipt-aha-line">
+            <span>🛒 ${t('receipt_aha_spent')}</span>
+            <strong>${formatMoney(totalSpent)}</strong>
+          </div>
+          <div class="receipt-aha-line">
+            <span>💡 ${t('receipt_aha_saved')}</span>
+            <strong>${formatMoney(savings)}</strong>
+          </div>
+          <div class="receipt-aha-line">
+            <span>⭐ ${t('receipt_aha_xp')}</span>
+            <strong>+${formatNumber(xpAwarded, '0')} XP</strong>
+          </div>
         </div>
-        <div class="report-meta-chips">
-          <div class="report-chip">📋 ${lines.length} item${lines.length !== 1 ? 's' : ''}</div>
-          <div class="report-chip">✓ ${verifiedPct}% ${t('report_verified_label')}</div>
-          <div class="report-chip">💶 ${formatMoney(totalSpent)} spent</div>
-        </div>
+        ${savings > 0 ? `
+          <button class="btn btn-ghost btn-small receipt-aha-open-btn" type="button" data-receipt-scroll-items="1">
+            ${t('receipt_aha_open')}
+          </button>
+        ` : ''}
       </div>`;
-
-    // Verified bar
-    const verBar = `
-      <div class="report-verified-bar">
-        <span class="verified-label">✓ ${t('report_verified_label')}</span>
-        <div class="verified-bar-track">
-          <div class="verified-bar-fill" style="width:${verifiedPct}%"></div>
-        </div>
-        <span class="verified-pct">${verifiedPct}%</span>
-      </div>`;
-
-    const avgComparison = `
-      <div class="kpi-grid" style="margin-bottom:0.8rem">
-        <div class="kpi"><span>${t('budget_overpaid')}</span><strong>${formatMoney(overpaidVsAverage)}</strong></div>
-        <div class="kpi kpi-green"><span>${t('budget_saved')}</span><strong>${formatMoney(savedVsAverage)}</strong></div>
-      </div>
-    `;
     const feedbackActions = `
       <div class="receipt-feedback-actions">
         <button class="btn ghost" type="button" data-receipt-rescan="1">
@@ -2654,7 +3246,7 @@
     `;
 
     // Items
-    const head = `<div class="report-items-head">${t('report_items_head')}</div>`;
+    const head = `<div class="report-items-head" id="receiptItemsHead">${t('report_items_head')}</div>`;
     const itemsHtml = lines.length === 0
       ? `<div class="empty">${t('report_empty_title') || 'No items found'}</div>`
       : lines.map((item) => {
@@ -2662,12 +3254,6 @@
           const isOverpaid = sav > 0;
           const icon = isOverpaid ? '⚠️' : '✅';
           const cls = isOverpaid ? 'overpaid' : 'ok';
-          const matchStatus = String(item.match_status || '').toLowerCase();
-          const matchLabel = matchStatus === 'matched'
-            ? t('receipt_line_status_matched')
-            : matchStatus === 'candidates'
-              ? t('receipt_line_status_candidates')
-              : t('receipt_line_status_unmatched');
           const store = item.store_chain ? `${t('report_best_store')}: ${sanitize(item.store_chain)}` : '';
           const bestP = item.best_offer_price != null ? ` · €${Number(item.best_offer_price).toFixed(2)}` : '';
           return `
@@ -2675,13 +3261,12 @@
               <div class="report-item-icon">${icon}</div>
               <div class="report-item-body">
                 <div class="report-item-name">${sanitize(item.product_name || item.receipt_name || 'Item')}</div>
-                <div class="report-item-match ${sanitize(matchStatus || 'unmatched')}">${sanitize(matchLabel)}</div>
                 ${store ? `<div class="report-item-store">${store}${bestP}</div>` : ''}
               </div>
               <div class="report-item-prices">
                 <div class="report-item-paid">€${item.price != null ? Number(item.price).toFixed(2) : '—'}</div>
                 ${isOverpaid
-                  ? `<div class="report-item-savings">−€${sav.toFixed(2)} overpaid</div>`
+                  ? `<div class="report-item-savings">−€${sav.toFixed(2)}</div>`
                   : `<div class="report-item-ok-badge">${t('report_ok_price')}</div>`}
               </div>
               ${isOverpaid ? `<div class="report-overpaid-badge">−€${sav.toFixed(2)}</div>` : ''}
@@ -2692,7 +3277,7 @@
       expanded: receiptStatus === 'needs_confirmation',
       unresolvedOnly: receiptStatus === 'needs_confirmation' && lines.length >= 12
     });
-    container.innerHTML = summaryHtml + verBar + avgComparison + feedbackActions + fixEditor + head + itemsHtml;
+    container.innerHTML = ahaHtml + feedbackActions + fixEditor + head + itemsHtml;
   }
 
   function renderReceiptFixEditor(lines, options = {}) {
@@ -2771,7 +3356,6 @@
         }
       });
       showToast(t('receipt_feedback_bad_scan_sent'), 'success');
-      await loadReceiptQualitySummary();
       await loadReceiptReviewQueue();
     } catch (error) {
       showToast(`Feedback failed: ${toApiErrorLabel(error)}`, 'error');
@@ -2792,10 +3376,12 @@
 
       receiptSetStep(2);
       receiptSetStatus(`${t('rp_scanning')}…`);
+      startReceiptMagicStatus();
       showToast('Rescan started.', 'info');
 
-      const finalStatus = await pollReceiptUntilComplete(receiptId);
+      const finalStatus = await pollReceiptUntilComplete(receiptId, 16, { showProgress: false });
       if (!finalStatus) {
+        stopReceiptMagicStatus();
         showToast(t('still_processing') || 'Still processing…', 'info');
         return;
       }
@@ -2804,13 +3390,18 @@
         headers: getReceiptGuestHeaders(receiptId)
       });
       state.activeReceiptId = receiptId;
+      if (state.token) {
+        await refreshAuthedPanels();
+      }
+      stopReceiptMagicStatus();
       renderReceiptReport(report);
-      await loadReceiptQualitySummary();
       await loadReceiptReviewQueue();
       receiptSetStep(4);
       receiptSetStatus(t('receipt_analysis_complete') || 'Done!', 'success');
+      openSheet('receiptDetailSheet');
       showToast(t('receipt_rescan_done'), 'success');
     } catch (error) {
+      stopReceiptMagicStatus();
       showToast(`Rescan failed: ${toApiErrorLabel(error)}`, 'error');
     }
   }
@@ -2857,7 +3448,6 @@
         headers: getReceiptGuestHeaders(receiptId)
       });
       renderReceiptReport(report);
-      await loadReceiptQualitySummary();
       await loadReceiptReviewQueue();
     } catch (error) {
       showToast(`Save corrections failed: ${toApiErrorLabel(error)}`, 'error');
@@ -2888,13 +3478,15 @@
 
       receiptSetStep(2);
       receiptSetStatus(`${t('rp_scanning')}…`);
+      startReceiptMagicStatus();
 
-      const finalStatus = await pollReceiptUntilComplete(upload.receipt_id);
+      const finalStatus = await pollReceiptUntilComplete(upload.receipt_id, 16, { showProgress: false });
 
       receiptSetStep(3);
       receiptSetStatus(`${t('rp_matching')}…`);
 
       if (!finalStatus) {
+        stopReceiptMagicStatus();
         showToast(t('still_processing') || 'Still processing…', 'info');
         receiptSetStatus(t('still_processing') || 'Still processing…', 'error');
         if (analyzeBtn) analyzeBtn.disabled = false;
@@ -2905,13 +3497,19 @@
         headers: getReceiptGuestHeaders(upload.receipt_id)
       });
 
+      if (state.token) {
+        await refreshAuthedPanels();
+      }
+      stopReceiptMagicStatus();
       receiptSetStep(4);
       receiptSetStatus(t('receipt_analysis_complete') || 'Done!', 'success');
       renderReceiptReport(report);
-      await loadReceiptQualitySummary();
       await loadReceiptReviewQueue();
+      closeSheet('receiptScanSheet');
+      openSheet('receiptDetailSheet');
       showToast(t('receipt_analysis_complete') || 'Analysis complete!', 'success');
     } catch (error) {
+      stopReceiptMagicStatus();
       const msg = toApiErrorLabel(error);
       showToast(`Receipt failed: ${msg}`, 'error');
       receiptSetStatus(`Error: ${msg}`, 'error');
@@ -3135,6 +3733,327 @@
     }
   }
 
+  const MISSION_CAPTURE_STEPS = [
+    { step: 1, kind: 'shelf_price', hintKey: 'mission_capture_hint_shelf' },
+    { step: 2, kind: 'product_front', hintKey: 'mission_capture_hint_front' },
+    { step: 3, kind: 'product_back', hintKey: 'mission_capture_hint_back' }
+  ];
+
+  function openReceiptScanSheet() {
+    state.activeScanIntent = 'receipt';
+    receiptResetUI();
+    openSheet('receiptScanSheet', { focusId: state.device === 'mobile' ? 'scanCameraBtn' : 'scanGalleryBtn' });
+  }
+
+  function openScanChoiceSheet() {
+    updateScanChoiceMissionButton();
+    openSheet('scanChoiceSheet', { focusId: 'scanChoiceMissionBtn' });
+  }
+
+  function openUniversalScannerFlow() {
+    if (state.activeMission) {
+      openScanChoiceSheet();
+      return;
+    }
+    openReceiptScanSheet();
+  }
+
+  function getMissionCaptureStep(step = 1) {
+    const normalized = Number.isFinite(Number(step)) ? Number(step) : 1;
+    return MISSION_CAPTURE_STEPS.find((entry) => entry.step === normalized) || MISSION_CAPTURE_STEPS[0];
+  }
+
+  function renderMissionAcceptStep() {
+    const textEl = $('missionAcceptText');
+    const rulesEl = $('missionAcceptRules');
+    const progressEl = $('missionAcceptProgress');
+    const primaryBtn = $('missionAcceptPrimaryBtn');
+    const secondaryBtn = $('missionAcceptSecondaryBtn');
+    if (!textEl || !rulesEl || !progressEl || !primaryBtn || !secondaryBtn) return;
+
+    const step = Number(state.missionAcceptStep || 1);
+    progressEl.textContent = `${Math.max(1, Math.min(step, 3))} / 3`;
+    rulesEl.style.display = 'none';
+    rulesEl.innerHTML = '';
+    secondaryBtn.style.visibility = 'visible';
+    secondaryBtn.textContent = t('mission_accept_cancel');
+
+    if (step === 1) {
+      textEl.textContent = t('mission_accept_step_1');
+      primaryBtn.textContent = t('mission_accept_next');
+      return;
+    }
+
+    if (step === 2) {
+      textEl.textContent = t('mission_accept_step_2_title');
+      rulesEl.style.display = '';
+      rulesEl.innerHTML = `
+        <p>${sanitize(t('mission_accept_rule_1'))}</p>
+        <p>${sanitize(t('mission_accept_rule_2'))}</p>
+        <p>${sanitize(t('mission_accept_rule_3'))}</p>
+      `;
+      primaryBtn.textContent = t('mission_accept_got_it');
+      return;
+    }
+
+    textEl.textContent = t('mission_accept_step_3');
+    secondaryBtn.style.visibility = 'hidden';
+    primaryBtn.textContent = t('mission_accept_activate');
+  }
+
+  function openMissionAcceptSheet(missionMeta) {
+    if (!missionMeta?.id) return;
+    state.activeMissionCandidate = { ...missionMeta };
+    state.missionAcceptStep = 1;
+    renderMissionAcceptStep();
+    openSheet('missionAcceptSheet', { focusId: 'missionAcceptPrimaryBtn' });
+  }
+
+  async function confirmMissionAcceptance() {
+    const mission = state.activeMissionCandidate;
+    if (!mission?.id) {
+      closeSheet('missionAcceptSheet');
+      return;
+    }
+    try {
+      await startMission(String(mission.id), mission);
+      setActiveMission({
+        id: String(mission.id),
+        title: mission.title || 'Mission',
+        rewardXp: Number(mission.reward_points || 0),
+        storeChain: mission.store_chain || null,
+        acceptedAt: new Date().toISOString(),
+        status: 'accepted'
+      });
+      showToast(t('mission_activated'), 'success');
+      closeSheet('missionAcceptSheet');
+      state.activeMissionCandidate = null;
+      state.missionAcceptStep = 1;
+    } catch (_) {
+      // toast handled inside startMission
+    }
+  }
+
+  function handleMissionAcceptPrimaryClick() {
+    const step = Number(state.missionAcceptStep || 1);
+    if (step < 3) {
+      state.missionAcceptStep = step + 1;
+      renderMissionAcceptStep();
+      return;
+    }
+    confirmMissionAcceptance().catch(() => {});
+  }
+
+  function cancelActiveMission() {
+    if (!state.activeMission) return;
+    setActiveMission(null);
+    if ($('missionIdInput')) $('missionIdInput').value = '';
+    if ($('missionVerifyHint')) $('missionVerifyHint').textContent = t('mission_verify_hint');
+    showToast(t('mission_cancelled'), 'info');
+  }
+
+  function ensureMissionCaptureDraft() {
+    const mission = state.activeMission;
+    if (!mission?.id) return null;
+    const existing = state.missionCaptureDraft;
+    if (existing?.missionId === mission.id) {
+      return existing;
+    }
+    const draft = {
+      missionId: mission.id,
+      step: 1,
+      photos: []
+    };
+    setMissionCaptureDraft(draft);
+    return draft;
+  }
+
+  function renderMissionCaptureSheet() {
+    const mission = state.activeMission;
+    const draft = ensureMissionCaptureDraft();
+    const progressEl = $('missionCaptureProgress');
+    const hintEl = $('missionCaptureHint');
+    const previewEl = $('missionCapturePreview');
+    const primaryBtn = $('missionCapturePrimaryBtn');
+    const secondaryBtn = $('missionCaptureSecondaryBtn');
+    const takeBtn = $('missionCaptureTakeBtn');
+    if (!mission || !draft || !progressEl || !hintEl || !previewEl || !primaryBtn || !secondaryBtn || !takeBtn) return;
+
+    const stepCfg = getMissionCaptureStep(draft.step);
+    const photo = (draft.photos || []).find((row) => row.kind === stepCfg.kind);
+    progressEl.textContent = `${draft.step}/3`;
+    hintEl.textContent = t(stepCfg.hintKey);
+
+    const missionTitle = $('missionCaptureTitle');
+    if (missionTitle) missionTitle.textContent = `${t('mission_capture_title')} · ${mission.title || mission.id}`;
+
+    if (photo?.blobUrl) {
+      previewEl.innerHTML = `<img src="${sanitize(photo.blobUrl)}" alt="Mission capture" class="mission-capture-preview-img" />`;
+      secondaryBtn.style.display = '';
+      secondaryBtn.disabled = false;
+    } else {
+      previewEl.innerHTML = `<div class="mission-capture-placeholder">📷</div>`;
+      secondaryBtn.style.display = 'none';
+    }
+
+    primaryBtn.textContent = draft.step >= 3 ? t('mission_capture_submit') : t('mission_capture_next');
+    takeBtn.textContent = photo?.blobUrl ? t('mission_capture_retake') : t('mission_capture_take_photo');
+
+    const productInput = $('missionCaptureProductInput');
+    const barcodeInput = $('missionCaptureBarcodeInput');
+    const storeInput = $('missionCaptureStoreInput');
+    if (productInput && !productInput.value && $('missionProductName')?.value) {
+      productInput.value = $('missionProductName').value;
+    }
+    if (barcodeInput && !barcodeInput.value && $('missionBarcode')?.value) {
+      barcodeInput.value = $('missionBarcode').value;
+    }
+    if (storeInput && !storeInput.value) {
+      storeInput.value = $('missionStoreChain')?.value || mission.storeChain || '';
+    }
+  }
+
+  function openMissionCaptureFlow() {
+    if (!state.activeMission) {
+      showToast(t('mission_active_empty'), 'warning');
+      return;
+    }
+    state.activeScanIntent = 'mission';
+    if ($('missionIdInput')) $('missionIdInput').value = state.activeMission.id || '';
+    if ($('missionStoreChain') && state.activeMission.storeChain && !$('missionStoreChain').value) {
+      $('missionStoreChain').value = state.activeMission.storeChain;
+    }
+    ensureMissionCaptureDraft();
+    renderMissionCaptureSheet();
+    openSheet('missionCaptureSheet', { focusId: 'missionCaptureTakeBtn' });
+  }
+
+  function triggerMissionCaptureInput() {
+    $('missionCaptureInput')?.click();
+  }
+
+  function saveMissionCapturePhoto(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    const draft = ensureMissionCaptureDraft();
+    if (!draft) return;
+    const stepCfg = getMissionCaptureStep(draft.step);
+    const blobUrl = URL.createObjectURL(file);
+    const nextPhotos = (draft.photos || []).filter((row) => row.kind !== stepCfg.kind);
+    nextPhotos.push({
+      kind: stepCfg.kind,
+      blobUrl,
+      capturedAt: new Date().toISOString()
+    });
+    setMissionCaptureDraft({
+      ...draft,
+      photos: nextPhotos
+    });
+    showToast(t('mission_capture_saved'), 'success');
+    renderMissionCaptureSheet();
+  }
+
+  function getMissionCaptureMediaPayload(draft, mediaHash) {
+    const photos = Array.isArray(draft?.photos) ? draft.photos : [];
+    return MISSION_CAPTURE_STEPS.map((stepCfg, index) => {
+      const photo = photos.find((row) => row.kind === stepCfg.kind);
+      return {
+        media_type: stepCfg.kind,
+        url: photo?.blobUrl || `local://capture-${index + 1}`,
+        quality_score: 0.85,
+        blur_score: 0.1,
+        hash: `${mediaHash}-${stepCfg.kind}`
+      };
+    });
+  }
+
+  async function handleMissionCapturePrimaryClick() {
+    const mission = state.activeMission;
+    const draft = ensureMissionCaptureDraft();
+    if (!mission || !draft) {
+      showToast(t('mission_active_empty'), 'warning');
+      return;
+    }
+
+    const stepCfg = getMissionCaptureStep(draft.step);
+    const hasPhoto = (draft.photos || []).some((row) => row.kind === stepCfg.kind && row.blobUrl);
+    if (!hasPhoto) {
+      showToast(t('mission_capture_missing_photo'), 'warning');
+      return;
+    }
+
+    if (draft.step < 3) {
+      setMissionCaptureDraft({ ...draft, step: draft.step + 1, photos: draft.photos || [] });
+      renderMissionCaptureSheet();
+      return;
+    }
+
+    const product = $('missionCaptureProductInput')?.value?.trim() || '';
+    const barcode = $('missionCaptureBarcodeInput')?.value?.trim() || '';
+    const storeChain = $('missionCaptureStoreInput')?.value?.trim() || mission.storeChain || '';
+    if (!product || !barcode) {
+      showToast(t('mission_capture_missing_fields'), 'warning');
+      return;
+    }
+
+    if ($('missionProductName')) $('missionProductName').value = product;
+    if ($('missionBarcode')) $('missionBarcode').value = barcode;
+    if ($('missionStoreChain')) $('missionStoreChain').value = storeChain || '';
+    if ($('missionIdInput')) $('missionIdInput').value = mission.id;
+
+    const mediaHash = `mission-${mission.id}-${Date.now().toString(36)}`;
+    if ($('missionMediaHash')) $('missionMediaHash').value = mediaHash;
+
+    const media = getMissionCaptureMediaPayload(draft, mediaHash);
+    showToast(t('mission_capture_submitting'), 'info');
+    const result = await submitMission({
+      missionId: mission.id,
+      product,
+      barcode,
+      storeChain,
+      media,
+      mediaHash
+    });
+
+    if (result?.ok) {
+      closeSheet('missionCaptureSheet');
+      setMissionCaptureDraft(null);
+      setActiveMission(null);
+      return;
+    }
+
+    setActiveMission({ ...mission, status: 'pending_submit' }, { keepDraft: true });
+  }
+
+  function setMissionGeoStatus(text, tone = 'neutral') {
+    const statusEl = $('missionGeoStatus');
+    if (!statusEl) return;
+    statusEl.textContent = text || t('mission_geo_idle');
+    statusEl.dataset.tone = tone;
+  }
+
+  function setMissionSelection(mission = null) {
+    const missionIdInput = $('missionIdInput');
+    const selectedValue = $('missionSelectedValue');
+    const missionStoreInput = $('missionStoreChain');
+    if (!mission || !mission.id) {
+      if (missionIdInput) missionIdInput.value = '';
+      if (selectedValue) selectedValue.textContent = t('mission_selected_empty');
+      return;
+    }
+    const missionId = String(mission.id);
+    const rewardPoints = Number(mission.reward_points || mission.rewardXp || 0);
+    if (missionIdInput) missionIdInput.value = missionId;
+    if (selectedValue) {
+      selectedValue.textContent = t('mission_selected_value', {
+        id: missionId,
+        xp: formatNumber(rewardPoints, '0')
+      });
+    }
+    if (missionStoreInput && mission.store_chain && !missionStoreInput.value.trim()) {
+      missionStoreInput.value = mission.store_chain;
+    }
+  }
+
   function renderMissions(missions) {
     const container = $('missionsList');
     if (!container) return;
@@ -3149,10 +4068,24 @@
       return map[type.toLowerCase()] || '🎯';
     };
 
+    const formatDistance = (mission) => {
+      const km = Number(mission.distance_km);
+      if (Number.isFinite(km) && km >= 0) return `${km.toFixed(km >= 10 ? 0 : 1)} km`;
+      const meters = Number(mission.distance_meters);
+      if (Number.isFinite(meters) && meters >= 0) return `${(meters / 1000).toFixed(meters >= 10000 ? 0 : 1)} km`;
+      return '';
+    };
+
     container.innerHTML = missions.map((mission) => `
-      <div class="mission-card" data-mission-id="${sanitize(mission.id)}">
+      <div
+        class="mission-card"
+        data-mission-id="${sanitize(mission.id)}"
+        data-mission-title="${sanitize(mission.title || 'Mission')}"
+        data-mission-xp="${sanitize(String(mission.reward_points || 0))}"
+        data-mission-store="${sanitize(mission.store_chain || '')}"
+      >
         <div class="mc-header">
-          <span class="mc-type-icon">${typeIcon(mission.mission_type)}</span>
+          <span class="mc-product-thumb" aria-hidden="true">🧃</span>
           <div class="mc-meta">
             <strong class="mc-title">${sanitize(mission.title || 'Mission')}</strong>
             ${mission.store_chain ? `<span class="mc-store muted small">📍 ${sanitize(mission.store_chain)}</span>` : ''}
@@ -3161,19 +4094,39 @@
         </div>
         ${mission.description ? `<p class="mc-desc muted small">${sanitize(mission.description)}</p>` : ''}
         <div class="mc-footer">
-          <span class="mc-status mc-status--${sanitize(mission.status || 'open')}">${sanitize(mission.status || 'open')}</span>
+          ${formatDistance(mission) ? `<span class="mc-distance">🧭 ${formatDistance(mission)}</span>` : '<span class="mc-distance">🧭 Nearby</span>'}
           <div class="row">
-            <button class="btn btn-ghost btn-small" data-action="start">Start</button>
-            <button class="btn btn-small" data-action="use">Use for Submit</button>
+            <button class="btn btn-small" data-action="start">${t('mission_start_btn')}</button>
           </div>
         </div>
       </div>
     `).join('');
   }
 
-  async function loadNearbyMissions() {
-    const lat = $('missionLat')?.value?.trim();
-    const lon = $('missionLon')?.value?.trim();
+  async function loadNearbyMissions(options = {}) {
+    const silent = Boolean(options.silent);
+    const preferFreshLocation = options.preferFreshLocation !== false;
+    const missionLatInput = $('missionLat');
+    const missionLonInput = $('missionLon');
+
+    let lat = missionLatInput?.value?.trim() || '';
+    let lon = missionLonInput?.value?.trim() || '';
+
+    if (preferFreshLocation || !lat || !lon) {
+      setMissionGeoStatus(t('mission_geo_requesting'), 'loading');
+      const location = await resolveCurrentLocation();
+      if (location) {
+        lat = String(location.lat);
+        lon = String(location.lon);
+        if (missionLatInput) missionLatInput.value = lat;
+        if (missionLonInput) missionLonInput.value = lon;
+        setMissionGeoStatus(t('mission_geo_ready', { lat, lon }), 'ready');
+      } else if (!lat || !lon) {
+        setMissionGeoStatus(t('mission_geo_missing'), 'warning');
+      }
+    } else {
+      setMissionGeoStatus(t('mission_geo_ready', { lat, lon }), 'ready');
+    }
 
     const params = new URLSearchParams();
     if (lat) params.set('lat', lat);
@@ -3183,52 +4136,82 @@
 
     try {
       const missions = await apiRequest(`/missions/nearby?${params.toString()}`);
-      renderMissions(missions);
-      showToast(`Loaded ${Array.isArray(missions) ? missions.length : 0} missions.`, 'success');
+      const list = Array.isArray(missions) ? missions : [];
+      const nearest = list
+        .slice()
+        .sort((a, b) => Number(a.distance_km || 9999) - Number(b.distance_km || 9999))[0];
+      const nearestKey = nearest ? String(nearest.store_chain || nearest.store_name || '') : '';
+      const scoped = nearestKey
+        ? list.filter((row) => String(row.store_chain || row.store_name || '') === nearestKey)
+        : list;
+      renderMissions(scoped.slice(0, 12));
+      if (!silent) showToast(`Loaded ${scoped.length} missions.`, 'success');
     } catch (error) {
       renderError($('missionsList'), toApiErrorLabel(error));
-      showToast(`Load missions failed: ${toApiErrorLabel(error)}`, 'error');
+      if (!silent) showToast(`Load missions failed: ${toApiErrorLabel(error)}`, 'error');
     }
   }
 
-  async function startMission(missionId) {
+  async function startMission(missionId, missionMeta = null) {
     try {
       await apiRequest(`/missions/${encodeURIComponent(missionId)}/start`, { method: 'POST' });
-      $('missionIdInput').value = missionId;
+      setMissionSelection(missionMeta || { id: missionId, reward_points: 0 });
       showToast('Mission started.', 'success');
-      await loadNearbyMissions();
+      await loadNearbyMissions({ silent: true, preferFreshLocation: false });
     } catch (error) {
       showToast(`Start mission failed: ${toApiErrorLabel(error)}`, 'error');
     }
   }
 
-  async function submitMission() {
-    const missionId = $('missionIdInput')?.value?.trim();
-    const product = $('missionProductName')?.value?.trim();
-    const barcode = $('missionBarcode')?.value?.trim();
+  async function submitMission(options = {}) {
+    const missionId = String(options.missionId || $('missionIdInput')?.value?.trim() || '');
+    const product = String(options.product || $('missionProductName')?.value?.trim() || '');
+    const barcode = String(options.barcode || $('missionBarcode')?.value?.trim() || '');
 
     if (!missionId || !product || !barcode) {
-      showToast('Mission ID, product name and barcode are required.', 'warning');
-      return;
+      showToast(t('mission_capture_missing_fields'), 'warning');
+      return { ok: false, error: 'missing_fields' };
     }
+
+    let latValue = Number($('missionLat')?.value);
+    let lonValue = Number($('missionLon')?.value);
+    if (!Number.isFinite(latValue) || !Number.isFinite(lonValue)) {
+      const location = await resolveCurrentLocation();
+      if (location) {
+        latValue = Number(location.lat);
+        lonValue = Number(location.lon);
+        if ($('missionLat')) $('missionLat').value = String(location.lat);
+        if ($('missionLon')) $('missionLon').value = String(location.lon);
+      }
+    }
+    const mediaHash = String(options.mediaHash || $('missionMediaHash')?.value?.trim() || `mission-${missionId}-${Date.now().toString(36)}`);
+    const mediaList = Array.isArray(options.media) && options.media.length
+      ? options.media.map((item) => ({
+          media_type: item.media_type || 'shelfie',
+          url: item.url || 'local://capture',
+          quality_score: Number(item.quality_score ?? 0.85),
+          blur_score: Number(item.blur_score ?? 0.1),
+          hash: item.hash || mediaHash
+        }))
+      : [
+          {
+            media_type: 'shelfie',
+            url: 'local://capture',
+            quality_score: 0.85,
+            blur_score: 0.1,
+            hash: mediaHash
+          }
+        ];
 
     const payload = {
       product_canonical_name: product,
       barcode,
-      store_chain: $('missionStoreChain')?.value?.trim() || null,
-      media_hash: $('missionMediaHash')?.value?.trim() || null,
-      foreground_app: !!$('missionForeground')?.checked,
-      location_lat: $('missionLat')?.value ? Number($('missionLat').value) : null,
-      location_lon: $('missionLon')?.value ? Number($('missionLon').value) : null,
-      media: [
-        {
-          media_type: 'shelfie',
-          url: 'local://capture',
-          quality_score: 0.85,
-          blur_score: 0.1,
-          hash: $('missionMediaHash')?.value?.trim() || null
-        }
-      ]
+      store_chain: String(options.storeChain || $('missionStoreChain')?.value?.trim() || '') || null,
+      media_hash: mediaHash,
+      foreground_app: $('missionForeground') ? !!$('missionForeground').checked : true,
+      location_lat: Number.isFinite(latValue) ? latValue : null,
+      location_lon: Number.isFinite(lonValue) ? lonValue : null,
+      media: mediaList
     };
 
     try {
@@ -3236,11 +4219,15 @@
         method: 'POST',
         body: payload
       });
-      $('verifySubmissionId').value = submission.submission_id;
+      if ($('verifySubmissionId')) $('verifySubmissionId').value = submission.submission_id;
+      if ($('proofIdInput') && submission.proof_id) $('proofIdInput').value = submission.proof_id;
+      if ($('missionVerifyHint')) $('missionVerifyHint').textContent = t('mission_verify_ready', { id: submission.submission_id || '-' });
       showToast(`Mission submitted: ${submission.proof_status}`, 'success');
       renderProofStatus(submission);
+      return { ok: true, submission };
     } catch (error) {
       showToast(`Submit failed: ${toApiErrorLabel(error)}`, 'error');
+      return { ok: false, error };
     }
   }
 
@@ -3250,7 +4237,7 @@
     const vote = $('verifyVote')?.value || 'confirm';
 
     if (!missionId || !submissionId) {
-      showToast('Mission ID and submission ID are required.', 'warning');
+      showToast(t('mission_verify_missing'), 'warning');
       return;
     }
 
@@ -3821,6 +4808,7 @@
       refreshAuthedPanels(),
       loadMapStores({ silent: true }),
       loadGlobalLeaderboard({ silent: true }),
+      loadOverviewPulse(true),
       state.token ? loadPlusStatus() : Promise.resolve(),
       state.token ? loadBudgetAnalytics() : Promise.resolve()
     ]);
@@ -3840,15 +4828,16 @@
 
       const missionId = card.getAttribute('data-mission-id');
       if (!missionId) return;
+      const missionMeta = {
+        id: missionId,
+        title: card.getAttribute('data-mission-title') || '',
+        reward_points: Number(card.getAttribute('data-mission-xp') || 0),
+        store_chain: card.getAttribute('data-mission-store') || ''
+      };
 
       if (target.dataset.action === 'start') {
-        await startMission(missionId);
-        return;
-      }
-
-      if (target.dataset.action === 'use') {
-        $('missionIdInput').value = missionId;
-        showToast(t('mission_selected_for_submit', { id: missionId }), 'info');
+        setMissionSelection(missionMeta);
+        openMissionAcceptSheet(missionMeta);
       }
     });
   }
@@ -3868,6 +4857,7 @@
   }
 
   function bindControls() {
+    bindSheetControls();
     $('registerForm')?.addEventListener('submit', handleRegisterSubmit);
     $('loginForm')?.addEventListener('submit', handleLoginSubmit);
     $('logoutBtn')?.addEventListener('click', handleLogout);
@@ -3879,6 +4869,62 @@
         event.preventDefault();
         runSearch().catch(() => {});
       }
+    });
+    $('globalSearchBtn')?.addEventListener('click', () => { runGlobalSearch().catch(() => {}); });
+    $('globalSearchInput')?.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        runGlobalSearch().catch(() => {});
+      }
+    });
+    $('overviewScanBtn')?.addEventListener('click', () => {
+      openUniversalScannerFlow();
+    });
+    $('universalScanFab')?.addEventListener('click', () => {
+      openUniversalScannerFlow();
+    });
+    $('scanChoiceMissionBtn')?.addEventListener('click', () => {
+      closeSheet('scanChoiceSheet');
+      openMissionCaptureFlow();
+    });
+    $('scanChoiceReceiptBtn')?.addEventListener('click', () => {
+      closeSheet('scanChoiceSheet');
+      openReceiptScanSheet();
+    });
+    $('missionAcceptPrimaryBtn')?.addEventListener('click', () => {
+      handleMissionAcceptPrimaryClick();
+    });
+    $('missionAcceptSecondaryBtn')?.addEventListener('click', () => {
+      state.activeMissionCandidate = null;
+      state.missionAcceptStep = 1;
+      closeSheet('missionAcceptSheet');
+    });
+    $('continueMissionBtn')?.addEventListener('click', () => {
+      openMissionCaptureFlow();
+    });
+    $('cancelMissionBtn')?.addEventListener('click', () => {
+      cancelActiveMission();
+    });
+    $('missionActiveContinueBtn')?.addEventListener('click', () => {
+      openMissionCaptureFlow();
+    });
+    $('missionActiveCancelBtn')?.addEventListener('click', () => {
+      cancelActiveMission();
+    });
+    $('missionCaptureTakeBtn')?.addEventListener('click', () => {
+      triggerMissionCaptureInput();
+    });
+    $('missionCaptureSecondaryBtn')?.addEventListener('click', () => {
+      triggerMissionCaptureInput();
+    });
+    $('missionCapturePrimaryBtn')?.addEventListener('click', () => {
+      handleMissionCapturePrimaryClick().catch(() => {});
+    });
+    $('missionCaptureInput')?.addEventListener('change', () => {
+      const input = $('missionCaptureInput');
+      if (!input?.files?.[0]) return;
+      saveMissionCapturePhoto(input.files[0]);
+      input.value = '';
     });
     $('searchResults')?.addEventListener('click', (event) => {
       const target = event.target;
@@ -3897,6 +4943,10 @@
     $('receiptReport')?.addEventListener('click', (event) => {
       const target = event.target;
       if (!(target instanceof HTMLElement)) return;
+      if (target.closest('[data-receipt-scroll-items]')) {
+        $('receiptItemsHead')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
       if (target.closest('[data-receipt-apply-suggestions]')) {
         document.querySelectorAll('#receiptFixEditor [data-receipt-candidate-for]')
           .forEach((button) => {
@@ -3983,7 +5033,7 @@
       document.querySelectorAll(`#receiptFixEditor [data-receipt-candidate-for="${lineId}"]`)
         .forEach((btn) => btn.classList.remove('active'));
     });
-    $('receiptReviewQueue')?.addEventListener('click', async (event) => {
+    $('receiptHistoryCards')?.addEventListener('click', async (event) => {
       const target = event.target;
       if (!(target instanceof HTMLElement)) return;
       const button = target.closest('[data-open-receipt-id]');
@@ -3996,6 +5046,7 @@
         });
         state.activeReceiptId = receiptId;
         renderReceiptReport(report);
+        openSheet('receiptDetailSheet');
       } catch (error) {
         showToast(`Open receipt failed: ${toApiErrorLabel(error)}`, 'error');
       }
@@ -4010,6 +5061,7 @@
     $('pollFamilyBtn')?.addEventListener('click', () => { pollFamilyEvents().catch(() => {}); });
 
     $('loadMissionsBtn')?.addEventListener('click', () => { loadNearbyMissions().catch(() => {}); });
+    $('refreshMissionsBtn')?.addEventListener('click', () => { loadNearbyMissions({ preferFreshLocation: false }).catch(() => {}); });
     $('submitMissionBtn')?.addEventListener('click', () => { submitMission().catch(() => {}); });
     $('verifyMissionBtn')?.addEventListener('click', () => { verifyMission().catch(() => {}); });
     $('loadProofBtn')?.addEventListener('click', () => { loadProofStatus().catch(() => {}); });
@@ -4100,6 +5152,11 @@
 
   async function boot() {
     state.device = detectDevice();
+    if (!state.activeMission || !state.activeMission.id) {
+      setActiveMission(null);
+    } else if (state.missionCaptureDraft && state.missionCaptureDraft.missionId !== state.activeMission.id) {
+      setMissionCaptureDraft(null);
+    }
     bindNavigation();
     setupLanguage();
     setupAuthTabs();
@@ -4121,6 +5178,7 @@
     renderFamilyLists([]);
     renderFamilyEvents({ events: [] });
     renderMissions([]);
+    renderActiveMissionBanner();
     renderLeaderboard($('globalLeaderboard'), []);
     renderLeaderboard($('friendsLeaderboard'), []);
     renderPlusFeatures([]);

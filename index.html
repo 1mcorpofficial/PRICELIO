@@ -263,29 +263,43 @@
     ═══════════════════════════════ -->
     <div id="appShell" class="app-shell">
       <header class="topbar">
-        <div class="brand-block">
-          <div class="brand-logo">PL</div>
-          <div>
-            <h1 data-i18n="brand_name">PRICELIO</h1>
-            <p data-i18n="brand_tagline">Smart grocery price intelligence for Baltic shoppers.</p>
-          </div>
+        <div class="topbar-search">
+          <input id="globalSearchInput" type="search" data-i18n-placeholder="search_placeholder" placeholder="e.g. Twix – cheapest near you" />
+          <button id="globalSearchBtn" class="btn" type="button" data-i18n="search_btn">Search</button>
         </div>
         <div class="topbar-actions">
-          <div id="authStatus" class="auth-status" data-i18n="guest_mode">Guest mode</div>
-          <button id="backToLandingBtn" class="btn btn-ghost" type="button" data-i18n="home_btn">Home</button>
-          <select id="languageSelect" class="language-select" aria-label="Language"></select>
-          <button id="refreshAllBtn" class="btn btn-ghost" data-i18n="refresh">Refresh</button>
+          <div id="topbarXpBalance" class="topbar-xp-balance">⚡ 0 XP</div>
+          <button class="btn btn-ghost nav-btn topbar-profile-btn" type="button" data-view="profile" data-i18n="nav_profile">Profile</button>
         </div>
       </header>
 
       <section id="deviceCapabilityNotice" class="device-notice"></section>
+      <section id="missionActiveBanner" class="mission-active-banner" hidden>
+        <div class="mission-active-main">
+          <p class="muted small" data-i18n="mission_active_label">Aktyvi misija</p>
+          <strong id="missionActiveBannerTitle" data-i18n="mission_active_empty">Šiuo metu neturi aktyvios misijos.</strong>
+        </div>
+        <div class="mission-active-actions">
+          <button id="missionActiveContinueBtn" class="btn btn-small" type="button" data-i18n="mission_active_continue">Tęsti misiją</button>
+          <button id="missionActiveCancelBtn" class="btn btn-ghost btn-small" type="button" data-i18n="mission_active_cancel">Atšaukti</button>
+        </div>
+      </section>
 
       <nav class="view-nav" aria-label="Views">
+        <div class="sidebar-brand">
+          <div class="brand-block">
+            <div class="brand-logo">PL</div>
+            <div>
+              <h1 data-i18n="brand_name">PRICELIO</h1>
+              <p data-i18n="brand_tagline">Smart grocery price intelligence for Baltic shoppers.</p>
+            </div>
+          </div>
+        </div>
         <button class="nav-btn active" data-view="overview"    data-nav-icon="🏠" data-i18n="nav_overview">Overview</button>
         <button class="nav-btn"        data-view="market"      data-nav-icon="🗺️" data-i18n="nav_market">Market</button>
-        <button class="nav-btn"        data-view="basket"      data-nav-icon="🛒" data-i18n="nav_basket">Basket</button>
         <button class="nav-btn"        data-view="receipts"    data-nav-icon="🧾" data-i18n="nav_receipts">Receipts</button>
         <button class="nav-btn"        data-view="family"      data-nav-icon="👨‍👩‍👧" data-i18n="nav_family">Family</button>
+        <button class="nav-btn"        data-view="basket"      data-nav-icon="🛒" data-i18n="nav_basket">Basket</button>
         <button class="nav-btn"        data-view="missions"    data-nav-icon="🎯" data-i18n="nav_missions">Missions</button>
         <button class="nav-btn"        data-view="leaderboard" data-nav-icon="🏆" data-i18n="nav_leaderboard">Leaderboard</button>
         <button class="nav-btn"        data-view="plus"        data-nav-icon="⭐" data-i18n="nav_plus">Plus</button>
@@ -298,26 +312,50 @@
 
         <!-- ━━━ OVERVIEW ━━━ -->
         <section class="view active" id="view-overview">
-
-          <!-- Welcome hero — spans full width -->
-          <div class="ov-hero panel fade-up">
-            <div class="ov-hero-left">
-              <div class="ov-hero-icon">PL</div>
-              <div>
-                <h2 class="ov-hero-title" data-i18n="ov_hero_title">Smart Grocery Intelligence</h2>
-                <p class="ov-hero-sub muted small" data-i18n="ov_hero_sub">Scan receipts · compare prices · save every week</p>
+          <div id="overviewDashboard" class="overview-dashboard">
+            <div class="overview-hero panel fade-up">
+              <p class="overview-kicker" data-i18n="dashboard_greeting_kicker">Tavo taupymo lenta</p>
+              <h2 id="overviewGreeting" class="overview-greeting-text" data-i18n="dashboard_greeting_default">Labas!</h2>
+              <p id="overviewRankLine" class="muted small" data-i18n="dashboard_rank_line_default">Prisijunk ir pradėk rinkti XP.</p>
+              <div class="overview-xp-progress" role="progressbar" aria-label="XP progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <div id="overviewXpProgressFill" class="overview-xp-progress-fill"></div>
+              </div>
+              <p id="overviewXpHint" class="overview-xp-hint">Iki kito lygio trūksta 0 XP</p>
+              <div class="overview-kpis">
+                <div class="kpi kpi-accent"><span data-i18n="kpi_rank">Rank</span><strong id="kpiRank">-</strong></div>
+                <div class="kpi"><span data-i18n="kpi_level">Level</span><strong id="kpiLevel">-</strong></div>
+                <div class="kpi"><span data-i18n="kpi_lifetime_xp">Lifetime XP</span><strong id="kpiXp">-</strong></div>
+                <div class="kpi kpi-green"><span data-i18n="kpi_spendable">Spendable</span><strong id="kpiPoints">-</strong></div>
               </div>
             </div>
-            <div class="ov-quick-chips">
-              <button class="ov-chip nav-btn" data-view="market" type="button">🗺️ <span data-i18n="ov_chip_map">Explore Map</span></button>
-              <button class="ov-chip nav-btn" data-view="leaderboard" type="button">🏆 <span data-i18n="ov_chip_rank">Rankings</span></button>
-              <button class="ov-chip nav-btn" data-view="plus" type="button">⭐ <span data-i18n="ov_chip_plus">Plus</span></button>
+
+            <button id="overviewScanBtn" class="panel overview-scan-cta" type="button">
+              <span class="overview-scan-icon">🧾</span>
+              <span class="overview-scan-copy">
+                <strong data-i18n="dashboard_scan_title">Skenuoti naują čekį</strong>
+                <small data-i18n="dashboard_scan_subtitle">Greičiausias kelias į taupymą ir XP</small>
+              </span>
+              <span class="overview-scan-arrow">→</span>
+            </button>
+
+            <div class="overview-pulse-grid">
+              <article class="panel overview-pulse-card">
+                <p class="muted small" data-i18n="dashboard_saved_label">Šį mėnesį sutaupyta</p>
+                <h3 id="overviewSavedValue">€0.00</h3>
+              </article>
+              <article class="panel overview-pulse-card">
+                <p class="muted small" data-i18n="dashboard_mission_label">Misijos statusas</p>
+                <h3 id="overviewMissionValue" data-i18n="dashboard_mission_empty">Nauja misija tavo rajone!</h3>
+              </article>
+              <article class="panel overview-pulse-card">
+                <p class="muted small" data-i18n="recent_points">Recent Points</p>
+                <h3 id="overviewRecentPointsValue">0 XP</h3>
+              </article>
             </div>
           </div>
 
-          <div class="v-grid">
-            <!-- Auth panel with tab toggle -->
-            <div class="panel fade-up ov-auth-panel">
+          <div class="v-grid overview-bottom-grid">
+            <div class="panel fade-up ov-auth-panel" id="overviewAuthPanel">
               <div class="auth-tab-bar" id="authTabBar">
                 <button class="auth-tab active" id="tabRegister" type="button" data-i18n="register_title">Create account</button>
                 <button class="auth-tab" id="tabLogin" type="button" data-i18n="login_title">Sign in</button>
@@ -355,20 +393,7 @@
               </form>
             </div>
 
-            <div class="panel fade-up gamif-panel">
-              <div class="view-panel-head">
-                <div class="vph-icon" style="background:#fef0c7;color:#b54708">🏆</div>
-                <div>
-                  <h2 data-i18n="gamification_title">Your Progress</h2>
-                  <p class="muted small">Earn XP scanning &amp; verifying prices</p>
-                </div>
-              </div>
-              <div class="kpi-grid">
-                <div class="kpi kpi-accent"><span data-i18n="kpi_rank">Rank</span><strong id="kpiRank">-</strong></div>
-                <div class="kpi"><span data-i18n="kpi_level">Level</span><strong id="kpiLevel">-</strong></div>
-                <div class="kpi"><span data-i18n="kpi_lifetime_xp">Lifetime XP</span><strong id="kpiXp">-</strong></div>
-                <div class="kpi kpi-green"><span data-i18n="kpi_spendable">Spendable</span><strong id="kpiPoints">-</strong></div>
-              </div>
+            <div class="panel fade-up gamif-panel" id="overviewActivityPanel">
               <h3 class="subhead" data-i18n="recent_points">Recent Points</h3>
               <div id="ledgerPreview" class="list compact"></div>
             </div>
@@ -451,94 +476,17 @@
 
         <!-- Receipts -->
         <section class="view" id="view-receipts">
-          <!-- Hidden file inputs -->
-          <input type="file" id="scanInput" accept="image/*" style="display:none" />
-          <input type="file" id="scanInputCamera" accept="image/*" capture="environment" style="display:none" />
-
-          <div class="receipt-layout">
-
-            <!-- LEFT: Upload panel -->
-            <div class="receipt-upload-panel">
-              <div class="receipt-panel-header">
-                <span class="receipt-icon-badge">🧾</span>
+          <div class="v-grid">
+            <div class="panel receipt-archive-panel">
+              <div class="view-panel-head">
+                <div class="vph-icon" style="background:#e0f2fe;color:#0c4a6e">🧾</div>
                 <div>
-                  <h2 data-i18n="upload_receipt_title">Receipt Scanner</h2>
-                  <p class="muted small" data-i18n="receipt_subtitle">Upload or take a photo of your receipt</p>
+                  <h2 data-i18n="receipt_archive_title">Purchase history</h2>
+                  <p class="muted small" data-i18n="receipt_archive_subtitle">Your scanned receipts and earned XP</p>
                 </div>
               </div>
-
-              <!-- Drop zone -->
-              <div class="receipt-dropzone" id="receiptDropzone">
-                <div class="receipt-dropzone-inner" id="scanPreview">
-                  <!-- Placeholder (hidden when image is loaded) -->
-                  <div class="dropzone-placeholder" id="dropzonePlaceholder">
-                    <div class="dropzone-icon">📄</div>
-                    <p class="dropzone-hint" data-i18n="dropzone_hint">Drag &amp; drop receipt here</p>
-                    <p class="dropzone-sub muted small" data-i18n="dropzone_sub">or use the buttons below · JPEG, PNG up to 10MB</p>
-                  </div>
-                  <!-- Preview (hidden by default) -->
-                  <div id="receiptPreviewWrap" style="display:none;position:relative;width:100%">
-                    <img id="receiptPreviewImg" src="" alt="Receipt preview" class="receipt-preview-img" />
-                    <button class="receipt-preview-overlay" id="changePhotoBtn" type="button">Change</button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Action buttons -->
-              <div class="receipt-actions">
-                <button id="scanGalleryBtn" class="receipt-btn receipt-btn-secondary">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                  <span data-i18n="choose_gallery_btn">Gallery</span>
-                </button>
-                <button id="scanCameraBtn" class="receipt-btn receipt-btn-secondary">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                  <span data-i18n="take_photo_btn">Camera</span>
-                </button>
-                <button id="scanBtn" class="receipt-btn receipt-btn-primary" disabled>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                  <span data-i18n="analyze_receipt_btn">Analyze</span>
-                </button>
-              </div>
-
-              <!-- Progress steps -->
-              <div class="receipt-progress" id="receiptProgress" style="display:none">
-                <div class="rp-step active" id="rpStep1">
-                  <div class="rp-dot"></div>
-                  <span data-i18n="rp_uploading">Uploading</span>
-                </div>
-                <div class="rp-line"></div>
-                <div class="rp-step" id="rpStep2">
-                  <div class="rp-dot"></div>
-                  <span data-i18n="rp_scanning">AI Scanning</span>
-                </div>
-                <div class="rp-line"></div>
-                <div class="rp-step" id="rpStep3">
-                  <div class="rp-dot"></div>
-                  <span data-i18n="rp_matching">Price Match</span>
-                </div>
-                <div class="rp-line"></div>
-                <div class="rp-step" id="rpStep4">
-                  <div class="rp-dot"></div>
-                  <span data-i18n="rp_done">Done</span>
-                </div>
-              </div>
-
-              <!-- Status line -->
-              <p id="scanStatus" class="receipt-status-text muted" data-i18n="awaiting_upload">Waiting for receipt…</p>
+              <div id="receiptHistoryCards"></div>
             </div>
-
-            <!-- RIGHT: Report panel -->
-            <div class="receipt-report-panel" id="receiptReportPanel">
-              <div id="receiptQualitySummary"></div>
-              <div id="receiptReviewQueue"></div>
-              <div class="receipt-report-empty" id="receiptReportEmpty">
-                <div class="report-empty-icon">📊</div>
-                <h3 data-i18n="report_empty_title">Your report will appear here</h3>
-                <p class="muted small" data-i18n="report_empty_sub">After scanning, we'll show which items you could have bought cheaper and where.</p>
-              </div>
-              <div id="receiptReport"></div>
-            </div>
-
           </div>
         </section>
 
@@ -630,63 +578,48 @@
                 <div class="vph-icon" style="background:#fee4e2;color:#d92d20">🎯</div>
                 <div>
                   <h2 data-i18n="bounty_missions_title">Bounty Missions</h2>
-                  <p class="muted small">Earn XP by scanning prices near you</p>
+                  <p class="muted small" data-i18n="mission_panel_subtitle">Find nearby missions and earn XP fast</p>
                 </div>
               </div>
-              <div class="loc-row">
-                <div class="field-group">
-                  <label class="field-label">Latitude</label>
-                  <input id="missionLat" placeholder="54.6872" data-i18n-placeholder="lat_placeholder" />
+              <div class="mission-hero">
+                <div class="mission-map-preview" aria-hidden="true">
+                  <span class="mission-map-ring"></span>
+                  <span class="mission-map-pin">📍</span>
                 </div>
-                <div class="field-group">
-                  <label class="field-label">Longitude</label>
-                  <input id="missionLon" placeholder="25.2797" data-i18n-placeholder="lon_placeholder" />
+                <div class="mission-hero-copy">
+                  <strong class="mission-hero-title" data-i18n="mission_geo_title">Missions around you</strong>
+                  <p id="missionGeoStatus" class="muted small mission-geo-status" data-i18n="mission_geo_idle">Allow location and load missions near you.</p>
                 </div>
-                <button id="loadMissionsBtn" class="btn ms-nearby-btn" data-i18n="nearby_btn">📍 Nearby</button>
+                <div class="mission-hero-actions">
+                  <button id="loadMissionsBtn" class="btn ms-nearby-btn mobile-primary-action" data-i18n="mission_geo_cta">I am here - Show missions</button>
+                  <button id="refreshMissionsBtn" class="btn btn-ghost btn-small" data-i18n="mission_geo_refresh">Refresh list</button>
+                </div>
               </div>
-              <div id="missionsList" class="list"></div>
+              <input id="missionLat" type="hidden" placeholder="54.6872" data-i18n-placeholder="lat_placeholder" />
+              <input id="missionLon" type="hidden" placeholder="25.2797" data-i18n-placeholder="lon_placeholder" />
+              <div id="missionsList" class="list mission-list-grid"></div>
             </div>
             <div class="panel">
               <div class="view-panel-head">
                 <div class="vph-icon" style="background:#d1fae5;color:#047857">✅</div>
                 <div>
-                  <h2 data-i18n="submit_verify_title">Submit &amp; Verify</h2>
-                  <p class="muted small">Provide price evidence to earn XP</p>
+                  <h2 data-i18n="mission_flow_title">Mission flow</h2>
+                  <p class="muted small" data-i18n="mission_flow_subtitle">Accept mission first, then scan from the main camera button.</p>
                 </div>
               </div>
-              <div class="stack">
-                <div class="field-group">
-                  <label class="field-label">Mission ID</label>
-                  <input id="missionIdInput" placeholder="Mission ID" data-i18n-placeholder="mission_id_placeholder" />
+              <div class="stack mission-flow-card">
+                <div id="missionSelectedCard" class="mission-selected mission-selected--flow">
+                  <p class="muted small" data-i18n="mission_selected_label">Selected mission</p>
+                  <strong id="missionSelectedValue" data-i18n="mission_selected_empty">Choose a mission from the list.</strong>
                 </div>
-                <div class="field-group">
-                  <label class="field-label">Product Name</label>
-                  <input id="missionProductName" placeholder="Canonical product name" data-i18n-placeholder="canonical_product_placeholder" />
-                </div>
-                <div class="field-row-2">
-                  <div class="field-group">
-                    <label class="field-label">Barcode</label>
-                    <input id="missionBarcode" placeholder="EAN-13" data-i18n-placeholder="barcode_placeholder" />
-                  </div>
-                  <div class="field-group">
-                    <label class="field-label">Store Chain</label>
-                    <input id="missionStoreChain" placeholder="Lidl, Maxima…" data-i18n-placeholder="store_chain_placeholder" />
-                  </div>
-                </div>
-                <div class="field-group">
-                  <label class="field-label">Media Hash</label>
-                  <input id="missionMediaHash" placeholder="Media hash" data-i18n-placeholder="media_hash_placeholder" />
-                </div>
-                <label class="check-label">
-                  <input type="checkbox" id="missionForeground" checked />
-                  <span data-i18n="app_foreground_label">App was in foreground</span>
-                </label>
-                <button id="submitMissionBtn" class="btn mobile-primary-action" data-i18n="submit_mission_btn">Submit Mission</button>
+                <button id="continueMissionBtn" class="btn mobile-primary-action" data-i18n="mission_active_continue">Continue mission</button>
+                <button id="cancelMissionBtn" class="btn btn-ghost" data-i18n="mission_active_cancel">Cancel mission</button>
               </div>
               <div class="ms-verify-block">
-                <h3 class="subhead" style="font-size:0.88rem;color:var(--ink-700)">Verify a Submission</h3>
+                <h3 class="subhead mission-verify-title" data-i18n="mission_verify_title">Community verification</h3>
+                <p id="missionVerifyHint" class="muted small" data-i18n="mission_verify_hint">After you submit, we will auto-fill verification details.</p>
+                <input id="verifySubmissionId" type="hidden" placeholder="Submission ID" data-i18n-placeholder="submission_id_placeholder" />
                 <div class="row" style="margin-top:0.5rem">
-                  <input id="verifySubmissionId" placeholder="Submission ID" data-i18n-placeholder="submission_id_placeholder" />
                   <select id="verifyVote">
                     <option value="confirm" data-i18n="confirm_option">✅ Confirm</option>
                     <option value="reject"  data-i18n="reject_option">❌ Reject</option>
@@ -699,6 +632,12 @@
                 </div>
                 <div id="proofStatus" class="list compact"></div>
               </div>
+              <input id="missionIdInput" type="hidden" placeholder="Mission ID" data-i18n-placeholder="mission_id_placeholder" />
+              <input id="missionMediaHash" type="hidden" placeholder="Media hash" data-i18n-placeholder="media_hash_placeholder" />
+              <input type="checkbox" id="missionForeground" checked hidden />
+              <input id="missionProductName" type="hidden" data-i18n-placeholder="canonical_product_placeholder" />
+              <input id="missionBarcode" type="hidden" data-i18n-placeholder="barcode_placeholder" />
+              <input id="missionStoreChain" type="hidden" data-i18n-placeholder="store_chain_placeholder" />
             </div>
           </div>
         </section>
@@ -897,6 +836,13 @@
                 </div>
               </div>
               <div id="profileData" class="list compact"></div>
+              <h3 class="subhead">More</h3>
+              <div class="row profile-more-actions">
+                <button class="btn btn-ghost nav-btn btn-small" type="button" data-view="missions">🎯 Missions</button>
+                <button class="btn btn-ghost nav-btn btn-small" type="button" data-view="budget">💳 Budget</button>
+                <button class="btn btn-ghost nav-btn btn-small" type="button" data-view="kids">👶 Kids</button>
+                <button class="btn btn-ghost nav-btn btn-small" type="button" data-view="plus">⭐ Plus</button>
+              </div>
             </div>
             <div class="panel">
               <div class="view-panel-head">
@@ -917,23 +863,19 @@
       <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="Mobile navigation">
         <button class="mbn-btn nav-btn" data-view="overview" type="button">
           <span class="mbn-icon">🏠</span>
-          <span class="mbn-label" data-i18n="nav_overview">Home</span>
+          <span class="mbn-label" data-i18n="nav_overview">Overview</span>
         </button>
-        <button class="mbn-btn nav-btn" data-view="receipts" type="button">
-          <span class="mbn-icon">🧾</span>
-          <span class="mbn-label" data-i18n="nav_receipts">Receipts</span>
+        <button class="mbn-btn nav-btn" data-view="market" type="button">
+          <span class="mbn-icon">🗺️</span>
+          <span class="mbn-label" data-i18n="nav_market">Market</span>
         </button>
-        <button class="mbn-btn nav-btn" data-view="basket" type="button">
-          <span class="mbn-icon">🛒</span>
-          <span class="mbn-label" data-i18n="nav_basket">Basket</span>
+        <button id="universalScanFab" class="mbn-fab" type="button" aria-label="Scan">
+          <span class="mbn-fab-icon">📷</span>
+          <span class="mbn-fab-label" data-i18n="scan_cta_short">Skenuoti</span>
         </button>
-        <button class="mbn-btn nav-btn" data-view="missions" type="button">
-          <span class="mbn-icon">🎯</span>
-          <span class="mbn-label" data-i18n="nav_missions">Missions</span>
-        </button>
-        <button class="mbn-btn nav-btn" data-view="budget" type="button">
-          <span class="mbn-icon">💳</span>
-          <span class="mbn-label" data-i18n="nav_budget">Budget</span>
+        <button class="mbn-btn nav-btn" data-view="family" type="button">
+          <span class="mbn-icon">👨‍👩‍👧</span>
+          <span class="mbn-label" data-i18n="nav_family">Family</span>
         </button>
         <button class="mbn-btn nav-btn" data-view="profile" type="button">
           <span class="mbn-icon">👤</span>
@@ -941,6 +883,154 @@
         </button>
       </nav>
     </div><!-- /appShell -->
+
+    <!-- Global capture and detail sheets -->
+    <section id="scanChoiceSheet" class="app-sheet" aria-hidden="true" role="dialog" aria-labelledby="scanChoiceTitle">
+      <button class="app-sheet-backdrop" type="button" data-sheet-close="scanChoiceSheet" aria-label="Close"></button>
+      <div class="app-sheet-panel app-sheet-panel--compact">
+        <div class="app-sheet-head">
+          <h3 id="scanChoiceTitle" data-i18n="scan_choice_title">Ką dabar skenuojame?</h3>
+          <button class="btn btn-ghost btn-small" type="button" data-sheet-close="scanChoiceSheet">✕</button>
+        </div>
+        <div class="stack">
+          <button id="scanChoiceMissionBtn" class="btn mission-choice-btn" type="button"></button>
+          <button id="scanChoiceReceiptBtn" class="btn btn-ghost" type="button" data-i18n="scan_choice_receipt">Paprastas čekis</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="missionAcceptSheet" class="app-sheet" aria-hidden="true" role="dialog" aria-labelledby="missionAcceptTitle">
+      <button class="app-sheet-backdrop" type="button" data-sheet-close="missionAcceptSheet" aria-label="Close"></button>
+      <div class="app-sheet-panel app-sheet-panel--compact">
+        <div class="app-sheet-head">
+          <h3 id="missionAcceptTitle" data-i18n="mission_accept_title">Prieš pradėdami misiją</h3>
+          <button class="btn btn-ghost btn-small" type="button" data-sheet-close="missionAcceptSheet">✕</button>
+        </div>
+        <p id="missionAcceptProgress" class="muted small mission-accept-progress">1 / 3</p>
+        <p id="missionAcceptText" class="mission-accept-text"></p>
+        <div id="missionAcceptRules" class="mission-accept-rules" style="display:none"></div>
+        <div class="row mission-accept-actions">
+          <button id="missionAcceptSecondaryBtn" class="btn btn-ghost" type="button" data-sheet-close="missionAcceptSheet" data-i18n="mission_accept_cancel">Atšaukti</button>
+          <button id="missionAcceptPrimaryBtn" class="btn" type="button" data-i18n="mission_accept_next">Kitas</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="missionCaptureSheet" class="app-sheet" aria-hidden="true" role="dialog" aria-labelledby="missionCaptureTitle">
+      <button class="app-sheet-backdrop" type="button" data-sheet-close="missionCaptureSheet" aria-label="Close"></button>
+      <div class="app-sheet-panel app-sheet-panel--large">
+        <div class="app-sheet-head">
+          <h3 id="missionCaptureTitle" data-i18n="mission_capture_title">Misijos nuotraukos</h3>
+          <button class="btn btn-ghost btn-small" type="button" data-sheet-close="missionCaptureSheet">✕</button>
+        </div>
+        <p id="missionCaptureProgress" class="muted small"></p>
+        <p id="missionCaptureHint" class="mission-capture-hint"></p>
+        <div id="missionCapturePreview" class="mission-capture-preview">
+          <div class="mission-capture-placeholder">📷</div>
+        </div>
+        <div class="field-row-2">
+          <div class="field-group">
+            <label class="field-label" data-i18n="mission_capture_product_label">Product name</label>
+            <input id="missionCaptureProductInput" placeholder="Canonical product name" data-i18n-placeholder="canonical_product_placeholder" />
+          </div>
+          <div class="field-group">
+            <label class="field-label" data-i18n="mission_capture_barcode_label">Barcode</label>
+            <input id="missionCaptureBarcodeInput" placeholder="EAN-13" data-i18n-placeholder="barcode_placeholder" />
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label" data-i18n="mission_capture_store_label">Store chain</label>
+          <input id="missionCaptureStoreInput" placeholder="Lidl, Maxima…" data-i18n-placeholder="store_chain_placeholder" />
+        </div>
+        <div class="row mission-capture-actions">
+          <button id="missionCaptureTakeBtn" class="btn mission-capture-take" type="button" data-i18n="mission_capture_take_photo">Fotografuoti</button>
+          <button id="missionCaptureSecondaryBtn" class="btn btn-ghost" type="button" data-i18n="mission_capture_retake">Perfotografuoti</button>
+          <button id="missionCapturePrimaryBtn" class="btn" type="button" data-i18n="mission_capture_next">Kitas</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="receiptScanSheet" class="app-sheet" aria-hidden="true" role="dialog" aria-labelledby="receiptScanSheetTitle">
+      <button class="app-sheet-backdrop" type="button" data-sheet-close="receiptScanSheet" aria-label="Close"></button>
+      <div class="app-sheet-panel app-sheet-panel--large">
+        <div class="app-sheet-head">
+          <h3 id="receiptScanSheetTitle" data-i18n="upload_receipt_title">Receipt Scanner</h3>
+          <button class="btn btn-ghost btn-small" type="button" data-sheet-close="receiptScanSheet">✕</button>
+        </div>
+        <input type="file" id="scanInput" accept="image/*" style="display:none" />
+        <input type="file" id="scanInputCamera" accept="image/*" capture="environment" style="display:none" />
+        <div class="receipt-upload-panel receipt-upload-panel--sheet">
+          <p class="muted small" data-i18n="receipt_subtitle">Upload or take a photo of your receipt</p>
+          <div class="receipt-dropzone" id="receiptDropzone">
+            <div class="receipt-dropzone-inner" id="scanPreview">
+              <div class="dropzone-placeholder" id="dropzonePlaceholder">
+                <div class="dropzone-icon">📷</div>
+                <p class="dropzone-hint" data-i18n="receipt_core_cta">Skenuoti čekį ir atsiimti XP</p>
+                <p class="dropzone-sub muted small" data-i18n="receipt_core_hint">Greičiausia telefone: atsidaryk kamerą ir nufotografuok čekį.</p>
+              </div>
+              <div id="receiptPreviewWrap" style="display:none;position:relative;width:100%">
+                <img id="receiptPreviewImg" src="" alt="Receipt preview" class="receipt-preview-img" />
+                <button class="receipt-preview-overlay" id="changePhotoBtn" type="button">Change</button>
+              </div>
+            </div>
+          </div>
+          <div class="receipt-actions">
+            <button id="scanGalleryBtn" class="receipt-btn receipt-btn-secondary" type="button">
+              <span data-i18n="choose_gallery_btn">Gallery</span>
+            </button>
+            <button id="scanCameraBtn" class="receipt-btn receipt-btn-secondary" type="button">
+              <span data-i18n="take_photo_btn">Camera</span>
+            </button>
+            <button id="scanBtn" class="receipt-btn receipt-btn-primary" type="button" disabled>
+              <span data-i18n="receipt_core_cta">Skenuoti čekį ir atsiimti XP</span>
+            </button>
+          </div>
+          <div class="receipt-progress" id="receiptProgress" style="display:none">
+            <div class="rp-step active" id="rpStep1">
+              <div class="rp-dot"></div>
+              <span data-i18n="rp_uploading">Uploading</span>
+            </div>
+            <div class="rp-line"></div>
+            <div class="rp-step" id="rpStep2">
+              <div class="rp-dot"></div>
+              <span data-i18n="rp_scanning">AI Scanning</span>
+            </div>
+            <div class="rp-line"></div>
+            <div class="rp-step" id="rpStep3">
+              <div class="rp-dot"></div>
+              <span data-i18n="rp_matching">Price Match</span>
+            </div>
+            <div class="rp-line"></div>
+            <div class="rp-step" id="rpStep4">
+              <div class="rp-dot"></div>
+              <span data-i18n="rp_done">Done</span>
+            </div>
+          </div>
+          <p id="scanStatus" class="receipt-status-text muted" data-i18n="awaiting_upload">Waiting for receipt…</p>
+          <p id="scanMagicStatus" class="receipt-magic-status" style="display:none"></p>
+        </div>
+      </div>
+    </section>
+
+    <section id="receiptDetailSheet" class="app-sheet" aria-hidden="true" role="dialog" aria-labelledby="receiptDetailSheetTitle">
+      <button class="app-sheet-backdrop" type="button" data-sheet-close="receiptDetailSheet" aria-label="Close"></button>
+      <div class="app-sheet-panel app-sheet-panel--large">
+        <div class="app-sheet-head">
+          <h3 id="receiptDetailSheetTitle" data-i18n="receipt_detail_title">Receipt details</h3>
+          <button class="btn btn-ghost btn-small" type="button" data-sheet-close="receiptDetailSheet">✕</button>
+        </div>
+        <div id="receiptDetailMeta" class="receipt-detail-meta"></div>
+        <div id="receiptDetailPhotoBlock" class="receipt-detail-photo-block"></div>
+        <div class="receipt-report-empty" id="receiptReportEmpty">
+          <div class="report-empty-icon">📊</div>
+          <h3 data-i18n="report_empty_title">Your report will appear here</h3>
+          <p class="muted small" data-i18n="report_empty_sub">After scanning, we'll show which items you could have bought cheaper and where.</p>
+        </div>
+        <div id="receiptReport"></div>
+      </div>
+    </section>
+
+    <input type="file" id="missionCaptureInput" accept="image/*" capture="environment" style="display:none" />
 
     <div id="toastRoot" class="toast-root" role="region" aria-live="polite" aria-label="Notifications"></div>
 
