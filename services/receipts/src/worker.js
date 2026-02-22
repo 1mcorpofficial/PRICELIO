@@ -44,7 +44,7 @@ async function handleReceiptJob(payload) {
     const matched = await pipeline.matchProducts(extracted.line_items);
     
     // Score confidence
-    const confidence = pipeline.scoreConfidence(matched);
+    const confidence = pipeline.scoreConfidence(matched, extracted);
     
     console.log(`Receipt ${payload.receipt_id} confidence: ${confidence.receipt_confidence}`);
 
@@ -52,7 +52,8 @@ async function handleReceiptJob(payload) {
     await insertReceiptItems(payload.receipt_id, matched);
     
     // Determine final status based on confidence
-    const finalStatus = confidence.receipt_confidence >= 0.7 
+    const extractionQuality = Number(extracted.extraction_quality_score || extracted.extraction_confidence || 0);
+    const finalStatus = confidence.receipt_confidence >= 0.7 && extractionQuality >= 0.52
       ? 'processed' 
       : 'needs_confirmation';
     

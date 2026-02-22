@@ -30,10 +30,13 @@ app.post('/extract/receipt', upload.single('image'), async (req, res) => {
       return res.status(400).json({ error: 'image_required' });
     }
 
+    const parsedMinQuality = Number(req.body.min_quality_score);
     const options = {
       provider: req.body.provider || process.env.DEFAULT_PROVIDER || 'openai',
       language: req.body.language || 'lt',
-      strictMode: req.body.strict_mode !== 'false'
+      strictMode: req.body.strict_mode !== 'false',
+      scanMode: req.body.scan_mode || 'full_receipt',
+      minQualityScore: Number.isFinite(parsedMinQuality) ? parsedMinQuality : undefined
     };
 
     const result = await extractReceipt(req.file.buffer, options);

@@ -24,6 +24,8 @@ image: file (JPEG/PNG, max 10MB)
 provider: string (optional) - "openai" | "anthropic" | "tesseract"
 language: string (optional) - default "lt"
 strict_mode: boolean (optional) - default true
+scan_mode: string (optional) - default "full_receipt"
+min_quality_score: number (optional) - default 0.67
 ```
 
 **Response:**
@@ -32,6 +34,7 @@ strict_mode: boolean (optional) - default true
   "success": true,
   "provider": "openai",
   "extraction": {
+    "scan_mode": "full_receipt",
     "store_name": "Maxima X",
     "receipt_date": "2026-01-15",
     "line_items": [
@@ -45,7 +48,9 @@ strict_mode: boolean (optional) - default true
     ],
     "total": 15.43,
     "currency": "EUR",
-    "confidence": 0.92
+    "confidence": 0.92,
+    "quality_score": 0.86,
+    "quality_flags": []
   },
   "confidence": 0.92,
   "processing_time_ms": 2341
@@ -85,12 +90,14 @@ ANTHROPIC_API_KEY=sk-ant-...
 DEFAULT_PROVIDER=openai
 MAX_RETRIES=2
 TIMEOUT_MS=30000
+RECEIPT_QUALITY_ACCEPTANCE_SCORE=0.67
+RECEIPT_QUALITY_MIN_VALID_SCORE=0.42
 ```
 
 ## Provider Details
 
 ### OpenAI GPT-4 Vision
-- Model: `gpt-4o-mini`
+- Model: `gpt-4o`
 - Best for: High-quality extraction with Lithuanian language support
 - Cost: ~$0.002/image
 

@@ -1403,6 +1403,8 @@ async function processReceiptInline(receiptId, imageBuffer, storeChain) {
     form.append('image', imageBuffer, { filename: 'receipt.jpg', contentType: 'image/jpeg' });
     if (storeChain) form.append('store_chain', storeChain);
     form.append('strict_mode', 'true');
+    form.append('scan_mode', 'full_receipt');
+    form.append('min_quality_score', String(process.env.RECEIPT_SCAN_MIN_QUALITY || 0.65));
     form.append('language', 'lt');
 
     const { data } = await axios.post(`${AI_GATEWAY}/extract/receipt`, form, {
@@ -1482,10 +1484,11 @@ async function processReceiptInline(receiptId, imageBuffer, storeChain) {
       extractionConfidence: normalized.extraction_confidence,
       lines: enrichedLines
     });
+    const extractionQualityScore = Number(normalized.extraction_quality_score || normalized.extraction_confidence || 0);
 
     const hasProductLines = enrichedLines.some((line) => line.line_type === 'product');
     const matchedProducts = enrichedLines.filter((line) => line.match_status === 'matched').length;
-    const finalStatus = hasProductLines && matchedProducts > 0 && receiptConfidence >= 0.62
+    const finalStatus = hasProductLines && matchedProducts > 0 && receiptConfidence >= 0.62 && extractionQualityScore >= 0.52
       ? 'processed'
       : 'needs_confirmation';
 
@@ -1520,7 +1523,7 @@ async function processReceiptInline(receiptId, imageBuffer, storeChain) {
 
     console.log(
       `Inline receipt processed: ${receiptId} — ${enrichedLines.length} items, ` +
-      `${matchedProducts} matched, confidence ${receiptConfidence}${vmiUrl ? ' (VMI QR verified)' : ''}`
+      `${matchedProducts} matched, confidence ${receiptConfidence}, extraction_quality ${extractionQualityScore}${vmiUrl ? ' (VMI QR verified)' : ''}`
     );
   } catch (err) {
     console.error(`Inline receipt processing error for ${receiptId}:`, err.message);

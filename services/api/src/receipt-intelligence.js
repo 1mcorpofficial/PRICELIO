@@ -83,7 +83,11 @@ function normalizeProductQuery(value) {
   };
 }
 
-function classifyReceiptLine(rawName, totalPrice) {
+function classifyReceiptLine(rawName, totalPrice, hintedType = null) {
+  const hint = String(hintedType || '').trim().toLowerCase();
+  if (['product', 'discount', 'summary', 'noise'].includes(hint)) {
+    return hint;
+  }
   const name = normalizeText(rawName);
   if (!name) return 'noise';
   if (SUMMARY_LINE_PATTERN.test(name)) return 'summary';
@@ -151,7 +155,7 @@ function normalizeExtractionPayload(extraction = {}) {
       continue;
     }
 
-    const lineType = classifyReceiptLine(rawName, totalPrice);
+    const lineType = classifyReceiptLine(rawName, totalPrice, raw.line_type);
     if (lineType === 'noise' || lineType === 'summary') {
       continue;
     }
@@ -201,6 +205,7 @@ function normalizeExtractionPayload(extraction = {}) {
     discount_total: Number(discountTotal.toFixed(2)),
     currency: String(extraction.currency || 'EUR').toUpperCase(),
     extraction_confidence: Number(clamp01(extraction.confidence || 0.6).toFixed(3)),
+    extraction_quality_score: Number(clamp01(extraction.quality_score || extraction.extraction_quality_score || extraction.confidence || 0.6).toFixed(3)),
     line_items: items,
     raw: extraction
   };

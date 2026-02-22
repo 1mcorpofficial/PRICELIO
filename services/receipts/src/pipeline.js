@@ -44,6 +44,8 @@ async function runExtraction(imagePath) {
     });
     formData.append('language', 'lt');
     formData.append('strict_mode', 'true');
+    formData.append('scan_mode', 'full_receipt');
+    formData.append('min_quality_score', String(process.env.RECEIPT_SCAN_MIN_QUALITY || 0.65));
 
     // Call AI Gateway
     const response = await axios.post(`${AI_GATEWAY_URL}/extract/receipt`, formData, {
@@ -59,15 +61,16 @@ async function runExtraction(imagePath) {
 
     return {
       store: extraction.store_name,
-      store_location: extraction.store_location,
+      store_location: extraction.store_address || extraction.store_location,
       receipt_date: extraction.receipt_date,
       receipt_time: extraction.receipt_time,
       line_items: extraction.line_items || [],
       subtotal: extraction.subtotal,
-      tax_total: extraction.tax_total,
+      tax_total: extraction.tax_total ?? extraction.vat_amount ?? null,
       total: extraction.total,
       currency: extraction.currency || 'EUR',
       extraction_confidence: extraction.confidence || 0.0,
+      extraction_quality_score: extraction.quality_score || extraction.confidence || 0.0,
       provider: response.data.provider,
       processing_time_ms: response.data.processing_time_ms
     };
@@ -86,6 +89,7 @@ async function runExtraction(imagePath) {
       total: null,
       currency: 'EUR',
       extraction_confidence: 0.0,
+      extraction_quality_score: 0.0,
       provider: 'fallback',
       error: error.message
     };
@@ -146,12 +150,16 @@ async function matchProducts(lines) {
   return matched;
 }
 
-function scoreConfidence(lines) {
+function scoreConfidence(lines, extractionMeta = {}) {
   if (!lines.length) {
     return { receipt_confidence: 0.0 };
   }
 
-  const extractionConfidences = lines.map(l => l.confidence || 0.5);
+  const extractionBase = Number(extractionMeta.extraction_quality_score ?? extractionMeta.extraction_confidence);
+  const extractionConfidences = lines.map((line) => {
+    if (line.confidence != null) return Number(line.confidence) || 0.5;
+    return Number.isFinite(extractionBase) ? extractionBase : 0.5;
+  });
   const matchConfidences = lines.map(l => l.match_confidence || 0.0);
   
   const avgExtraction = extractionConfidences.reduce((sum, c) => sum + c, 0) / lines.length;
@@ -160,7 +168,7 @@ function scoreConfidence(lines) {
   // Weighted average: 60% extraction, 40% matching
   const overall = (avgExtraction * 0.6) + (avgMatch * 0.4);
 
-  return { 
+  return {
     receipt_confidence: Number(overall.toFixed(3)),
     extraction_confidence: Number(avgExtraction.toFixed(3)),
     matching_confidence: Number(avgMatch.toFixed(3))

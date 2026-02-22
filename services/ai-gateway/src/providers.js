@@ -31,19 +31,34 @@ async function extractWithOpenAI(imageBuffer, options = {}) {
 
   const base64Image = imageBuffer.toString('base64');
   const mimeType = 'image/jpeg';
+  const scanMode = options.scanMode || 'full_receipt';
 
-  const prompt = `You are a Lithuanian grocery receipt OCR expert. Extract ALL data from this receipt image and return ONLY valid JSON, no other text.
+  const prompt = `You are a Lithuanian grocery receipt OCR expert.
+Analyze the FULL receipt as a complete document first, then extract line items.
+Return ONLY valid JSON (no markdown, no explanation).
 
 JSON format:
 {
+  "scan_mode": "${scanMode}",
   "store_name": "string or null",
   "store_address": "string or null",
   "receipt_date": "YYYY-MM-DD or null",
   "receipt_time": "HH:MM or null",
   "receipt_number": "string or null",
   "cashier": "string or null",
+  "payment_method": "cash|card|mixed or null",
+  "currency": "EUR",
+  "subtotal": 0.00,
+  "vat_amount": 0.00,
+  "total": 0.00,
+  "document_summary": {
+    "header_detected": true,
+    "footer_detected": true,
+    "totals_block_found": true
+  },
   "line_items": [
     {
+      "line_type": "product|discount",
       "raw_name": "product name exactly as on receipt",
       "quantity": 1,
       "unit_price": 0.00,
@@ -53,27 +68,23 @@ JSON format:
       "discount": 0.00
     }
   ],
-  "subtotal": 0.00,
-  "total": 0.00,
-  "vat_amount": 0.00,
-  "currency": "EUR",
-  "payment_method": "cash|card|mixed or null",
   "vmi_url": "full URL from QR code if present (e.g. https://i.vmi.lt/...) or null",
   "barcode_number": "main receipt barcode number if visible or null",
+  "quality_flags": ["array of strings, empty if no issues"],
   "confidence": 0.9
 }
 
 Rules:
 - Do NOT invent products, prices, totals, dates, barcodes, or store names. Use null when unclear.
-- Keep only true line items. Do NOT put summary/payment lines into line_items (e.g. VISO, PVM, MOKĖTI, CARD, CASH).
-- LOOK CAREFULLY for a QR code on the receipt — read it and extract the full URL into vmi_url
-- Look for barcode numbers printed on the receipt
-- Extract EVERY product line item (including discounted items with negative prices)
-- Preserve Lithuanian product names exactly as printed (e.g. "PIENAS", "DUONA")
-- quantity defaults to 1 if not shown; for weighted items use kg as quantity
-- unit_price = price per unit/kg; total_price = what was charged for that line
-- Include discount lines as separate items if they show a discount amount
-- confidence: 0.95 if image is sharp and all text visible, 0.7 if partially obscured, 0.5 if blurry`;
+- FIRST detect document-level data (store, date, totals, payment) from header/footer.
+- THEN extract product/discount lines. Do NOT put summary/payment lines into line_items (e.g. VISO, PVM, MOKĖTI, CARD, CASH).
+- Extract EVERY product line item (including discounted items with negative prices).
+- Preserve Lithuanian product names exactly as printed.
+- quantity defaults to 1 if not shown; for weighted items use kg as quantity.
+- unit_price = price per unit/kg; total_price = what was charged for that line.
+- LOOK CAREFULLY for QR code URL (vmi_url) and any barcode numbers.
+- If line_items sum differs strongly from total, add quality flag "line_sum_mismatch".
+- confidence guidance: 0.95 sharp complete receipt, 0.7 partial/unclear, 0.5 blurry`;
 
   const startTime = Date.now();
 
@@ -122,32 +133,46 @@ async function extractWithAnthropic(imageBuffer, options = {}) {
 
   const base64Image = imageBuffer.toString('base64');
   const mimeType = 'image/jpeg';
+  const scanMode = options.scanMode || 'full_receipt';
 
-  const prompt = `Analyze this receipt image and extract all information in strict JSON format.
+  const prompt = `Analyze this receipt image as a FULL document first, then extract line items.
+Return only strict JSON.
 
 Return ONLY valid JSON with this structure:
 {
+  "scan_mode": "${scanMode}",
   "store_name": "string or null",
-  "store_location": "string or null",
+  "store_address": "string or null",
   "receipt_date": "YYYY-MM-DD or null",
   "receipt_time": "HH:MM or null",
+  "receipt_number": "string or null",
+  "payment_method": "cash|card|mixed or null",
+  "currency": "EUR",
+  "subtotal": number or null,
+  "vat_amount": number or null,
+  "total": number or null,
   "line_items": [
     {
+      "line_type": "product|discount",
       "raw_name": "exact product name",
       "quantity": number,
       "unit_price": number,
       "total_price": number,
-      "line_number": number
+      "line_number": number,
+      "barcode": "string or null",
+      "discount": number or null
     }
   ],
-  "subtotal": number or null,
-  "tax_total": number or null,
-  "total": number or null,
-  "currency": "EUR",
+  "vmi_url": "string or null",
+  "quality_flags": ["array of strings"],
   "confidence": 0.0 to 1.0
 }
 
-Extract EVERY product line visible. Preserve exact product names.`;
+Rules:
+- Do not invent missing values.
+- Keep only product/discount lines in line_items (no payment or total summary rows).
+- Preserve exact Lithuanian product names.
+- If totals look inconsistent, add "line_sum_mismatch" to quality_flags.`;
 
   const startTime = Date.now();
 
