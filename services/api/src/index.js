@@ -79,6 +79,8 @@ const INGEST_SERVICE_URL = process.env.INGEST_SERVICE_URL || 'http://localhost:3
 const ADMIN_API_KEY = process.env.ADMIN_API_KEY || '';
 const INTERNAL_CACHE_BUMP_TOKEN = process.env.INTERNAL_CACHE_BUMP_TOKEN || '';
 const allowedUploadMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const RECEIPT_PROCESSED_CONFIDENCE_MIN = Number(process.env.RECEIPT_PROCESSED_CONFIDENCE_MIN || 0.62);
+const RECEIPT_SCAN_QUALITY_MIN = Number(process.env.RECEIPT_SCAN_QUALITY_MIN || 0.52);
 
 const latencyByEndpoint = new Map();
 const authBackoffState = new Map();
@@ -1488,7 +1490,10 @@ async function processReceiptInline(receiptId, imageBuffer, storeChain) {
 
     const hasProductLines = enrichedLines.some((line) => line.line_type === 'product');
     const matchedProducts = enrichedLines.filter((line) => line.match_status === 'matched').length;
-    const finalStatus = hasProductLines && matchedProducts > 0 && receiptConfidence >= 0.62 && extractionQualityScore >= 0.52
+    const finalStatus = hasProductLines
+      && matchedProducts > 0
+      && receiptConfidence >= RECEIPT_PROCESSED_CONFIDENCE_MIN
+      && extractionQualityScore >= RECEIPT_SCAN_QUALITY_MIN
       ? 'processed'
       : 'needs_confirmation';
 

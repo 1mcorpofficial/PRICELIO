@@ -8,6 +8,8 @@ const { updateReceiptStatus, insertReceiptItems } = require('./queries');
 let queueConnected = false;
 let lastError = null;
 let processedCount = 0;
+const RECEIPT_PROCESSED_CONFIDENCE_MIN = Number(process.env.RECEIPT_PROCESSED_CONFIDENCE_MIN || 0.62);
+const RECEIPT_SCAN_QUALITY_MIN = Number(process.env.RECEIPT_SCAN_QUALITY_MIN || 0.52);
 
 async function handleReceiptJob(payload) {
   try {
@@ -53,7 +55,8 @@ async function handleReceiptJob(payload) {
     
     // Determine final status based on confidence
     const extractionQuality = Number(extracted.extraction_quality_score || extracted.extraction_confidence || 0);
-    const finalStatus = confidence.receipt_confidence >= 0.7 && extractionQuality >= 0.52
+    const finalStatus = confidence.receipt_confidence >= RECEIPT_PROCESSED_CONFIDENCE_MIN
+      && extractionQuality >= RECEIPT_SCAN_QUALITY_MIN
       ? 'processed' 
       : 'needs_confirmation';
     
