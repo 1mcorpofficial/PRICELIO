@@ -17,7 +17,9 @@
     "dev:infra:logs": "bash scripts/dev-infra-logs.sh",
     "dev:services": "concurrently -k -n admin,api,ai,ingest,receipts,analytics \"npm -w apps/admin run dev\" \"npm -w services/api run dev\" \"npm -w services/ai-gateway run dev\" \"npm -w services/ingest run dev\" \"npm -w services/receipts run dev\" \"npm -w services/analytics run dev\"",
     "doctor": "bash scripts/doctor.sh",
-    "test": "node --test tests/*.test.js"
+    "test": "node --test tests/*.test.js",
+    "air:bump": "node scripts/bump-air-version.mjs",
+    "air:show": "node -e \"console.log(require('fs').readFileSync('version.json','utf8'))\""
   },
   "devDependencies": {
     "concurrently": "^9.2.1"

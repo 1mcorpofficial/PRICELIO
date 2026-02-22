@@ -6,8 +6,12 @@
   const STORAGE_ONBOARDING_KEY = 'pricelio_onboarding_done_v1';
   const STORAGE_ONBOARDING_HINT_KEY = 'pricelio_onboarding_hint_seen_v1';
   const STORAGE_LANG_KEY = 'pricelio_lang';
+  const STORAGE_APP_VERSION_KEY = 'pricelio_app_version';
+  const STORAGE_AIR_LAST_CHECK_AT_KEY = 'pricelio_air_last_check_at';
   const STORAGE_ACTIVE_MISSION_KEY = 'pricelio_active_mission_v1';
   const STORAGE_MISSION_DRAFT_KEY = 'pricelio_mission_capture_draft_v1';
+  const AIR_CHECK_MIN_INTERVAL_MS = 12000;
+  const AIR_CHECK_TIMEOUT_MS = 5000;
   const SUPPORTED_LANGS = ['lt', 'en', 'lv', 'et', 'ru', 'pl', 'be', 'uk'];
   const LANG_LABELS = {
     lt: 'Lietuvių',
@@ -44,6 +48,7 @@
       dashboard_mission_empty: 'New mission near your area!',
       dashboard_recent_points_empty: 'No XP events yet',
       scan_cta_short: 'Scan',
+      air_updating: 'Updating app...',
       topbar_xp_balance: '⚡ {xp} XP',
       guest_mode: 'Guest mode',
       home_btn: 'Home',
@@ -462,6 +467,7 @@
       dashboard_mission_empty: 'Nauja misija tavo rajone!',
       dashboard_recent_points_empty: 'Kol kas nėra XP įvykių',
       scan_cta_short: 'Skenuoti',
+      air_updating: 'Atnaujinama programėlė...',
       topbar_xp_balance: '⚡ {xp} XP',
       guest_mode: 'Svečio režimas',
       home_btn: 'Pradžia',
@@ -1032,6 +1038,8 @@
     missionAcceptStep: 1,
     activeScanIntent: null,
     activeSheetId: null,
+    airUpdateCheckInFlight: false,
+    airReloadScheduled: false,
     setView: null,
     setAuthTab: null,
     toastHistory: new Map()
@@ -1130,6 +1138,128 @@
     const mobileUa = /android|iphone|ipad|ipod|mobile/i.test(ua);
     const compactViewport = window.matchMedia('(max-width: 960px)').matches;
     return mobileUa || (touch && compactViewport) ? 'mobile' : 'desktop';
+  }
+
+  function parseSemver(value) {
+    const match = String(value || '').trim().match(/^(\d+)\.(\d+)\.(\d+)$/);
+    if (!match) return null;
+    return [Number(match[1]), Number(match[2]), Number(match[3])];
+  }
+
+  function compareSemver(a, b) {
+    const left = parseSemver(a);
+    const right = parseSemver(b);
+    if (!left || !right) return 0;
+    for (let i = 0; i < 3; i += 1) {
+      if (left[i] > right[i]) return 1;
+      if (left[i] < right[i]) return -1;
+    }
+    return 0;
+  }
+
+  async function fetchAirVersionManifest() {
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), AIR_CHECK_TIMEOUT_MS);
+    try {
+      const response = await fetch(`/version.json?t=${Date.now()}`, {
+        method: 'GET',
+        cache: 'no-store',
+        headers: { Accept: 'application/json' },
+        signal: controller.signal
+      });
+      if (!response.ok) {
+        throw new Error(`version_fetch_failed_${response.status}`);
+      }
+      const payload = await response.json();
+      if (!payload || typeof payload.version !== 'string') {
+        throw new Error('version_manifest_invalid');
+      }
+      return {
+        version: payload.version.trim(),
+        forceUpdate: payload.forceUpdate === true
+      };
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
+  }
+
+  async function clearRuntimeCachesBestEffort() {
+    if (!('caches' in window)) return;
+    try {
+      const keys = await caches.keys();
+      await Promise.allSettled(keys.map((key) => caches.delete(key)));
+    } catch (_) {
+      // Ignore cache clear failures.
+    }
+  }
+
+  function notifyServiceWorkerOta(version) {
+    try {
+      if (navigator.serviceWorker?.controller) {
+        navigator.serviceWorker.controller.postMessage({ type: 'OTA_FORCE_REFRESH', version });
+      }
+    } catch (_) {
+      // Ignore messaging failures.
+    }
+  }
+
+  function buildAirReloadUrl(version) {
+    const pathname = window.location.pathname || '/';
+    const hash = window.location.hash || '';
+    return `${pathname}?air=${encodeURIComponent(version)}&t=${Date.now()}${hash}`;
+  }
+
+  async function checkAirPushUpdate(trigger = 'boot') {
+    if (state.airReloadScheduled || state.airUpdateCheckInFlight) return;
+
+    const now = Date.now();
+    const lastCheckAt = Number(localStorage.getItem(STORAGE_AIR_LAST_CHECK_AT_KEY) || 0);
+    if (Number.isFinite(lastCheckAt) && now - lastCheckAt < AIR_CHECK_MIN_INTERVAL_MS) {
+      return;
+    }
+    localStorage.setItem(STORAGE_AIR_LAST_CHECK_AT_KEY, String(now));
+
+    state.airUpdateCheckInFlight = true;
+    try {
+      const manifest = await fetchAirVersionManifest();
+      const remoteVersion = manifest.version;
+      if (!parseSemver(remoteVersion)) return;
+
+      const localVersion = String(localStorage.getItem(STORAGE_APP_VERSION_KEY) || '').trim();
+      if (!localVersion) {
+        localStorage.setItem(STORAGE_APP_VERSION_KEY, remoteVersion);
+        return;
+      }
+      if (!parseSemver(localVersion)) {
+        localStorage.setItem(STORAGE_APP_VERSION_KEY, remoteVersion);
+        return;
+      }
+
+      if (compareSemver(remoteVersion, localVersion) <= 0) return;
+
+      state.airReloadScheduled = true;
+      showToast(t('air_updating'), 'info');
+      localStorage.setItem(STORAGE_APP_VERSION_KEY, remoteVersion);
+      await clearRuntimeCachesBestEffort();
+      notifyServiceWorkerOta(remoteVersion);
+      await new Promise((resolve) => window.setTimeout(resolve, 300));
+      window.location.replace(buildAirReloadUrl(remoteVersion));
+    } catch (error) {
+      // OTA checks are non-blocking by design.
+      console.debug('Air Push check skipped', trigger, error?.message || error);
+    } finally {
+      state.airUpdateCheckInFlight = false;
+    }
+  }
+
+  function bindAirPushForegroundChecks() {
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState !== 'visible') return;
+      checkAirPushUpdate('visibility').catch(() => {});
+    });
+    window.addEventListener('pageshow', () => {
+      checkAirPushUpdate('pageshow').catch(() => {});
+    });
   }
 
   function t(key, vars = {}) {
@@ -5196,7 +5326,11 @@
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js?v=20260219-2').catch(() => {});
     }
+
+    checkAirPushUpdate('boot').catch(() => {});
   }
+
+  bindAirPushForegroundChecks();
 
   window.addEventListener('unhandledrejection', (event) => {
     const reason = event.reason instanceof Error ? event.reason.message : 'Unhandled error';
