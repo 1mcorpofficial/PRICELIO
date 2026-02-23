@@ -1,11 +1,19 @@
-# Web app (PWA)
+# PRICELIO Web V2
 
-This folder is reserved for a future extracted production PWA package.
-Current active PWA remains in repo root:
-- `index.html`
-- `styles.css`
-- `app.js`
+React + Vite + TypeScript rewrite of PRICELIO web frontend.
 
-Current decision:
-- Keep vanilla PWA in root for MVP speed.
-- API calls for map/search/basket/receipts are wired from `app.js`.
+## Commands
+
+- `npm -w apps/web run dev`
+- `npm -w apps/web run build`
+- `npm -w apps/web run test`
+- `npm -w apps/web run e2e`
+
+## Core architecture
+
+- Public routes: `/`, `/demo`, `/auth`
+- Protected routes: `/app/*`
+- Stores: `authStore`, `demoStore`, `uiStore`, `gamificationStore`, `missionsStore`
+- Realtime: SSE via `/events/user/stream`
+- Funnel analytics: `/events/ui`
+- PWA: `vite-plugin-pwa`

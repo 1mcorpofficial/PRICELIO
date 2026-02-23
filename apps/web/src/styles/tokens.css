@@ -1,0 +1,32 @@
+:root {
+  --bg-base: #1b0f2e;
+  --bg-surface: #271744;
+  --bg-elevated: #322055;
+
+  --accent-pink: #ff2a7a;
+  --accent-blue: #4361ee;
+  --accent-red: #ff3366;
+
+  --text-main: #f0edf5;
+  --text-muted: #a59eb5;
+
+  --surface-glass: color-mix(in oklab, var(--bg-surface) 84%, white 16%);
+  --surface-outline: color-mix(in oklab, var(--accent-blue) 32%, transparent 68%);
+  --focus-ring: color-mix(in oklab, var(--accent-blue) 60%, white 40%);
+  --danger-soft: color-mix(in oklab, var(--accent-red) 28%, var(--bg-surface) 72%);
+
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+
+  --shadow-soft: 0 16px 40px rgba(0, 0, 0, 0.35);
+  --shadow-glow: 0 0 20px rgba(255, 42, 122, 0.5);
+}

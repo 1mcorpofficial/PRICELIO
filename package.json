@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "workspaces": [
+    "apps/web",
     "apps/admin",
     "services/api",
     "services/ai-gateway",
@@ -11,7 +12,10 @@
     "services/analytics"
   ],
   "scripts": {
-    "install:all": "npm -w apps/admin install && npm -w services/api install && npm -w services/ai-gateway install && npm -w services/ingest install && npm -w services/receipts install && npm -w services/analytics install",
+    "dev:web": "npm -w apps/web run dev",
+    "build:web": "npm -w apps/web run build",
+    "preview:web": "npm -w apps/web run preview",
+    "install:all": "npm -w apps/web install && npm -w apps/admin install && npm -w services/api install && npm -w services/ai-gateway install && npm -w services/ingest install && npm -w services/receipts install && npm -w services/analytics install",
     "dev:infra": "bash scripts/dev-infra-up.sh",
     "dev:infra:down": "bash scripts/dev-infra-down.sh",
     "dev:infra:logs": "bash scripts/dev-infra-logs.sh",

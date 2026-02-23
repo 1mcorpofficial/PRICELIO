@@ -12,7 +12,7 @@ const rateLimit = require('express-rate-limit');
 const multer = require('multer');
 const FormData = require('form-data');
 const axios = require('axios');
-const { query } = require('./db');
+const { query, getClient } = require('./db');
 const {
   getStorePins,
   getStoreDetail,
@@ -77,6 +77,21 @@ const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN || undefined;
 const INGEST_SERVICE_URL = process.env.INGEST_SERVICE_URL || 'http://127.0.0.1:3002';
 const ADMIN_API_KEY = process.env.ADMIN_API_KEY || '';
 const INTERNAL_CACHE_BUMP_TOKEN = process.env.INTERNAL_CACHE_BUMP_TOKEN || '';
+const ANALYTICS_SERVICE_URL = process.env.ANALYTICS_SERVICE_URL || 'http://127.0.0.1:3004';
+const DEMO_SESSION_TTL_MS = Number(process.env.DEMO_SESSION_TTL_MS || 30 * 60 * 1000);
+const DEMO_PREVIEW_REWARD_XP = Number(process.env.DEMO_PREVIEW_REWARD_XP || 50);
+const DEMO_PREVIEW_REWARD_POINTS = Number(process.env.DEMO_PREVIEW_REWARD_POINTS || 50);
+const UI_EVENT_ALLOWLIST = new Set([
+  'lp_viewed',
+  'lp_try_demo_click',
+  'demo_scan_click',
+  'demo_micro_win_seen',
+  'auth_register_submit',
+  'auth_register_success',
+  'demo_claim_success',
+  'first_receipt_scan_started',
+  'first_receipt_scan_done'
+]);
 const allowedUploadMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const RECEIPT_PROCESSED_CONFIDENCE_MIN = Number(process.env.RECEIPT_PROCESSED_CONFIDENCE_MIN || 0.62);
 const RECEIPT_SCAN_QUALITY_MIN = Number(process.env.RECEIPT_SCAN_QUALITY_MIN || 0.52);
@@ -513,6 +528,82 @@ async function writeAdminAudit(action, actor, targetId = null, payload = null) {
   );
 }
 
+let webV2TablesEnsured = false;
+async function ensureWebV2Tables() {
+  if (webV2TablesEnsured) return;
+  await query(
+    `CREATE TABLE IF NOT EXISTS demo_sessions (
+       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+       token_hash text NOT NULL UNIQUE,
+       reward_xp integer NOT NULL DEFAULT 50,
+       reward_points integer NOT NULL DEFAULT 50,
+       expires_at timestamptz NOT NULL,
+       claimed_by_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+       claimed_at timestamptz,
+       session_id text,
+       user_agent text,
+       ip_hash text,
+       metadata jsonb,
+       created_at timestamptz NOT NULL DEFAULT now()
+     )`
+  );
+  await query(
+    `CREATE INDEX IF NOT EXISTS demo_sessions_expiry_idx
+     ON demo_sessions (expires_at DESC)`
+  );
+  await query(
+    `CREATE INDEX IF NOT EXISTS demo_sessions_claimed_idx
+     ON demo_sessions (claimed_by_user_id, claimed_at DESC)`
+  );
+  await query(
+    `CREATE TABLE IF NOT EXISTS ui_events_log (
+       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+       event_name text NOT NULL,
+       user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+       session_id text,
+       metadata jsonb,
+       created_at timestamptz NOT NULL DEFAULT now()
+     )`
+  );
+  await query(
+    `CREATE INDEX IF NOT EXISTS ui_events_log_event_created_idx
+     ON ui_events_log (event_name, created_at DESC)`
+  );
+  await query(
+    `CREATE INDEX IF NOT EXISTS ui_events_log_user_created_idx
+     ON ui_events_log (user_id, created_at DESC)`
+  );
+  webV2TablesEnsured = true;
+}
+
+function createDemoToken() {
+  return crypto.randomBytes(24).toString('hex');
+}
+
+function hashToken(value) {
+  return crypto.createHash('sha256').update(String(value || '')).digest('hex');
+}
+
+async function publishUiEventToAnalytics(eventName, req, metadata = {}) {
+  try {
+    await axios.post(
+      `${ANALYTICS_SERVICE_URL}/events/track`,
+      {
+        event_name: eventName,
+        user_id: req.user?.id || null,
+        metadata: {
+          ...metadata,
+          route: req.path,
+          trace_id: req.traceId || null
+        }
+      },
+      { timeout: 2000 }
+    );
+  } catch (_) {
+    // Non-blocking analytics.
+  }
+}
+
 async function fetchIngestConnectors() {
   const response = await axios.get(`${INGEST_SERVICE_URL}/connectors`, { timeout: 6000 });
   return Array.isArray(response.data) ? response.data : [];
@@ -530,6 +621,29 @@ async function forceRunIngestConnector(connectorId) {
 async function fetchIngestHealth() {
   const response = await axios.get(`${INGEST_SERVICE_URL}/health`, { timeout: 5000 });
   return response.data || {};
+}
+
+async function trackUiEvent(eventName, req, metadata = {}) {
+  if (!UI_EVENT_ALLOWLIST.has(eventName)) {
+    return false;
+  }
+  await ensureWebV2Tables();
+  try {
+    await query(
+      `INSERT INTO ui_events_log (event_name, user_id, session_id, metadata, created_at)
+       VALUES ($1, $2, $3, $4, NOW())`,
+      [
+        eventName,
+        req.user?.id || null,
+        String(req.body?.session_id || req.get('x-session-id') || req.get('x-demo-session-id') || '').slice(0, 120) || null,
+        JSON.stringify(metadata || {})
+      ]
+    );
+  } catch (_) {
+    // Non-blocking local log.
+  }
+  await publishUiEventToAnalytics(eventName, req, metadata);
+  return true;
 }
 
 alerts.setNotificationPublisher(async (userId, notification) => {
@@ -562,6 +676,174 @@ app.get('/events/price-drops/stream', auth.requireUser, (req, res) => {
   });
 });
 
+app.get('/events/user/stream', (req, res) => {
+  const authHeader = String(req.get('authorization') || '');
+  const queryToken = String(req.query.access_token || '').trim();
+  const token = authHeader.startsWith('Bearer ')
+    ? authHeader.slice(7).trim()
+    : queryToken;
+  const decoded = auth.verifyToken(token);
+  if (!decoded?.user_id || decoded?.type !== 'access') {
+    return res.status(401).json({ error: 'login_required' });
+  }
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders?.();
+  res.write(`retry: 5000\n\n`);
+
+  const clientId = sse.registerClient(res, decoded.user_id, req.get('last-event-id'));
+  req.on('close', () => {
+    sse.unregisterClient(clientId);
+    res.end();
+  });
+});
+
+app.post('/events/ui', auth.optionalAuthMiddleware, async (req, res) => {
+  try {
+    const eventName = String(req.body?.event_name || '').trim();
+    if (!eventName) {
+      return res.status(400).json({ error: 'event_name_required' });
+    }
+    const accepted = await trackUiEvent(eventName, req, req.body?.metadata || {});
+    if (!accepted) {
+      return res.status(400).json({ error: 'event_not_allowed' });
+    }
+    return res.json({ ok: true, accepted: true });
+  } catch (error) {
+    return res.status(500).json({ error: 'ui_event_tracking_failed' });
+  }
+});
+
+app.post('/demo/session/start', async (req, res) => {
+  try {
+    await ensureWebV2Tables();
+    const token = createDemoToken();
+    const tokenHash = hashToken(token);
+    const expiresAt = new Date(Date.now() + Math.max(60_000, DEMO_SESSION_TTL_MS));
+    const sessionId = String(req.body?.session_id || req.get('x-session-id') || '').trim().slice(0, 120) || null;
+    const ipHash = crypto.createHash('sha256').update(req.ip || 'unknown').digest('hex');
+
+    await query(
+      `INSERT INTO demo_sessions (
+         token_hash, reward_xp, reward_points, expires_at, session_id, user_agent, ip_hash, metadata
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [
+        tokenHash,
+        DEMO_PREVIEW_REWARD_XP,
+        DEMO_PREVIEW_REWARD_POINTS,
+        expiresAt.toISOString(),
+        sessionId,
+        req.get('user-agent') ? String(req.get('user-agent')).slice(0, 255) : null,
+        ipHash,
+        JSON.stringify(req.body?.metadata || {})
+      ]
+    );
+
+    return res.json({
+      demo_token: token,
+      expires_at: expiresAt.toISOString(),
+      preview_reward: {
+        xp: DEMO_PREVIEW_REWARD_XP,
+        points: DEMO_PREVIEW_REWARD_POINTS,
+        mission_unlock_level: 1
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({ error: 'demo_session_start_failed' });
+  }
+});
+
+app.post('/demo/session/claim', auth.requireUser, async (req, res) => {
+  const demoToken = String(req.body?.demo_token || '').trim();
+  if (!demoToken) {
+    return res.status(400).json({ error: 'demo_token_required' });
+  }
+
+  const tokenHash = hashToken(demoToken);
+  const client = await getClient();
+  try {
+    await ensureWebV2Tables();
+    await client.query('BEGIN');
+    const found = await client.query(
+      `SELECT id, reward_xp, reward_points, expires_at, claimed_at, claimed_by_user_id
+       FROM demo_sessions
+       WHERE token_hash = $1
+       LIMIT 1
+       FOR UPDATE`,
+      [tokenHash]
+    );
+
+    if (!found.rows.length) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'demo_session_not_found' });
+    }
+
+    const session = found.rows[0];
+    if (session.claimed_at) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'demo_session_already_claimed' });
+    }
+    if (new Date(session.expires_at).getTime() <= Date.now()) {
+      await client.query('ROLLBACK');
+      return res.status(410).json({ error: 'demo_session_expired' });
+    }
+
+    await client.query(
+      `UPDATE demo_sessions
+       SET claimed_by_user_id = $2,
+           claimed_at = NOW()
+       WHERE id = $1`,
+      [session.id, req.user.id]
+    );
+    await client.query('COMMIT');
+
+    const award = await ecosystem.awardPoints(req.user.id, {
+      eventType: 'demo_claim',
+      xp: Number(session.reward_xp || DEMO_PREVIEW_REWARD_XP),
+      points: Number(session.reward_points || DEMO_PREVIEW_REWARD_POINTS),
+      referenceType: 'demo_session',
+      referenceId: session.id,
+      metadata: { source: 'web_v2_demo' }
+    });
+    const gamification = await ecosystem.getGamification(req.user.id);
+
+    sse.broadcastUserEvent({
+      type: 'xp_awarded',
+      user_id: req.user.id,
+      source: 'demo_claim',
+      xp_delta: Number(session.reward_xp || DEMO_PREVIEW_REWARD_XP),
+      points_delta: Number(session.reward_points || DEMO_PREVIEW_REWARD_POINTS),
+      occurred_at: nowIso()
+    }, { userIds: [req.user.id] });
+
+    await trackUiEvent('demo_claim_success', req, {
+      demo_session_id: session.id,
+      xp_delta: Number(session.reward_xp || DEMO_PREVIEW_REWARD_XP),
+      points_delta: Number(session.reward_points || DEMO_PREVIEW_REWARD_POINTS)
+    });
+
+    return res.json({
+      claimed: true,
+      demo_session_id: session.id,
+      reward: {
+        xp: Number(session.reward_xp || DEMO_PREVIEW_REWARD_XP),
+        points: Number(session.reward_points || DEMO_PREVIEW_REWARD_POINTS)
+      },
+      award,
+      gamification
+    });
+  } catch (error) {
+    try {
+      await client.query('ROLLBACK');
+    } catch (_) {}
+    return res.status(500).json({ error: 'demo_session_claim_failed' });
+  } finally {
+    client.release();
+  }
+});
+
 app.post('/auth/guest', async (req, res) => {
   try {
     const ipHash = crypto.createHash('sha256').update(req.ip || 'unknown').digest('hex');
@@ -582,6 +864,7 @@ app.post('/auth/guest', async (req, res) => {
 app.post('/auth/register', async (req, res) => {
   const authKey = await applyAuthBackoff(req);
   try {
+    await trackUiEvent('auth_register_submit', req, { flow: 'email_password' });
     const { email, password } = req.body;
     
     if (!email || !password) {
@@ -610,6 +893,7 @@ app.post('/auth/register', async (req, res) => {
         email: user.email
       }
     });
+    await trackUiEvent('auth_register_success', req, { user_id: user.id });
   } catch (error) {
     if (error.message === 'user_exists') {
       recordAuthFailure(authKey);
@@ -1541,6 +1825,10 @@ app.post('/receipts/upload', receiptActionLimiter, auth.optionalAuthMiddleware, 
       res.status(400).json({ error: 'file_required' });
       return;
     }
+    await trackUiEvent('first_receipt_scan_started', req, {
+      mime_type: req.file.mimetype || null,
+      size_bytes: req.file.size || null
+    });
 
     const ext = path.extname(req.file.originalname || '.jpg');
     const objectKey = `receipts/${crypto.randomUUID()}${ext || '.jpg'}`;
@@ -1624,6 +1912,19 @@ app.get('/receipts/:id/status', auth.optionalAuthMiddleware, async (req, res) =>
     if (!access.ok) {
       return res.status(access.status).json({ error: access.code });
     }
+    if (
+      access.mode === 'user'
+      && req.user?.id
+      && ['processed', 'finalized'].includes(String(receipt.status || '').toLowerCase())
+    ) {
+      sse.broadcastUserEvent({
+        type: 'receipt_processed',
+        user_id: req.user.id,
+        receipt_id: receipt.id,
+        status: receipt.status,
+        occurred_at: nowIso()
+      }, { userIds: [req.user.id] });
+    }
     res.json({
       receipt_id: receipt.id,
       status: receipt.status,
@@ -1680,6 +1981,11 @@ app.get('/receipts/:id/report', auth.optionalAuthMiddleware, async (req, res) =>
           referenceId: req.params.id
         });
       }
+      await trackUiEvent('first_receipt_scan_done', req, {
+        receipt_id: req.params.id,
+        status: receipt.status,
+        savings_total: Number(payload.savings_total || 0)
+      });
     }
 
     res.json(payload);
@@ -2300,6 +2606,22 @@ app.get('/missions/nearby', auth.requireUser, withFeatureFlag('bounty'), async (
       limit: req.query.limit ? Number(req.query.limit) : 20,
       app_foreground: req.query.app_foreground !== 'false'
     });
+    const nowMs = Date.now();
+    const expiring = missions.find((mission) => {
+      if (!mission?.ends_at) return false;
+      const endsAtMs = new Date(mission.ends_at).getTime();
+      return Number.isFinite(endsAtMs) && endsAtMs > nowMs && (endsAtMs - nowMs) <= 2 * 60 * 60 * 1000;
+    });
+    if (expiring) {
+      sse.broadcastUserEvent({
+        type: 'mission_expiring',
+        user_id: req.user.id,
+        mission_id: expiring.id,
+        title: expiring.title || null,
+        ends_at: expiring.ends_at,
+        occurred_at: nowIso()
+      }, { userIds: [req.user.id] });
+    }
     res.json(missions);
   } catch (error) {
     res.status(500).json({ error: 'missions_nearby_failed' });
@@ -2342,6 +2664,15 @@ app.post('/missions/:id/verify', auth.requireUser, withFeatureFlag('bounty'), as
       return res.status(400).json({ error: 'submission_id_and_vote_required' });
     }
     const result = await ecosystem.verifyMissionSubmission(req.user.id, req.params.id, submissionId, vote);
+    sse.broadcastUserEvent({
+      type: 'mission_verified',
+      user_id: req.user.id,
+      mission_id: req.params.id,
+      submission_id: submissionId,
+      vote,
+      result: result || null,
+      occurred_at: nowIso()
+    }, { userIds: [req.user.id] });
     res.json(result);
   } catch (error) {
     if (['submission_not_found', 'cannot_verify_own_submission'].includes(error.message)) {

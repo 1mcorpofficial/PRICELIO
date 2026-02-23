@@ -53,6 +53,63 @@ paths:
       responses:
         '204':
           description: Logged out
+  /demo/session/start:
+    post:
+      summary: Start anonymous demo session
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DemoSessionStartRequest'
+      responses:
+        '200':
+          description: Demo session created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DemoSessionStartResponse'
+  /demo/session/claim:
+    post:
+      summary: Claim demo reward after auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DemoSessionClaimRequest'
+      responses:
+        '200':
+          description: Demo reward claimed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DemoSessionClaimResponse'
+  /events/user/stream:
+    get:
+      summary: User live event stream (SSE)
+      responses:
+        '200':
+          description: Stream connected
+          content:
+            text/event-stream:
+              schema:
+                type: string
+  /events/ui:
+    post:
+      summary: Track UI/funnel event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UiEventRequest'
+      responses:
+        '200':
+          description: Event accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UiEventResponse'
   /me:
     get:
       summary: Current user profile
@@ -691,6 +748,85 @@ components:
         expires_at:
           type: string
           format: date-time
+    DemoSessionStartRequest:
+      type: object
+      properties:
+        session_id:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+    DemoSessionPreviewReward:
+      type: object
+      properties:
+        xp:
+          type: integer
+        points:
+          type: integer
+        mission_unlock_level:
+          type: integer
+    DemoSessionStartResponse:
+      type: object
+      properties:
+        demo_token:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+        preview_reward:
+          $ref: '#/components/schemas/DemoSessionPreviewReward'
+    DemoSessionClaimRequest:
+      type: object
+      required: [demo_token]
+      properties:
+        demo_token:
+          type: string
+    DemoSessionClaimResponse:
+      type: object
+      properties:
+        claimed:
+          type: boolean
+        demo_session_id:
+          type: string
+        reward:
+          $ref: '#/components/schemas/DemoSessionPreviewReward'
+        award:
+          type: object
+          additionalProperties: true
+        gamification:
+          $ref: '#/components/schemas/GamificationProfile'
+    UiEventRequest:
+      type: object
+      required: [event_name]
+      properties:
+        event_name:
+          type: string
+        session_id:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+    UiEventResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        accepted:
+          type: boolean
+    RealtimeEvent:
+      type: object
+      properties:
+        event_id:
+          type: string
+        type:
+          type: string
+          enum: [xp_awarded, mission_expiring, mission_verified, receipt_processed, price_drop, heartbeat]
+        occurred_at:
+          type: string
+          format: date-time
+        payload:
+          type: object
+          additionalProperties: true
     RegisterRequest:
       type: object
       properties:

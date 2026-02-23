@@ -81,6 +81,29 @@ function broadcastPriceDrop(payload, filter = {}) {
   return event.id;
 }
 
+function broadcastUserEvent(payload, filter = {}) {
+  const event = serializeEvent({
+    ...payload,
+    type: payload?.type || 'user_event',
+    occurred_at: payload?.occurred_at || new Date().toISOString()
+  });
+  rememberEvent(event);
+
+  const targetUserIds = Array.isArray(filter.userIds)
+    ? new Set(filter.userIds.map((value) => String(value)))
+    : null;
+
+  for (const client of clients.values()) {
+    if (targetUserIds && !targetUserIds.has(client.userId)) {
+      continue;
+    }
+    client.res.write(event.wire);
+    eventsSent += 1;
+  }
+
+  return event.id;
+}
+
 function getSseStats() {
   return {
     active_clients: clients.size,
@@ -95,5 +118,6 @@ module.exports = {
   registerClient,
   unregisterClient,
   broadcastPriceDrop,
+  broadcastUserEvent,
   getSseStats
 };
