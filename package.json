@@ -23,7 +23,9 @@
     "doctor": "bash scripts/doctor.sh",
     "test": "node --test tests/*.test.js",
     "air:bump": "node scripts/bump-air-version.mjs",
-    "air:show": "node -e \"console.log(require('fs').readFileSync('version.json','utf8'))\""
+    "air:show": "node -e \"console.log(require('fs').readFileSync('version.json','utf8'))\"",
+    "cutover:web": "bash scripts/cutover-web-v2.sh",
+    "rollback:web": "bash scripts/rollback-web-v2.sh"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
