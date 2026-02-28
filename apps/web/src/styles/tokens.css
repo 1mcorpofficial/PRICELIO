@@ -1,23 +1,25 @@
 :root {
-  --bg-base: #0f081c;
-  --bg-surface: #271744;
-  --bg-elevated: #322055;
+  --bg-base: #080312; /* Deep Space Purple */
+  --bg-surface: #150a26;
+  --bg-elevated: #22113c;
 
   --accent-pink: #FF007A;
   --accent-blue: #00F0FF;
-  --accent-red: #FF003C;
+  --accent-red: #FF2A5F;
+  --accent-green: #00E676; /* Pridėta neoninė žalia kainų kritimui */
 
-  --text-main: #f0edf5;
-  --text-muted: #a59eb5;
+  --text-main: #f4f0ff;
+  --text-muted: #9b92b3;
 
-  --surface-glass: color-mix(in oklab, var(--bg-surface) 84%, white 16%);
-  --surface-outline: color-mix(in oklab, var(--accent-blue) 32%, transparent 68%);
+  --surface-glass: rgba(30, 15, 53, 0.65);
+  --surface-outline: rgba(255, 255, 255, 0.12);
   --focus-ring: color-mix(in oklab, var(--accent-blue) 60%, white 40%);
   --danger-soft: color-mix(in oklab, var(--accent-red) 28%, var(--bg-surface) 72%);
 
-  --radius-sm: 10px;
-  --radius-md: 16px;
-  --radius-lg: 24px;
+  --radius-sm: 12px;
+  --radius-md: 20px;
+  --radius-lg: 32px;
+  --radius-full: 9999px;
 
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -27,6 +29,7 @@
   --space-6: 1.5rem;
   --space-8: 2rem;
 
-  --shadow-soft: 0 16px 40px rgba(0, 0, 0, 0.4);
-  --shadow-glow: 0 0 20px rgba(255, 0, 122, 0.6);
+  --shadow-soft: 0 16px 40px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 24px rgba(0, 240, 255, 0.3);
+  --shadow-glow-pink: 0 0 24px rgba(255, 0, 122, 0.3);
 }

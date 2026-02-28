@@ -28,6 +28,8 @@ Welcome to the ReceiptRadar/Pricelio documentation!
 ## 📁 This Directory (docs/)
 
 ### Core Documentation
+- **[PRICELIO_UI_UX_VISION.md](PRICELIO_UI_UX_VISION.md)** - **UI/UX ir Dizaino architektūra** (Deep Space Purple, Glassmorphism, 5-mygtukų navigacija, „P“ asistentas)
+- **[PRICELIO_PRICING_AND_ECOSYSTEM.md](PRICELIO_PRICING_AND_ECOSYSTEM.md)** - **Galutinė kainodaros ir planų matrica** (FREE, SOLO PRO, DUO, FAMILY, GROUP; XP ekonomika, „P“ asistentas, leaderboards)
 - **[mvp-backlog.md](mvp-backlog.md)** - MVP feature backlog
 - **[architecture-map.md](architecture-map.md)** - System architecture overview
 - **[implementation-status.md](implementation-status.md)** - Detailed implementation status
@@ -83,8 +85,9 @@ The `spec/` directory contains 30 detailed specification documents:
 - [Complete Audit](../COMPLETE_FEATURES_AUDIT_FINAL.md) - Detailed feature audit
 
 ### For Business
+- [**Pricelio Pricing & Ecosystem**](PRICELIO_PRICING_AND_ECOSYSTEM.md) - Planų ir funkcijų matrica (kanoninis šaltinis)
 - [Project Summary](spec/01-summary.md) - High-level overview
-- [Monetization](spec/20-monetization.md) - Business model
+- [Monetization](spec/20-monetization.md) - Business model (legacy; plėtinių planų detalės – žr. PRICELIO_PRICING_AND_ECOSYSTEM.md)
 - [Launch Plan](spec/28-launch-plan.md) - Go-to-market strategy
 
 ---
