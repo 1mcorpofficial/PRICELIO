@@ -75,6 +75,11 @@ small { color: color-mix(in srgb, var(--text-muted) 86%, white 14%); }
 
 .glass:hover {
   border-color: rgba(255, 255, 255, 0.25);
+}
+
+a.glass:hover,
+button.glass:hover,
+.ui-card.glass:hover {
   transform: translateY(-2px);
 }
 
@@ -549,6 +554,25 @@ small { color: color-mix(in srgb, var(--text-muted) 86%, white 14%); }
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.kpi-grid div {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  padding: var(--space-3);
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.kpi-grid div:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-pink);
+  box-shadow: 0 4px 15px color-mix(in srgb, var(--accent-pink) 20%, transparent 80%);
+}
+
+.list-grid {
+  display: grid;
   gap: var(--space-3);
 }
 
