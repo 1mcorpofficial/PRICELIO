@@ -6,9 +6,20 @@ const COPY = {
     brand: 'PRICELIO',
     nav_login: 'Prisijungti',
     nav_register: 'Registruotis',
-    hero_title: 'Nepermokek. Skenuok. Laimek.',
-    hero_sub: 'Skenuok cekius, rink XP taskus ir atrakink geriausias kainas bei misijas.',
-    hero_cta: 'Isbandyti demonstracine versija',
+    hero_title: 'Pažangus išlaidų sekimas. Tavo taisyklės.',
+    hero_sub: 'Skenuok čekius, rink XP taškus ir atrakink geriausias kainas bei misijas.',
+    hero_cta: 'Išbandyti demonstracinę versiją',
+    hero_card_amount: '+€127 šį mėn.',
+    hero_card_accuracy: '94% tikslumas',
+    why_title: 'Kodėl mes tai sukūrėme',
+    why_text: 'Finansinis skaidrumas yra būtinas.',
+    how_title: 'Kaip tai veikia',
+    how_step_1: 'Skenuok čekį',
+    how_step_2: 'Rask geriausią kainą',
+    how_step_3: 'Sutaupyk pinigų',
+    footer_product: 'Produktas',
+    footer_company: 'Įmonė',
+    footer_legal: 'Teisinė informacija',
     problem_title: 'Kainu stebejimas neturi buti rankinis darbas.',
     problem_text: 'PRICELIO sujungia cekius, pasiulymus ir misijas i viena ismanu taupymo varikli.',
     social_title: 'Gyva socialine verifikacija',
@@ -23,6 +34,10 @@ const COPY = {
     proof_title: 'Patikimumas realiu laiku',
     proof_text: 'Srautai atnaujinami gyvai: XP, misijos ir cekiu statusai be perkrovimo.',
     demo_title: 'Demo Smeliadeze',
+    demo_modal_title: 'Mikro-pergalė atrakinta',
+    demo_item_milk: 'Pienas 1L',
+    demo_item_bread: 'Duona',
+    demo_item_cheese: 'Sūris',
     demo_sub: 'Isbandyk virtualu ceki ir pamatyk mikro-pergale pries registracija.',
     demo_scan: 'Skenuoti (Demo)',
     demo_success: 'Sveikiname! Sis cekis atnese +50 XP ir atrakino 1 lygio misija.',
@@ -85,9 +100,20 @@ const COPY = {
     brand: 'PRICELIO',
     nav_login: 'Login',
     nav_register: 'Register',
-    hero_title: 'Stop overpaying. Scan. Win.',
+    hero_title: 'Advanced expense tracking. Your rules.',
     hero_sub: 'Scan receipts, earn XP points, and unlock better prices and missions.',
     hero_cta: 'Try demo experience',
+    hero_card_amount: '+€127 this month',
+    hero_card_accuracy: '94% accuracy',
+    why_title: 'Why we built this',
+    why_text: 'Financial transparency is essential.',
+    how_title: 'How it works',
+    how_step_1: 'Scan your receipt',
+    how_step_2: 'Find the best price',
+    how_step_3: 'Save money',
+    footer_product: 'Product',
+    footer_company: 'Company',
+    footer_legal: 'Legal',
     problem_title: 'Price tracking should not be manual work.',
     problem_text: 'PRICELIO combines receipts, offers, and missions into one savings engine.',
     social_title: 'Live social proof',
@@ -102,6 +128,10 @@ const COPY = {
     proof_title: 'Realtime trust layer',
     proof_text: 'Streams update instantly: XP, missions and receipt statuses without reload.',
     demo_title: 'Sandbox Demo',
+    demo_modal_title: 'Micro-win unlocked',
+    demo_item_milk: 'Milk 1L',
+    demo_item_bread: 'Bread',
+    demo_item_cheese: 'Cheese',
     demo_sub: 'Try a virtual receipt and get a micro-win before signup.',
     demo_scan: 'Scan (Demo)',
     demo_success: 'Congrats! This receipt gave you +50 XP and unlocked a level-1 mission.',
@@ -173,12 +203,15 @@ type I18nState = {
 function readInitialLang(): Lang {
   if (typeof window === 'undefined') return 'lt';
   const stored = String(localStorage.getItem('pricelio_lang_v2') || '').toLowerCase();
+  let lang: Lang = 'lt';
   if (stored === 'lt' || stored === 'en') {
-    return stored;
+    lang = stored as Lang;
+  } else {
+    const browser = String(navigator.language || 'lt').toLowerCase();
+    if (browser.startsWith('en')) lang = 'en';
   }
-  const browser = String(navigator.language || 'lt').toLowerCase();
-  if (browser.startsWith('en')) return 'en';
-  return 'lt';
+  document.documentElement.lang = lang;
+  return lang;
 }
 
 export const useI18n = create<I18nState>((set, get) => ({
@@ -186,6 +219,7 @@ export const useI18n = create<I18nState>((set, get) => ({
   setLang: (lang) => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('pricelio_lang_v2', lang);
+      document.documentElement.lang = lang;
     }
     set({ lang });
   },

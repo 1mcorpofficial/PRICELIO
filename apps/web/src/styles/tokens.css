@@ -1,11 +1,11 @@
 :root {
-  --bg-base: #1b0f2e;
+  --bg-base: #0f081c;
   --bg-surface: #271744;
   --bg-elevated: #322055;
 
-  --accent-pink: #ff2a7a;
-  --accent-blue: #4361ee;
-  --accent-red: #ff3366;
+  --accent-pink: #FF007A;
+  --accent-blue: #00F0FF;
+  --accent-red: #FF003C;
 
   --text-main: #f0edf5;
   --text-muted: #a59eb5;
@@ -27,6 +27,6 @@
   --space-6: 1.5rem;
   --space-8: 2rem;
 
-  --shadow-soft: 0 16px 40px rgba(0, 0, 0, 0.35);
-  --shadow-glow: 0 0 20px rgba(255, 42, 122, 0.5);
+  --shadow-soft: 0 16px 40px rgba(0, 0, 0, 0.4);
+  --shadow-glow: 0 0 20px rgba(255, 0, 122, 0.6);
 }

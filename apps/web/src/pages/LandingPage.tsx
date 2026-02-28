@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
@@ -6,34 +6,15 @@ import { Card } from '../components/ui/Card';
 import { trackUiEvent } from '../lib/analytics';
 import { useI18n } from '../i18n';
 
-function useCountUp(target: number, duration = 1200) {
-  const [value, setValue] = useState(0);
-
-  useEffect(() => {
-    const start = performance.now();
-    let raf = 0;
-
-    const tick = (now: number) => {
-      const progress = Math.min(1, (now - start) / duration);
-      setValue(Math.floor(target * progress));
-      if (progress < 1) {
-        raf = requestAnimationFrame(tick);
-      }
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [target, duration]);
-
-  return value;
-}
-
 export function LandingPage() {
   const t = useI18n((state) => state.t);
   const lang = useI18n((state) => state.lang);
   const setLang = useI18n((state) => state.setLang);
-  const usersCount = useCountUp(10432);
-  const receiptCount = useCountUp(218640);
-  const savingsCount = useCountUp(12480);
+
+  // Future integration: fetch these stats from real API. Defaulting to 0 for honesty.
+  const usersCount = 0;
+  const receiptCount = 0;
+  const savingsCount = 0;
 
   useEffect(() => {
     void trackUiEvent('lp_viewed');
@@ -41,12 +22,13 @@ export function LandingPage() {
 
   const stats = useMemo(() => ([
     { value: usersCount.toLocaleString(), label: t('stats_users') },
-    { value: `${receiptCount.toLocaleString()}+`, label: t('stats_receipts') },
+    { value: `${receiptCount.toLocaleString()}`, label: t('stats_receipts') },
     { value: `€${savingsCount.toLocaleString()}`, label: t('stats_saved') }
   ]), [usersCount, receiptCount, savingsCount, t]);
 
   return (
     <main className="landing-page">
+      <a href="#hero-section" className="skip-link">Skip to main content</a>
       <header className="landing-nav glass">
         <div className="landing-brand">{t('brand')}</div>
         <div className="landing-nav__actions">
@@ -60,7 +42,7 @@ export function LandingPage() {
         </div>
       </header>
 
-      <section className="hero glass">
+      <section className="hero glass" id="hero-section">
         <div>
           <Badge>{t('hero_badge_live')}</Badge>
           <h1>{t('hero_title')}</h1>
@@ -80,11 +62,34 @@ export function LandingPage() {
             <div className="hero-card-3d__progress">
               <span />
             </div>
+            <div style={{ display: 'grid', gap: '4px', textAlign: 'center', marginTop: '0.5rem' }}>
+              <div style={{ color: 'var(--accent-blue)', fontSize: '1.2rem' }}>{t('hero_card_amount' as any)}</div>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 500 }}>{t('hero_card_accuracy' as any)}</div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="landing-grid">
+      <section style={{ marginTop: '2rem' }}>
+        <h2 style={{ textAlign: 'center', marginBottom: '0.5rem' }}>{t('why_title' as any)}</h2>
+        <p className="muted" style={{ textAlign: 'center', marginBottom: '2rem' }}>{t('why_text' as any)}</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
+           <Card className="glass" style={{ borderTop: '2px solid var(--accent-blue)', boxShadow: '0 8px 32px rgba(0, 240, 255, 0.1)' }}>
+             <h4 style={{ color: 'var(--accent-blue)', margin: 0 }}>1. {t('how_step_1' as any)}</h4>
+             <p className="muted" style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>{t('onboarding_1')}</p>
+           </Card>
+           <Card className="glass" style={{ borderTop: '2px solid var(--accent-pink)', boxShadow: '0 8px 32px rgba(255, 0, 122, 0.1)' }}>
+             <h4 style={{ color: 'var(--accent-pink)', margin: 0 }}>2. {t('how_step_2' as any)}</h4>
+             <p className="muted" style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>{t('onboarding_2')}</p>
+           </Card>
+           <Card className="glass" style={{ borderTop: '2px solid var(--accent-red)', boxShadow: '0 8px 32px rgba(255, 0, 60, 0.1)' }}>
+             <h4 style={{ color: 'var(--accent-red)', margin: 0 }}>3. {t('how_step_3' as any)}</h4>
+             <p className="muted" style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>{t('onboarding_3')}</p>
+           </Card>
+        </div>
+      </section>
+
+      <section className="landing-grid" style={{ marginTop: '2rem' }}>
         <Card>
           <h3>{t('problem_title')}</h3>
           <p>{t('problem_text')}</p>
@@ -105,18 +110,47 @@ export function LandingPage() {
         </Card>
       </section>
 
-      <Card className="social-card">
+      <Card className="social-card" style={{ marginTop: '2rem' }}>
         <h3>{t('social_title')}</h3>
         <p>{t('social_text')}</p>
         <div className="social-metrics">
           {stats.map((stat) => (
             <article key={stat.label} className="social-metric">
-              <strong>{stat.value}</strong>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent-blue)', boxShadow: '0 0 8px var(--accent-blue)' }} />
+                <strong>{stat.value}</strong>
+              </div>
               <small>{stat.label}</small>
             </article>
           ))}
         </div>
       </Card>
+
+      <footer style={{ marginTop: '4rem', paddingTop: '2rem', borderTop: '1px solid var(--surface-outline)', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '2rem' }}>
+        <div>
+          <div className="landing-brand" style={{ marginBottom: '1rem' }}>{t('brand')}</div>
+          <p className="muted" style={{ fontSize: '0.85rem', maxWidth: '300px' }}>
+            {t('problem_text')}
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: '3rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'grid', gap: '0.5rem', alignContent: 'start' }}>
+            <strong style={{ color: 'var(--text-main)', fontSize: '0.95rem' }}>{t('footer_product' as any)}</strong>
+            <Link to="/demo" className="muted" style={{ textDecoration: 'none', fontSize: '0.9rem' }}>{t('nav_demo')}</Link>
+            <Link to="/auth" className="muted" style={{ textDecoration: 'none', fontSize: '0.9rem' }}>{t('nav_login')}</Link>
+          </div>
+          <div style={{ display: 'grid', gap: '0.5rem', alignContent: 'start' }}>
+            <strong style={{ color: 'var(--text-main)', fontSize: '0.95rem' }}>{t('footer_company' as any)}</strong>
+            <a href="#" onClick={(e) => e.preventDefault()} className="muted" style={{ textDecoration: 'none', fontSize: '0.9rem' }}>About</a>
+            <a href="#" onClick={(e) => e.preventDefault()} className="muted" style={{ textDecoration: 'none', fontSize: '0.9rem' }}>Contact</a>
+          </div>
+          <div style={{ display: 'grid', gap: '0.5rem', alignContent: 'start' }}>
+            <strong style={{ color: 'var(--text-main)', fontSize: '0.95rem' }}>{t('footer_legal' as any)}</strong>
+            <a href="#" onClick={(e) => e.preventDefault()} className="muted" style={{ textDecoration: 'none', fontSize: '0.9rem' }}>Privacy</a>
+            <a href="#" onClick={(e) => e.preventDefault()} className="muted" style={{ textDecoration: 'none', fontSize: '0.9rem' }}>Terms</a>
+          </div>
+        </div>
+      </footer>
     </main>
   );
 }

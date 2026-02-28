@@ -24,18 +24,18 @@ export function AuthPage() {
   const [mode, setMode] = useState<'register' | 'login'>('register');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [validationError, setValidationError] = useState('');
+  const [validationError, setValidationError] = useState<{field: string, message: string} | null>(null);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    setValidationError('');
+    setValidationError(null);
 
     if (!email.includes('@') || !email.includes('.')) {
-      setValidationError(t('auth_validation_email'));
+      setValidationError({ field: 'email', message: t('auth_validation_email') });
       return;
     }
     if (password.length < 8) {
-      setValidationError(t('auth_validation_password'));
+      setValidationError({ field: 'password', message: t('auth_validation_password') });
       return;
     }
 
@@ -73,34 +73,36 @@ export function AuthPage() {
           </div>
 
           <form onSubmit={submit} className="auth-form" noValidate>
-            <label>
+            <label htmlFor="auth-email">
               {t('email')}
               <Input
+                id="auth-email"
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 required
                 autoComplete="email"
-                aria-invalid={Boolean(validationError)}
+                aria-invalid={validationError?.field === 'email'}
               />
             </label>
-            <label>
+            <label htmlFor="auth-password">
               {t('password')}
               <Input
+                id="auth-password"
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 required
                 minLength={8}
                 autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
-                aria-invalid={Boolean(validationError)}
+                aria-invalid={validationError?.field === 'password'}
               />
             </label>
 
             <Button type="submit" glow disabled={loading}>{loading ? '...' : mode === 'register' ? t('auth_register') : t('auth_login')}</Button>
           </form>
 
-          {validationError ? <p className="error-line">{validationError}</p> : null}
+          {validationError ? <p className="error-line">{validationError.message}</p> : null}
           {error ? <p className="error-line">{error}</p> : null}
         </Card>
 

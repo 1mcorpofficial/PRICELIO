@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -15,6 +15,11 @@ export function DemoPage() {
   const startDemo = useDemoStore((state) => state.startDemo);
   const markWin = useDemoStore((state) => state.markWin);
   const [open, setOpen] = useState(false);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => { mountedRef.current = false; };
+  }, []);
 
   const busy = status === 'loading';
 
@@ -32,9 +37,9 @@ export function DemoPage() {
 
         <div className="demo-receipt-mock">
           <div className={`demo-scan-laser ${busy ? 'is-active' : ''}`} aria-hidden="true" />
-          <div>Milk 1L · €0.99</div>
-          <div>Bread · €1.29</div>
-          <div>Cheese · €2.49</div>
+          <div>{t('demo_item_milk' as any)} · €0.99</div>
+          <div>{t('demo_item_bread' as any)} · €1.29</div>
+          <div>{t('demo_item_cheese' as any)} · €2.49</div>
         </div>
 
         <Button
@@ -45,6 +50,7 @@ export function DemoPage() {
             if (!ok) return;
             await trackUiEvent('demo_scan_click');
             setTimeout(async () => {
+              if (!mountedRef.current) return;
               markWin();
               setOpen(true);
               await trackUiEvent('demo_micro_win_seen');
@@ -62,7 +68,7 @@ export function DemoPage() {
         {error ? <p className="error-line">{error}</p> : null}
       </Card>
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Micro-win unlocked">
+      <Modal open={open} onClose={() => setOpen(false)} title={t('demo_modal_title' as any)}>
         <p>{t('demo_success')}</p>
         <p>{t('demo_claim_prompt')}</p>
         <Link to="/auth"><Button glow>{t('demo_claim_cta')}</Button></Link>

@@ -15,6 +15,7 @@ import { LeaderboardPage } from './pages/app/LeaderboardPage';
 import { PlusPage } from './pages/app/PlusPage';
 import { KidsPage } from './pages/app/KidsPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { ToastHost } from './components/ui/ToastHost';
 import { useAuthStore } from './stores/authStore';
 import { useDemoStore } from './stores/demoStore';
@@ -38,8 +39,9 @@ export function AppRouter() {
   return (
     <BrowserRouter>
       <AppBootstrap />
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
+      <ErrorBoundary>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
         <Route path="/demo" element={<DemoPage />} />
         <Route path="/auth" element={<AuthPage />} />
 
@@ -64,8 +66,9 @@ export function AppRouter() {
           <Route path="kids" element={<KidsPage />} />
         </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </ErrorBoundary>
       <ToastHost />
     </BrowserRouter>
   );
