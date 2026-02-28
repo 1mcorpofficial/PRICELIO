@@ -9,140 +9,220 @@ class BasketPage extends StatefulWidget {
 }
 
 class _BasketPageState extends State<BasketPage> {
-  final List<Map<String, dynamic>> _items = [];
   final _controller = TextEditingController();
-  bool _optimizing = false;
-  Map<String, dynamic>? _result;
+  final List<Map<String, dynamic>> _basket = [
+    {'name': 'Lavazza Kava', 'qty': 1, 'price': 14.99, 'store': 'Maxima'},
+    {'name': 'Bananas', 'qty': 5, 'price': 1.25, 'store': 'Lidl'},
+    {'name': 'Vištienos krūtinėlė', 'qty': 1, 'price': 3.50, 'store': 'Iki'},
+  ];
+  
+  bool _showSuggestions = false;
 
-  void _addItem() {
-    final name = _controller.text.trim();
-    if (name.isEmpty) return;
-    setState(() {
-      _items.add({'name': name, 'quantity': 1});
-      _result = null;
+  final _suggestions = [
+    {'name': 'Dvaro Pienas 3.2%', 'price': 1.45, 'old': 1.69, 'img': '🥛'},
+    {'name': 'Dvaro Sviestas', 'price': 2.45, 'old': 2.89, 'img': '🧈'},
+    {'name': 'Dvaro Varškė', 'price': 1.85, 'old': 2.15, 'img': '🥣'},
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(() {
+      setState(() {
+        _showSuggestions = _controller.text.toLowerCase().startsWith('dva');
+      });
     });
-    _controller.clear();
-  }
-
-  Future<void> _optimize() async {
-    if (_items.isEmpty) return;
-    setState(() { _optimizing = true; _result = null; });
-    try {
-      // Create basket
-      final basket = await ApiClient().dio.post('/baskets', data: {'name': 'Mobile Basket'});
-      final basketId = basket.data['id'];
-      // Add items
-      await ApiClient().dio.post('/baskets/$basketId/items', data: {'items': _items});
-      // Optimize
-      final res = await ApiClient().dio.post('/baskets/$basketId/optimize');
-      setState(() => _result = res.data);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Optimizavimas nepavyko. Bandykite vėliau.')));
-    } finally {
-      setState(() => _optimizing = false);
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Krepšelis'),
+        title: const Text('Išmanus Krepšelis'),
         actions: [
-          if (_items.isNotEmpty)
-            TextButton(onPressed: _optimize, child: const Text('Optimizuoti')),
+          IconButton(
+            icon: const Icon(Icons.bolt, color: AppColors.primary),
+            onPressed: () {},
+          )
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(children: [
-              Expanded(
+          Column(
+            children: [
+              // Paieškos juosta
+              Padding(
+                padding: const EdgeInsets.all(16),
                 child: TextField(
                   controller: _controller,
-                  textInputAction: TextInputAction.done,
-                  onSubmitted: (_) => _addItem(),
-                  decoration: const InputDecoration(
-                    hintText: 'Pridėti produktą...',
-                    prefixIcon: Icon(Icons.add_shopping_cart),
+                  decoration: InputDecoration(
+                    hintText: 'Ką nori pirkti? (Pvz: Dvaro...)',
+                    hintStyle: const TextStyle(color: AppColors.textSub),
+                    prefixIcon: const Icon(Icons.search, color: AppColors.textSub),
+                    filled: true,
+                    fillColor: AppColors.surface,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                onPressed: _addItem,
-                style: ElevatedButton.styleFrom(minimumSize: const Size(52, 52)),
-                child: const Icon(Icons.add),
-              ),
-            ]),
-          ),
-          Expanded(
-            child: _items.isEmpty
-                ? Center(child: Text('Krepšelis tuščias.\nPridėkite produktų!',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: AppColors.textSub, fontSize: 16)))
-                : ListView(
-                    children: [
-                      ..._items.asMap().entries.map((e) => ListTile(
-                        leading: const Icon(Icons.shopping_cart_outlined),
-                        title: Text(e.value['name']),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.close, color: AppColors.error),
-                          onPressed: () => setState(() { _items.removeAt(e.key); _result = null; }),
-                        ),
-                      )),
-                      if (_optimizing) const Padding(
-                        padding: EdgeInsets.all(24),
-                        child: Center(child: CircularProgressIndicator()),
+
+              // Krepšelio Sąrašas
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  itemCount: _basket.length,
+                  itemBuilder: (ctx, i) {
+                    final item = _basket[i];
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white.withOpacity(0.05)),
                       ),
-                      if (_result != null) _OptimizationResult(result: _result!),
-                    ],
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        leading: Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.white.withOpacity(0.05)),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${item['qty']}x',
+                              style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
+                            ),
+                          ),
+                        ),
+                        title: Text(item['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Row(
+                          children: [
+                            const Icon(Icons.storefront, size: 12, color: AppColors.textSub),
+                            const SizedBox(width: 4),
+                            Text('Pigiausia: ${item['store']}', style: const TextStyle(fontSize: 12, color: AppColors.textSub)),
+                          ],
+                        ),
+                        trailing: Text(
+                          '${item['price'].toStringAsFixed(2)} €',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              
+              // Summary Footer
+              Container(
+                margin: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.surface, AppColors.elevated],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                  boxShadow: [
+                    BoxShadow(color: AppColors.primary.withOpacity(0.15), blurRadius: 20),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('VISO KREPŠELIS', style: TextStyle(fontSize: 10, color: AppColors.textSub, letterSpacing: 1.5)),
+                        SizedBox(height: 4),
+                        Text('19.74 €', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+                      ],
+                    ),
+                    ElevatedButton(
+                      onPressed: () {},
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        minimumSize: Size.zero,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('Pradėti Apsipirkimą'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
+
+          // Autocomplete Overlay (Iškyla kai showSuggestions yra true)
+          if (_showSuggestions)
+            Positioned(
+              top: 85, // Žemiau paieškos juostos
+              left: 0,
+              right: 0,
+              child: SizedBox(
+                height: 140,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: _suggestions.length,
+                  itemBuilder: (ctx, i) {
+                    final item = _suggestions[i];
+                    return Container(
+                      width: 130,
+                      margin: const EdgeInsets.only(right: 12),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.elevated.withOpacity(0.95),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.secondary.withOpacity(0.3)),
+                        boxShadow: [
+                          BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 10, offset: const Offset(0, 5)),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Center(child: Text(item['img'].toString(), style: const TextStyle(fontSize: 28))),
+                          const Spacer(),
+                          Text(item['name'].toString(), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Text('${item['price']} €', style: const TextStyle(color: AppColors.green, fontWeight: FontWeight.bold, fontSize: 13)),
+                              const SizedBox(width: 4),
+                              Text('${item['old']} €', style: const TextStyle(color: AppColors.textSub, decoration: TextDecoration.lineThrough, fontSize: 10)),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 
   @override
-  void dispose() { _controller.dispose(); super.dispose(); }
-}
-
-class _OptimizationResult extends StatelessWidget {
-  final Map<String, dynamic> result;
-  const _OptimizationResult({required this.result});
-
-  @override
-  Widget build(BuildContext context) {
-    final stores = (result['stores'] as List? ?? []);
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('Optimizuotas maršrutas', style: TextStyle(
-          fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textMain)),
-        const SizedBox(height: 12),
-        ...stores.map((s) => Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Row(children: [
-            const Icon(Icons.store, color: AppColors.primary),
-            const SizedBox(width: 10),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(s['store_name'] ?? s['chain'] ?? '',
-                style: const TextStyle(fontWeight: FontWeight.w600)),
-              if (s['total'] != null)
-                Text('Iš viso: €${s['total']}', style: const TextStyle(color: AppColors.textSub)),
-            ])),
-          ]),
-        )),
-      ]),
-    );
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 }

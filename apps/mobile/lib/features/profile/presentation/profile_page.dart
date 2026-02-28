@@ -13,6 +13,20 @@ class _ProfilePageState extends State<ProfilePage> {
   Map<String, dynamic>? _gamification;
   Map<String, dynamic>? _user;
   bool _loading = true;
+  int _activeTabIndex = 0; // 0: Hoarders, 1: Whales
+
+  // Demo data for leaderboards
+  final _topHoarders = [
+    {'name': 'Mantas P.', 'rank': 'Rinkos Medžiotojas', 'xp': 45200, 'avatar': 'M', 'color': AppColors.primary},
+    {'name': 'Aistė G.', 'rank': 'Kainų Architektė', 'xp': 38100, 'avatar': 'A', 'color': AppColors.secondary},
+    {'name': 'Tomas L.', 'rank': 'Taupymo Guru', 'xp': 32500, 'avatar': 'T', 'color': AppColors.green},
+  ];
+
+  final _topWhales = [
+    {'name': 'Dominykas V.', 'plan': 'Family (Metinis)', 'spent': 150000, 'avatar': 'D', 'color': AppColors.error},
+    {'name': 'Laura K.', 'plan': 'Duo', 'spent': 85000, 'avatar': 'L', 'color': Colors.orangeAccent},
+    {'name': 'Studentų Atst.', 'plan': 'Group Admin', 'spent': 60000, 'avatar': 'S', 'color': AppColors.primary},
+  ];
 
   @override
   void initState() {
@@ -46,147 +60,268 @@ class _ProfilePageState extends State<ProfilePage> {
     if (_loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
 
     final rank = _gamification?['rank'];
-    final xp   = _gamification?['lifetime_xp'] ?? 0;
-    final pts  = _gamification?['spendable_points'] ?? 0;
+    final xp   = _gamification?['lifetime_xp'] ?? 12500; // Demo
+    final initial = (_user?['email'] ?? 'G')[0].toUpperCase();
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Profilis'),
         actions: [
-          IconButton(icon: const Icon(Icons.logout), onPressed: _logout),
+          IconButton(icon: const Icon(Icons.settings_outlined), onPressed: () {}),
+          IconButton(icon: const Icon(Icons.logout, color: AppColors.error), onPressed: _logout),
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         children: [
-          // Avatar + email
-          Center(
-            child: Column(children: [
-              CircleAvatar(radius: 40, backgroundColor: AppColors.primary,
-                child: Text((_user?['email'] ?? 'U')[0].toUpperCase(),
-                  style: const TextStyle(fontSize: 32, color: Colors.white, fontWeight: FontWeight.w700))),
-              const SizedBox(height: 12),
-              Text(_user?['email'] ?? '', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
-            ]),
+          // 1. Asmeninė Vitrina (Hero Section)
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [AppColors.surface, AppColors.elevated.withOpacity(0.5)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.white.withOpacity(0.1)),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 20),
+              ],
+            ),
+            child: Column(
+              children: [
+                // Avataras su progresu
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(
+                      width: 90,
+                      height: 90,
+                      child: CircularProgressIndicator(
+                        value: 0.75, // 75% progress
+                        backgroundColor: Colors.white.withOpacity(0.1),
+                        color: AppColors.primary,
+                        strokeWidth: 4,
+                      ),
+                    ),
+                    Container(
+                      width: 76,
+                      height: 76,
+                      decoration: const BoxDecoration(
+                        color: AppColors.elevated,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          initial,
+                          style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  _user?['email']?.split('@')[0] ?? 'Svečias',
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                  ),
+                  child: Text(
+                    rank?['rank_name']?.toUpperCase() ?? 'LYGIS 14: RINKOS MEDŽIOTOJAS',
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text('XP Piniginė', style: TextStyle(color: AppColors.textSub, fontSize: 12)),
+                Text(
+                  '$xp',
+                  style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w900),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 28),
-
-          // Rank card
-          if (rank != null) _Card(children: [
-            Row(children: [
-              _RankBadge(tier: rank['tier'] ?? 'bronze'),
-              const SizedBox(width: 12),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(rank['rank_name'] ?? '', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-                Text('Lygis ${rank['level']}', style: const TextStyle(color: AppColors.textSub)),
-              ])),
-              Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                Text('$xp XP', style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.primary)),
-                Text('$pts taškų', style: const TextStyle(color: AppColors.textSub, fontSize: 13)),
-              ]),
-            ]),
-          ]),
-
+          
           const SizedBox(height: 16),
 
-          // Stats row
-          Row(children: [
-            Expanded(child: _StatCard(label: 'XP', value: '$xp')),
-            const SizedBox(width: 12),
-            Expanded(child: _StatCard(label: 'Taškai', value: '$pts')),
-            const SizedBox(width: 12),
-            Expanded(child: _StatCard(label: 'Lygis', value: '${rank?['level'] ?? 1}')),
-          ]),
+          // 2. XP Dilemos Zona
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white.withOpacity(0.05)),
+                  ),
+                  child: const Column(
+                    children: [
+                      Icon(Icons.arrow_upward_rounded, color: AppColors.primary),
+                      SizedBox(height: 8),
+                      Text('Kilti Lygiais', style: TextStyle(fontWeight: FontWeight.bold)),
+                      SizedBox(height: 2),
+                      Text('Trūksta 2,500 XP', style: TextStyle(fontSize: 10, color: AppColors.textSub)),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.secondary.withOpacity(0.3)),
+                  ),
+                  child: const Column(
+                    children: [
+                      Icon(Icons.shopping_cart_checkout, color: AppColors.secondary),
+                      SizedBox(height: 8),
+                      Text('Išleisti XP', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.secondary)),
+                      SizedBox(height: 2),
+                      Text('Apmokėti PRO', style: TextStyle(fontSize: 10, color: AppColors.textSub)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
 
-          const SizedBox(height: 28),
+          const SizedBox(height: 24),
 
-          // Kids Space shortcut
-          OutlinedButton.icon(
-            onPressed: () => context.go('/kids'),
-            icon: const Icon(Icons.child_care),
-            label: const Text('Vaikų erdvė'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.secondary,
-              side: const BorderSide(color: AppColors.secondary, width: 2),
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          // 3. Dvigubos Lyderių Lentelės
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withOpacity(0.05)),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    _buildTabBtn('TOP KAUPIKAI', 0, AppColors.primary),
+                    _buildTabBtn('🔥 BANGINIAI', 1, AppColors.error),
+                  ],
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: _activeTabIndex == 0
+                        ? _topHoarders.map((u) => _buildHoarderTile(u)).toList()
+                        : _topWhales.map((u) => _buildWhaleTile(u)).toList(),
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 12),
-
-          // Barcode scanner shortcut
-          OutlinedButton.icon(
-            onPressed: () => context.go('/scanner'),
-            icon: const Icon(Icons.qr_code_scanner),
-            label: const Text('Barkodų skaitytuvas'),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          ElevatedButton.icon(
-            onPressed: _logout,
-            icon: const Icon(Icons.logout),
-            label: const Text('Atsijungti'),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-          ),
+          
+          const SizedBox(height: 100), // Padding for bottom nav
         ],
       ),
     );
   }
-}
 
-class _Card extends StatelessWidget {
-  final List<Widget> children;
-  const _Card({required this.children});
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: AppColors.border),
-    ),
-    child: Column(children: children),
-  );
-}
+  Widget _buildTabBtn(String title, int index, Color accentColor) {
+    final isActive = _activeTabIndex == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _activeTabIndex = index),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                color: isActive ? accentColor : Colors.white.withOpacity(0.1),
+                width: isActive ? 2 : 1,
+              ),
+            ),
+          ),
+          child: Center(
+            child: Text(
+              title,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+                color: isActive ? Colors.white : AppColors.textSub,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
-class _StatCard extends StatelessWidget {
-  final String label, value;
-  const _StatCard({required this.label, required this.value});
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: AppColors.border),
-    ),
-    child: Column(children: [
-      Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.primary)),
-      const SizedBox(height: 4),
-      Text(label, style: const TextStyle(color: AppColors.textSub, fontSize: 13)),
-    ]),
-  );
-}
+  Widget _buildHoarderTile(Map<String, dynamic> user) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          CircleAvatar(
+            backgroundColor: user['color'],
+            radius: 18,
+            child: Text(user['avatar'], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(user['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(user['rank'], style: const TextStyle(fontSize: 11, color: AppColors.textSub)),
+              ],
+            ),
+          ),
+          Text('${user['xp']} XP', style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.primary)),
+        ],
+      ),
+    );
+  }
 
-class _RankBadge extends StatelessWidget {
-  final String tier;
-  const _RankBadge({required this.tier});
-
-  static const _colors = {
-    'bronze':  Color(0xFFCD7F32),
-    'silver':  Color(0xFFC0C0C0),
-    'gold':    Color(0xFFFFD700),
-    'diamond': Color(0xFF00BFFF),
-  };
-
-  @override
-  Widget build(BuildContext context) => CircleAvatar(
-    radius: 24,
-    backgroundColor: _colors[tier] ?? const Color(0xFFCD7F32),
-    child: const Icon(Icons.emoji_events, color: Colors.white),
-  );
+  Widget _buildWhaleTile(Map<String, dynamic> user) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.error.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.error.withOpacity(0.15)),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            backgroundColor: user['color'],
+            radius: 18,
+            child: Text(user['avatar'], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(user['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(user['plan'], style: const TextStyle(fontSize: 11, color: AppColors.textSub)),
+              ],
+            ),
+          ),
+          Text('-${user['spent']}', style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.error)),
+        ],
+      ),
+    );
+  }
 }
