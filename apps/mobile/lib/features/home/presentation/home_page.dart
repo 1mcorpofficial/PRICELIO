@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/api/api_client.dart';
+import 'package:flutter/services.dart';
+import 'dart:async';
 import '../../../core/theme/app_theme.dart';
-import '../../receipts/presentation/receipt_scan_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -10,37 +10,47 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
-  List<dynamic> _stores = [];
-  Map<String, dynamic>? _gamification;
-  bool _loading = true;
+class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
+  bool _isListening = false;
+  late AnimationController _breatheController;
+  late Animation<double> _breatheAnimation;
+  Timer? _stopListeningTimer;
 
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _breatheController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+
+    _breatheAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
+      CurvedAnimation(parent: _breatheController, curve: Curves.easeInOut),
+    );
   }
 
-  Future<void> _loadData() async {
-    try {
-      final storesRes = await ApiClient().dio.get(
-        '/map/stores',
-        queryParameters: {'city': 'Vilnius'},
-      );
-      Map<String, dynamic>? gamification;
-      try {
-        final gamificationRes = await ApiClient().dio.get('/me/gamification');
-        if (gamificationRes.data is Map<String, dynamic>) {
-          gamification = gamificationRes.data as Map<String, dynamic>;
+  @override
+  void dispose() {
+    _breatheController.dispose();
+    _stopListeningTimer?.cancel();
+    super.dispose();
+  }
+
+  void _handlePClick() {
+    HapticFeedback.mediumImpact();
+    setState(() {
+      _isListening = !_isListening;
+    });
+
+    if (_isListening) {
+      _stopListeningTimer?.cancel();
+      _stopListeningTimer = Timer(const Duration(seconds: 4), () {
+        if (mounted) {
+          setState(() {
+            _isListening = false;
+          });
         }
-      } catch (_) {}
-      setState(() {
-        _stores = storesRes.data is List ? storesRes.data : [];
-        _gamification = gamification;
-        _loading = false;
       });
-    } catch (_) {
-      setState(() => _loading = false);
     }
   }
 
@@ -48,345 +58,193 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: RefreshIndicator(
-        onRefresh: _loadData,
-        child: CustomScrollView(
-          slivers: [
-            _buildAppBar(context),
-            if (_loading)
-              const SliverFillRemaining(
-                child: Center(child: CircularProgressIndicator()),
-              )
-            else ...[
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-                    // Savings hero
-                    if (_gamification != null) ...[
-                      _SavingsHeroCard(gamification: _gamification!),
-                      const SizedBox(height: 16),
-                    ],
-                    // Quick actions row
-                    _QuickActions(),
-                    const SizedBox(height: 20),
-                    // Receipt scan banner
-                    _ReceiptScanBanner(),
-                    const SizedBox(height: 20),
-                    // Section title
-                    _SectionTitle('Parduotuvės Vilniuje (${_stores.length})'),
-                    const SizedBox(height: 10),
-                  ]),
+      body: Stack(
+        children: [
+          // Subtilus radialinis gradientas fone
+          Positioned(
+            top: -100,
+            left: -100,
+            child: Container(
+              width: 400,
+              height: 400,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [AppColors.primary.withOpacity(0.15), Colors.transparent],
+                  stops: const [0.0, 1.0],
                 ),
               ),
-              // Stores list
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (ctx, i) => _StoreCard(store: _stores[i]),
-                    childCount: _stores.length,
+            ),
+          ),
+          Positioned(
+            bottom: -50,
+            right: -50,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [AppColors.secondary.withOpacity(0.1), Colors.transparent],
+                  stops: const [0.0, 1.0],
+                ),
+              ),
+            ),
+          ),
+          
+          SafeArea(
+            child: Column(
+              children: [
+                _buildTopBar(),
+                Expanded(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildPAssistant(),
+                        const SizedBox(height: 40),
+                        Text(
+                          _isListening ? 'Klausau tavęs...' : 'Bakstelėk, kad kalbėtumeisi',
+                          style: TextStyle(
+                            color: _isListening ? AppColors.textMain : AppColors.textSub,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  SliverAppBar _buildAppBar(BuildContext context) {
-    return SliverAppBar(
-      floating: true,
-      snap: true,
-      backgroundColor: AppColors.surface,
-      elevation: 0,
-      titleSpacing: 16,
-      title: Row(children: [
-        Container(
-          width: 32, height: 32,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [AppColors.primary, Color(0xFFFF8C5A)],
-            ),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Center(
-            child: Text('PL',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11)),
-          ),
-        ),
-        const SizedBox(width: 10),
-        const Text('PRICELIO',
-          style: TextStyle(
-            fontWeight: FontWeight.w900,
-            color: AppColors.textMain,
-            fontSize: 18,
-            letterSpacing: -0.3,
-          )),
-      ]),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.search, color: AppColors.textMain),
-          onPressed: () => context.go('/search'),
-        ),
-        IconButton(
-          icon: const Icon(Icons.map_outlined, color: AppColors.textMain),
-          onPressed: () => context.go('/map'),
-        ),
-        const SizedBox(width: 4),
-      ],
-    );
-  }
-}
-
-// ── Savings Hero Card ─────────────────────────────────────
-class _SavingsHeroCard extends StatelessWidget {
-  final Map<String, dynamic> gamification;
-  const _SavingsHeroCard({required this.gamification});
-
-  @override
-  Widget build(BuildContext context) {
-    final xp    = gamification['lifetime_xp'] ?? 0;
-    final pts   = gamification['spendable_points'] ?? 0;
-    final rank  = gamification['rank'];
-    final level = rank?['level'] ?? 1;
-
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF0B1C4A), Color(0xFF1A3D8A), Color(0xFF0E5E58)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF1A3D8A).withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(children: [
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Jūsų pažanga',
-              style: TextStyle(
-                color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600)),
-            const SizedBox(height: 6),
-            Text('$xp XP',
-              style: const TextStyle(
-                color: Colors.white, fontSize: 28, fontWeight: FontWeight.w900)),
-            const SizedBox(height: 4),
-            Text('Lygis $level · $pts taškų',
-              style: const TextStyle(color: Colors.white60, fontSize: 13)),
-          ]),
-        ),
-        Container(
-          width: 56, height: 56,
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: const Center(
-            child: Text('🏆', style: TextStyle(fontSize: 28)),
-          ),
-        ),
-      ]),
-    );
-  }
-}
-
-// ── Quick Actions ─────────────────────────────────────────
-class _QuickActions extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Row(children: [
-      Expanded(child: _QuickBtn(
-        icon: Icons.qr_code_scanner,
-        label: 'Barkodas',
-        color: const Color(0xFF7C3AED),
-        onTap: () => context.go('/scanner'),
-      )),
-      const SizedBox(width: 10),
-      Expanded(child: _QuickBtn(
-        icon: Icons.emoji_events_outlined,
-        label: 'Misijos',
-        color: AppColors.primary,
-        onTap: () => context.go('/missions'),
-      )),
-      const SizedBox(width: 10),
-      Expanded(child: _QuickBtn(
-        icon: Icons.shopping_bag_outlined,
-        label: 'Krepšelis',
-        color: const Color(0xFF047857),
-        onTap: () => context.go('/basket'),
-      )),
-    ]);
-  }
-}
-
-class _QuickBtn extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _QuickBtn({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withOpacity(0.2)),
-        ),
-        child: Column(children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 5),
-          Text(label, style: TextStyle(
-            color: color, fontSize: 11, fontWeight: FontWeight.w700)),
-        ]),
-      ),
-    );
-  }
-}
-
-// ── Receipt Scan Banner ───────────────────────────────────
-class _ReceiptScanBanner extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => Navigator.push(context,
-          MaterialPageRoute(builder: (_) => const ReceiptScanPage())),
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [AppColors.primary, AppColors.primary.withOpacity(0.75)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withOpacity(0.35),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Row(children: [
-          Container(
-            width: 52, height: 52,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.18),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(Icons.receipt_long, color: Colors.white, size: 28),
-          ),
-          const SizedBox(width: 14),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Analizuoti čekį',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w800,
-                    )),
-                SizedBox(height: 3),
-                Text('Nuskenuokite čekį ir sužinokite, kur permokėjote',
-                    style: TextStyle(color: Colors.white70, fontSize: 12)),
               ],
             ),
           ),
-          const Icon(Icons.arrow_forward_ios, color: Colors.white60, size: 16),
-        ]),
+        ],
       ),
     );
   }
-}
 
-// ── Section Title ─────────────────────────────────────────
-class _SectionTitle extends StatelessWidget {
-  final String text;
-  const _SectionTitle(this.text);
-
-  @override
-  Widget build(BuildContext context) => Text(text,
-      style: const TextStyle(
-        fontSize: 17,
-        fontWeight: FontWeight.w800,
-        color: AppColors.textMain,
-      ));
-}
-
-// ── Store Card ────────────────────────────────────────────
-class _StoreCard extends StatelessWidget {
-  final Map store;
-  const _StoreCard({required this.store});
-
-  @override
-  Widget build(BuildContext context) {
-    final chain = (store['chain'] ?? '') as String;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+  Widget _buildTopBar() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: const BoxDecoration(
+                  color: AppColors.secondary,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(color: AppColors.secondary, blurRadius: 10)
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'PRICELIO',
+                style: TextStyle(
+                  color: AppColors.textMain,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2.0,
+                ),
+              ),
+            ],
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.surface.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.star, color: AppColors.primary, size: 16),
+                SizedBox(width: 6),
+                Text(
+                  '12,500 XP',
+                  style: TextStyle(
+                    color: AppColors.textMain,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        leading: Container(
-          width: 44, height: 44,
-          decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Center(
-            child: Text(_chainEmoji(chain),
-              style: const TextStyle(fontSize: 20)),
-          ),
-        ),
-        title: Text(store['name'] ?? '',
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-        subtitle: Text(chain,
-            style: TextStyle(color: AppColors.textSub, fontSize: 12)),
-        trailing: const Icon(Icons.chevron_right, color: AppColors.textSub),
-      ),
     );
   }
 
-  String _chainEmoji(String chain) {
-    switch (chain.toLowerCase()) {
-      case 'maxima':  return '🅼';
-      case 'lidl':    return '🛒';
-      case 'iki':     return '🏪';
-      case 'norfa':   return '🏬';
-      case 'rimi':    return '🛍';
-      default:        return '🏪';
-    }
+  Widget _buildPAssistant() {
+    return GestureDetector(
+      onTap: _handlePClick,
+      child: AnimatedBuilder(
+        animation: _breatheAnimation,
+        builder: (context, child) {
+          final scale = _isListening ? 1.05 : _breatheAnimation.value;
+          return Transform.scale(
+            scale: scale,
+            child: Container(
+              width: 180,
+              height: 180,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.surface.withOpacity(0.8),
+                    AppColors.elevated.withOpacity(0.9),
+                  ],
+                ),
+                border: Border.all(
+                  color: _isListening ? AppColors.primary : AppColors.border,
+                  width: _isListening ? 2 : 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: _isListening 
+                        ? AppColors.primary.withOpacity(0.4) 
+                        : Colors.black.withOpacity(0.5),
+                    blurRadius: _isListening ? 40 : 30,
+                    spreadRadius: _isListening ? 10 : 0,
+                    offset: const Offset(0, 10),
+                  ),
+                  if (_isListening)
+                    BoxShadow(
+                      color: AppColors.secondary.withOpacity(0.2),
+                      blurRadius: 60,
+                      spreadRadius: 20,
+                    ),
+                ],
+              ),
+              child: Center(
+                child: Text(
+                  'P',
+                  style: TextStyle(
+                    fontSize: 80,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.textMain,
+                    shadows: [
+                      Shadow(
+                        color: Colors.white.withOpacity(0.3),
+                        blurRadius: 20,
+                      )
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 }
