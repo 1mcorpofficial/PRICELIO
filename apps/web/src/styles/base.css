@@ -881,6 +881,45 @@ button.glass:hover,
   display: none;
 }
 
+.landing-footer {
+  margin-top: 4rem;
+  padding-top: 2rem;
+  border-top: 1px solid color-mix(in srgb, var(--accent-blue) 20%, transparent 80%);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+
+.landing-footer__links {
+  display: flex;
+  gap: 3rem;
+  flex-wrap: wrap;
+}
+
+.landing-footer__column {
+  display: grid;
+  gap: 0.5rem;
+  align-content: start;
+}
+
+.landing-footer__column strong {
+  color: var(--text-main);
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
+}
+
+.landing-footer__column a {
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
 @media (max-width: 1100px) {
   .auth-layout {
     grid-template-columns: 1fr;
@@ -955,10 +994,30 @@ button.glass:hover,
   .page-shell,
   .landing-page {
     width: min(1200px, calc(100% - 1rem));
+    padding-bottom: 90px;
   }
 
   .hero {
     padding: var(--space-4);
+    text-align: center;
+  }
+
+  .hero-cta-row {
+    justify-content: center;
+  }
+
+  .hero h1 {
+    font-size: clamp(2rem, 9vw, 3rem);
+  }
+
+  .landing-footer {
+    flex-direction: column;
+    gap: 2.5rem;
+  }
+
+  .landing-footer__links {
+    gap: 2rem;
+    justify-content: space-between;
   }
 
   .toast-host {
@@ -968,6 +1027,48 @@ button.glass:hover,
 
   .toast {
     min-width: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero h1 {
+    font-size: clamp(1.8rem, 10vw, 2.5rem);
+  }
+
+  .hero-card-visual {
+    min-height: 280px;
+  }
+
+  .hero-card-3d {
+    transform: rotate(0deg);
+    animation: none;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), inset 0 0 15px rgba(0, 240, 255, 0.1);
+  }
+
+  .landing-nav {
+    flex-direction: column;
+    gap: 0.8rem;
+    padding: 1rem;
+    align-items: flex-start;
+  }
+
+  .landing-nav__actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .landing-footer__links {
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .auth-layout {
+    margin-top: -1rem;
+  }
+
+  .demo-card,
+  .auth-card {
+    padding: var(--space-4);
   }
 }
 

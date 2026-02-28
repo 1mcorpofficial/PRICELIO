@@ -70,10 +70,10 @@ export function LandingPage() {
         </div>
       </section>
 
-      <section style={{ marginTop: '2rem' }}>
+      <section className="landing-bento" style={{ marginTop: '2rem' }}>
         <h2 style={{ textAlign: 'center', marginBottom: '0.5rem' }}>{t('why_title' as any)}</h2>
         <p className="muted" style={{ textAlign: 'center', marginBottom: '2rem' }}>{t('why_text' as any)}</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
+        <div className="bento-grid">
            <Card className="glass" style={{ borderTop: '2px solid var(--accent-blue)', boxShadow: '0 8px 32px rgba(0, 240, 255, 0.1)' }}>
              <h4 style={{ color: 'var(--accent-blue)', margin: 0 }}>1. {t('how_step_1' as any)}</h4>
              <p className="muted" style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>{t('onboarding_1')}</p>
@@ -126,28 +126,28 @@ export function LandingPage() {
         </div>
       </Card>
 
-      <footer style={{ marginTop: '4rem', paddingTop: '2rem', borderTop: '1px solid var(--surface-outline)', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '2rem' }}>
-        <div>
+      <footer className="landing-footer">
+        <div className="landing-footer__brand">
           <div className="landing-brand" style={{ marginBottom: '1rem' }}>{t('brand')}</div>
           <p className="muted" style={{ fontSize: '0.85rem', maxWidth: '300px' }}>
             {t('problem_text')}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '3rem', flexWrap: 'wrap' }}>
-          <div style={{ display: 'grid', gap: '0.5rem', alignContent: 'start' }}>
-            <strong style={{ color: 'var(--text-main)', fontSize: '0.95rem' }}>{t('footer_product' as any)}</strong>
-            <Link to="/demo" className="muted" style={{ textDecoration: 'none', fontSize: '0.9rem' }}>{t('nav_demo')}</Link>
-            <Link to="/auth" className="muted" style={{ textDecoration: 'none', fontSize: '0.9rem' }}>{t('nav_login')}</Link>
+        <div className="landing-footer__links">
+          <div className="landing-footer__column">
+            <strong>{t('footer_product' as any)}</strong>
+            <Link to="/demo" className="muted">{t('nav_demo')}</Link>
+            <Link to="/auth" className="muted">{t('nav_login')}</Link>
           </div>
-          <div style={{ display: 'grid', gap: '0.5rem', alignContent: 'start' }}>
-            <strong style={{ color: 'var(--text-main)', fontSize: '0.95rem' }}>{t('footer_company' as any)}</strong>
-            <a href="#" onClick={(e) => e.preventDefault()} className="muted" style={{ textDecoration: 'none', fontSize: '0.9rem' }}>About</a>
-            <a href="#" onClick={(e) => e.preventDefault()} className="muted" style={{ textDecoration: 'none', fontSize: '0.9rem' }}>Contact</a>
+          <div className="landing-footer__column">
+            <strong>{t('footer_company' as any)}</strong>
+            <a href="#" onClick={(e) => e.preventDefault()} className="muted">About</a>
+            <a href="#" onClick={(e) => e.preventDefault()} className="muted">Contact</a>
           </div>
-          <div style={{ display: 'grid', gap: '0.5rem', alignContent: 'start' }}>
-            <strong style={{ color: 'var(--text-main)', fontSize: '0.95rem' }}>{t('footer_legal' as any)}</strong>
-            <a href="#" onClick={(e) => e.preventDefault()} className="muted" style={{ textDecoration: 'none', fontSize: '0.9rem' }}>Privacy</a>
-            <a href="#" onClick={(e) => e.preventDefault()} className="muted" style={{ textDecoration: 'none', fontSize: '0.9rem' }}>Terms</a>
+          <div className="landing-footer__column">
+            <strong>{t('footer_legal' as any)}</strong>
+            <a href="#" onClick={(e) => e.preventDefault()} className="muted">Privacy</a>
+            <a href="#" onClick={(e) => e.preventDefault()} className="muted">Terms</a>
           </div>
         </div>
       </footer>
