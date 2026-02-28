@@ -67,7 +67,7 @@ class MorePage extends StatelessWidget {
                         title: 'Garantijų Seifas',
                         desc: 'Tavo skaitmeniniai čekiai',
                         color: AppColors.green,
-                        route: '/receipts', // Temp route, as we haven't built separate warranty page in mobile yet
+                        route: '/warranty', // Fixed route
                         delay: 2,
                       ),
                       _buildBubbleItem(

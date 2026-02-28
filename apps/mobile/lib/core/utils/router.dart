@@ -14,6 +14,7 @@ import '../../features/scanner/presentation/scanner_page.dart';
 import '../../features/kids/presentation/kids_page.dart';
 import '../../features/receipts/presentation/receipt_scan_page.dart';
 import '../../features/missions/presentation/missions_page.dart';
+import '../../features/warranty/presentation/warranty_page.dart';
 import '../api/api_client.dart';
 import '../theme/app_theme.dart';
 
@@ -36,6 +37,7 @@ final appRouter = GoRouter(
     GoRoute(path: '/register', builder: (_, __) => const RegisterPage()),
     GoRoute(path: '/kids',     builder: (_, __) => const KidsPage()),
     GoRoute(path: '/map',      builder: (_, __) => const MapPage()),
+    GoRoute(path: '/warranty', builder: (_, __) => const WarrantyPage()),
     // Scanner dabar bus kaip overlay arba tiesiog langas per visą ekraną
     GoRoute(path: '/scanner',  builder: (_, __) => const ScannerPage()),
     

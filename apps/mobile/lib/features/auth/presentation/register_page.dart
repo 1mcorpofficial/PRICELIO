@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:ui';
 import '../../../core/api/api_client.dart';
 import '../../../core/theme/app_theme.dart';
 
@@ -36,8 +37,7 @@ class _RegisterPageState extends State<RegisterPage> {
       );
       if (mounted) context.go('/home');
     } catch (e) {
-      setState(() => _error =
-          'Registracija nepavyko. Gal toks el. paštas jau egzistuoja?');
+      setState(() => _error = 'Registracija nepavyko. Gal el. paštas jau egzistuoja?');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -46,63 +46,117 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 48),
-              Text('Sukurti paskyrą 🛒',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w700, color: AppColors.textMain)),
-              const SizedBox(height: 8),
-              const Text('Taupykite kasdien su PRICELIO',
-                  style: TextStyle(
-                    color: AppColors.textSub,
-                    fontSize: 16,
-                  )),
-              const SizedBox(height: 40),
-              TextField(
-                controller: _email,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                    labelText: 'El. paštas',
-                    prefixIcon: Icon(Icons.email_outlined)),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _password,
-                obscureText: true,
-                decoration: const InputDecoration(
-                    labelText: 'Slaptažodis (min. 8 simboliai)',
-                    prefixIcon: Icon(Icons.lock_outlined)),
-              ),
-              if (_error != null) ...[
-                const SizedBox(height: 12),
-                Text(_error!, style: const TextStyle(color: AppColors.error)),
-              ],
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _loading ? null : _register,
-                child: _loading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2))
-                    : const Text('Registruotis'),
-              ),
-              const SizedBox(height: 16),
-              Center(
-                child: TextButton(
-                  onPressed: () => context.go('/login'),
-                  child: const Text('Jau turite paskyrą? Prisijungti'),
+      backgroundColor: AppColors.background,
+      body: Stack(
+        children: [
+          Positioned(
+            top: -50,
+            left: -50,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [AppColors.secondary.withOpacity(0.15), Colors.transparent],
                 ),
               ),
-            ],
+            ),
           ),
-        ),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 60),
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(colors: [AppColors.surface, AppColors.elevated]),
+                      border: Border.all(color: AppColors.secondary.withOpacity(0.5)),
+                      boxShadow: [BoxShadow(color: AppColors.secondary.withOpacity(0.2), blurRadius: 30)],
+                    ),
+                    child: const Center(
+                      child: Icon(Icons.rocket_launch, color: AppColors.secondary, size: 36),
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+                  const Text('Sukurti paskyrą',
+                      style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.white)),
+                  const SizedBox(height: 8),
+                  const Text('Pradėk taupyti išmaniai',
+                      style: TextStyle(color: AppColors.textSub, fontSize: 14)),
+                  const SizedBox(height: 40),
+                  
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface.withOpacity(0.6),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: Colors.white.withOpacity(0.05)),
+                        ),
+                        child: Column(
+                          children: [
+                            TextField(
+                              controller: _email,
+                              keyboardType: TextInputType.emailAddress,
+                              style: const TextStyle(color: Colors.white),
+                              decoration: const InputDecoration(
+                                labelText: 'El. paštas',
+                                prefixIcon: Icon(Icons.email_outlined, color: AppColors.secondary),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            TextField(
+                              controller: _password,
+                              obscureText: true,
+                              style: const TextStyle(color: Colors.white),
+                              decoration: const InputDecoration(
+                                labelText: 'Slaptažodis (min. 8)',
+                                prefixIcon: Icon(Icons.lock_outline, color: AppColors.secondary),
+                              ),
+                            ),
+                            if (_error != null) ...[
+                              const SizedBox(height: 16),
+                              Text(_error!, style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.bold)),
+                            ],
+                            const SizedBox(height: 32),
+                            ElevatedButton(
+                              onPressed: _loading ? null : _register,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.secondary,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                elevation: 10,
+                                shadowColor: AppColors.secondary.withOpacity(0.5),
+                              ),
+                              child: _loading
+                                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3))
+                                  : const Text('REGISTRUOTIS', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  TextButton(
+                    onPressed: () => context.go('/login'),
+                    child: const Text('Jau turite paskyrą? Prisijungti', style: TextStyle(color: AppColors.textSub, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
