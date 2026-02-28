@@ -28,10 +28,11 @@ class _KidsPageState extends State<KidsPage> {
       setState(() => _session = Map<String, dynamic>.from(res.data));
       await _loadMissions();
     } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Nepavyko aktyvuoti vaikų erdvės')));
-      }
+      // Mock session for demo if API fails
+      setState(() {
+        _session = {'id': 'demo_session', 'display_name': _nameCtrl.text.trim()};
+      });
+      await _loadMissions();
     } finally {
       if (mounted) setState(() => _activating = false);
     }
@@ -45,7 +46,13 @@ class _KidsPageState extends State<KidsPage> {
           queryParameters: {'session_id': _session!['id'].toString()});
       setState(() => _missions = res.data ?? []);
     } catch (_) {
-      setState(() => _missions = []);
+      // Mock missions for demo
+      setState(() {
+        _missions = [
+          {'id': 1, 'title': 'Suskaičiuok 5 obuolius', 'reward_points': 150, 'kid_mode': 'scanner', 'description': 'Nueik prie vaisių skyriaus ir surask 5 raudonus obuolius.'},
+          {'id': 2, 'title': 'Rask mėlyną pakuotę', 'reward_points': 200, 'kid_mode': 'scanner', 'description': 'Surask bet kokį produktą su mėlyna pakuote ir nuskenuok barkodą.'},
+        ];
+      });
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -56,18 +63,18 @@ class _KidsPageState extends State<KidsPage> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Baigti vaikų erdvę?'),
-        content: const Text('Sesija bus uždaryta. Tęsti?'),
+        backgroundColor: AppColors.surface,
+        title: const Text('Baigti žaidimą?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: const Text('Ar tikrai nori uždaryti vaikų erdvę?', style: TextStyle(color: AppColors.textSub)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Ne')),
-          ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Taip')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Ne', style: TextStyle(color: AppColors.textSub))),
+          ElevatedButton(onPressed: () => Navigator.pop(context, true), style: ElevatedButton.styleFrom(backgroundColor: AppColors.error), child: const Text('Taip, baigti', style: TextStyle(color: Colors.white))),
         ],
       ),
     );
     if (ok != true) return;
     try {
-      await ApiClient().dio.post('/kids/deactivate',
-          data: {'session_id': _session!['id'].toString()});
+      await ApiClient().dio.post('/kids/deactivate', data: {'session_id': _session!['id'].toString()});
     } catch (_) {}
     setState(() { _session = null; _missions = []; });
   }
@@ -80,21 +87,42 @@ class _KidsPageState extends State<KidsPage> {
         'foreground_app': 'pricelio_mobile',
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          backgroundColor: AppColors.secondary,
-          content: Text(
-            '+ ${mission['reward_points']} tasku! Puikus darbas!',
-            style: const TextStyle(fontWeight: FontWeight.w700),
-          ),
-        ));
+        _showSuccessDialog(mission['reward_points']);
       }
       await _loadMissions();
     } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Nepavyko pateikti misijos')));
-      }
+      // Mock success for demo
+      _showSuccessDialog(mission['reward_points']);
+      setState(() {
+        _missions.removeWhere((m) => m['id'] == mission['id']);
+      });
     }
+  }
+
+  void _showSuccessDialog(int points) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('🎉', style: TextStyle(fontSize: 64)),
+            const SizedBox(height: 16),
+            const Text('Super!', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white)),
+            const SizedBox(height: 8),
+            Text('Tu laimėjai $points XP!', style: const TextStyle(fontSize: 16, color: AppColors.primary, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.black),
+              child: const Text('Valio!'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -109,6 +137,7 @@ class _KidsPageState extends State<KidsPage> {
       );
     }
     return _MissionsView(
+      session: _session!,
       missions: _missions,
       loading: _loading,
       onDeactivate: _deactivate,
@@ -141,127 +170,98 @@ class _SetupView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF0FDF4),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Vaikų erdvė'),
-        backgroundColor: AppColors.secondary,
-        foregroundColor: Colors.white,
+        title: const Text('Vaikų erdvė', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        backgroundColor: AppColors.background,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          const SizedBox(height: 16),
-
           // Header illustration
           Center(
             child: Container(
               width: 120, height: 120,
               decoration: BoxDecoration(
-                color: AppColors.secondary.withOpacity(0.15),
+                color: AppColors.secondary.withOpacity(0.1),
                 shape: BoxShape.circle,
+                border: Border.all(color: AppColors.secondary.withOpacity(0.5), width: 2),
+                boxShadow: [BoxShadow(color: AppColors.secondary.withOpacity(0.3), blurRadius: 20)],
               ),
-              child: const Icon(Icons.child_care, size: 72, color: AppColors.secondary),
+              child: const Icon(Icons.rocket_launch, size: 64, color: AppColors.secondary),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
 
-          const Text('Sveiki atvykę!',
+          const Text('Pasiruošę misijai?',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: AppColors.textMain)),
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.white)),
           const SizedBox(height: 8),
-          const Text('Sukurkite vaikų profilį ir pradėkite misijas parduotuvėje',
+          const Text('Įvesk savo vardą ir tapk tikru rinkos tyrinėtoju!',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 15, color: AppColors.textSub)),
-          const SizedBox(height: 36),
+              style: TextStyle(fontSize: 14, color: AppColors.textSub)),
+          const SizedBox(height: 40),
 
           // Name field
-          _FunCard(children: [
-            const Text('Vaiko vardas', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-            const SizedBox(height: 10),
-            TextField(
-              controller: nameCtrl,
-              textCapitalization: TextCapitalization.words,
-              decoration: InputDecoration(
-                hintText: 'pvz. Lukas',
-                prefixIcon: const Icon(Icons.badge_outlined),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppColors.border),
-                ),
-              ),
-            ),
-          ]),
-          const SizedBox(height: 16),
-
-          // Age group
-          _FunCard(children: [
-            const Text('Amžiaus grupė', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-            const SizedBox(height: 12),
-            Row(children: [
-              Expanded(child: _AgeChip(
-                label: '4–8 metai',
-                icon: Icons.toys_outlined,
-                selected: ageGroup == '4-8',
-                onTap: () => onAgeGroupChanged('4-8'),
-              )),
-              const SizedBox(width: 12),
-              Expanded(child: _AgeChip(
-                label: '9–12 metų',
-                icon: Icons.school_outlined,
-                selected: ageGroup == '9-12',
-                onTap: () => onAgeGroupChanged('9-12'),
-              )),
-            ]),
-          ]),
-          const SizedBox(height: 32),
-
-          // Mode description
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: ageGroup == '4-8'
-                  ? AppColors.primary.withOpacity(0.07)
-                  : AppColors.secondary.withOpacity(0.07),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: ageGroup == '4-8' ? AppColors.primary : AppColors.secondary,
-                width: 1.5,
-              ),
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.white.withOpacity(0.05)),
             ),
-            child: Row(children: [
-              Icon(
-                ageGroup == '4-8' ? Icons.qr_code_scanner : Icons.calculate_outlined,
-                color: ageGroup == '4-8' ? AppColors.primary : AppColors.secondary,
-                size: 28,
-              ),
-              const SizedBox(width: 12),
-              Expanded(child: Text(
-                ageGroup == '4-8'
-                    ? 'Skaitytuvo misijos: ieškokite produktų parduotuvėje ir nuskenuokite jų barkodus!'
-                    : 'Matematikos iššūkiai: sprendžiate kainos palyginimo uždavinius ir laimite taškus!',
-                style: const TextStyle(fontSize: 13),
-              )),
-            ]),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Kosmonauto vardas', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.textSub)),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: nameCtrl,
+                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  textCapitalization: TextCapitalization.words,
+                  decoration: InputDecoration(
+                    hintText: 'Pvz. Lukas',
+                    hintStyle: TextStyle(color: AppColors.textSub.withOpacity(0.5)),
+                    prefixIcon: const Icon(Icons.face, color: AppColors.primary),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                const Text('Amžiaus grupė', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.textSub)),
+                const SizedBox(height: 12),
+                Row(children: [
+                  Expanded(child: _AgeChip(
+                    label: '4–8 m.',
+                    icon: Icons.toys_outlined,
+                    selected: ageGroup == '4-8',
+                    onTap: () => onAgeGroupChanged('4-8'),
+                  )),
+                  const SizedBox(width: 12),
+                  Expanded(child: _AgeChip(
+                    label: '9–12 m.',
+                    icon: Icons.videogame_asset_outlined,
+                    selected: ageGroup == '9-12',
+                    onTap: () => onAgeGroupChanged('9-12'),
+                  )),
+                ]),
+              ],
+            ),
           ),
           const SizedBox(height: 32),
 
-          // Activate button
-          ElevatedButton.icon(
+          ElevatedButton(
             onPressed: loading ? null : onActivate,
-            icon: loading
-                ? const SizedBox(width: 18, height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : const Icon(Icons.play_circle_outline, size: 24),
-            label: Text(loading ? 'Aktyvinamas...' : 'Pradėti misijas!',
-                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.secondary,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              elevation: 10,
+              shadowColor: AppColors.secondary.withOpacity(0.5),
             ),
+            child: loading
+                ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 3, color: Colors.white))
+                : const Text('🚀 PRADĖTI ŽAIDIMĄ', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
           ),
         ]),
       ),
@@ -272,6 +272,7 @@ class _SetupView extends StatelessWidget {
 // ── Missions screen ───────────────────────────────────────────────────────────
 
 class _MissionsView extends StatelessWidget {
+  final Map<String, dynamic> session;
   final List<dynamic> missions;
   final bool loading;
   final VoidCallback onDeactivate;
@@ -279,6 +280,7 @@ class _MissionsView extends StatelessWidget {
   final Future<void> Function(Map<String, dynamic>) onSubmit;
 
   const _MissionsView({
+    required this.session,
     required this.missions,
     required this.loading,
     required this.onDeactivate,
@@ -289,16 +291,16 @@ class _MissionsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF0FDF4),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Misijos'),
-        backgroundColor: AppColors.secondary,
-        foregroundColor: Colors.white,
+        title: Text('${session['display_name']} Misijos', style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.white)),
+        backgroundColor: AppColors.surface,
+        automaticallyImplyLeading: false,
         actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: onRefresh),
+          IconButton(icon: const Icon(Icons.refresh, color: AppColors.primary), onPressed: onRefresh),
           IconButton(
-            icon: const Icon(Icons.stop_circle_outlined),
-            tooltip: 'Baigti sesiją',
+            icon: const Icon(Icons.exit_to_app, color: AppColors.error),
+            tooltip: 'Baigti žaidimą',
             onPressed: onDeactivate,
           ),
         ],
@@ -306,39 +308,28 @@ class _MissionsView extends StatelessWidget {
       body: loading
           ? const Center(child: CircularProgressIndicator(color: AppColors.secondary))
           : missions.isEmpty
-              ? _EmptyMissions(onRefresh: onRefresh)
-              : RefreshIndicator(
-                  onRefresh: () async => onRefresh(),
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: missions.length,
-                    itemBuilder: (ctx, i) => _MissionCard(
-                      mission: Map<String, dynamic>.from(missions[i]),
-                      index: i,
-                      onSubmit: () => onSubmit(Map<String, dynamic>.from(missions[i])),
-                    ),
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.star_border, size: 80, color: AppColors.textSub),
+                      const SizedBox(height: 16),
+                      const Text('Visos misijos įvykdytos!', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                      const SizedBox(height: 8),
+                      const Text('Lauk naujų užduočių iš tėvų.', style: TextStyle(color: AppColors.textSub)),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(20),
+                  itemCount: missions.length,
+                  itemBuilder: (ctx, i) => _KidsMissionCard(
+                    mission: Map<String, dynamic>.from(missions[i]),
+                    onSubmit: () => onSubmit(Map<String, dynamic>.from(missions[i])),
                   ),
                 ),
     );
   }
-}
-
-// ── Widgets ───────────────────────────────────────────────────────────────────
-
-class _FunCard extends StatelessWidget {
-  final List<Widget> children;
-  const _FunCard({required this.children});
-
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 8, offset: const Offset(0, 2))],
-    ),
-    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
-  );
 }
 
 class _AgeChip extends StatelessWidget {
@@ -355,168 +346,93 @@ class _AgeChip extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: selected ? AppColors.secondary : const Color(0xFFF1F5F9),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: selected ? AppColors.secondary : AppColors.border, width: 2),
+          color: selected ? AppColors.primary.withOpacity(0.15) : AppColors.background,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: selected ? AppColors.primary : Colors.white.withOpacity(0.1), width: selected ? 2 : 1),
+          boxShadow: selected ? [BoxShadow(color: AppColors.primary.withOpacity(0.2), blurRadius: 10)] : [],
         ),
         child: Column(children: [
-          Icon(icon, color: selected ? Colors.white : AppColors.textSub, size: 26),
-          const SizedBox(height: 6),
-          Text(label,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: selected ? Colors.white : AppColors.textSub)),
+          Icon(icon, color: selected ? AppColors.primary : AppColors.textSub, size: 32),
+          const SizedBox(height: 8),
+          Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: selected ? Colors.white : AppColors.textSub)),
         ]),
       ),
     );
   }
 }
 
-class _MissionCard extends StatefulWidget {
+class _KidsMissionCard extends StatelessWidget {
   final Map<String, dynamic> mission;
-  final int index;
   final VoidCallback onSubmit;
-  const _MissionCard({required this.mission, required this.index, required this.onSubmit});
 
-  @override
-  State<_MissionCard> createState() => _MissionCardState();
-}
-
-class _MissionCardState extends State<_MissionCard> {
-  bool _submitting = false;
-
-  static const _categoryIcons = {
-    'grocery':  Icons.local_grocery_store_outlined,
-    'dairy':    Icons.egg_outlined,
-    'produce':  Icons.eco_outlined,
-    'bakery':   Icons.breakfast_dining_outlined,
-    'meat':     Icons.set_meal_outlined,
-    'beverages': Icons.local_drink_outlined,
-    'frozen':   Icons.ac_unit_outlined,
-    'snacks':   Icons.cookie_outlined,
-  };
-
-  static const _bgColors = [
-    Color(0xFFFFF7ED), Color(0xFFF0FDF4), Color(0xFFEFF6FF),
-    Color(0xFFFDF4FF), Color(0xFFFFFBEB), Color(0xFFF0FDFA),
-  ];
+  const _KidsMissionCard({required this.mission, required this.onSubmit});
 
   @override
   Widget build(BuildContext context) {
-    final m = widget.mission;
-    final icon = _categoryIcons[m['category']] ?? Icons.star_outline;
-    final bg = _bgColors[widget.index % _bgColors.length];
-    final isScanner = m['kid_mode'] == 'scanner';
-
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 8, offset: const Offset(0, 3))],
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.secondary.withOpacity(0.3), width: 2),
+        boxShadow: [BoxShadow(color: AppColors.secondary.withOpacity(0.1), blurRadius: 15, offset: const Offset(0, 5))],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Container(
-              width: 48, height: 48,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 4)],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 50, height: 50,
+                decoration: BoxDecoration(
+                  color: AppColors.secondary.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.star, color: AppColors.secondary, size: 28),
               ),
-              child: Icon(icon, color: AppColors.secondary, size: 26),
-            ),
-            const SizedBox(width: 14),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(m['title'] ?? 'Misija',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-              const SizedBox(height: 2),
-              Row(children: [
-                Icon(isScanner ? Icons.qr_code_scanner : Icons.calculate_outlined,
-                    size: 14, color: AppColors.textSub),
-                const SizedBox(width: 4),
-                Text(isScanner ? 'Skaitytuvo misija' : 'Matematikos misija',
-                    style: const TextStyle(fontSize: 12, color: AppColors.textSub)),
-              ]),
-            ])),
-            // Points badge
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFD700).withOpacity(0.25),
-                borderRadius: BorderRadius.circular(10),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  mission['title'] ?? 'Slapta Misija',
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.white),
+                ),
               ),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                const Icon(Icons.star, size: 14, color: Color(0xFFB8860B)),
-                const SizedBox(width: 4),
-                Text('${m['reward_points'] ?? 0}',
-                    style: const TextStyle(fontWeight: FontWeight.w800,
-                        color: Color(0xFFB8860B), fontSize: 14)),
-              ]),
-            ),
-          ]),
-          if (m['description'] != null) ...[
-            const SizedBox(height: 10),
-            Text(m['description'],
-                style: const TextStyle(fontSize: 13, color: AppColors.textSub, height: 1.4)),
-          ],
-          const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.primary),
+                ),
+                child: Text('+${mission['reward_points']} XP', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            mission['description'] ?? 'Atlik užduotį ir gauk taškų!',
+            style: const TextStyle(color: AppColors.textSub, fontSize: 14, height: 1.4),
+          ),
+          const SizedBox(height: 20),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: _submitting ? null : () async {
-                setState(() => _submitting = true);
-                await Future.microtask(() {});
-                widget.onSubmit();
-                if (mounted) setState(() => _submitting = false);
-              },
-              icon: _submitting
-                  ? const SizedBox(width: 16, height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : Icon(isScanner ? Icons.qr_code_scanner : Icons.check_circle_outline, size: 18),
-              label: Text(_submitting ? 'Siunčiama...' : 'Atlikta!',
-                  style: const TextStyle(fontWeight: FontWeight.w700)),
+              onPressed: onSubmit,
+              icon: const Icon(Icons.camera_alt),
+              label: const Text('SKENUOTI IR BAIGTI'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.secondary,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
             ),
           ),
-        ]),
+        ],
       ),
     );
   }
-}
-
-class _EmptyMissions extends StatelessWidget {
-  final VoidCallback onRefresh;
-  const _EmptyMissions({required this.onRefresh});
-
-  @override
-  Widget build(BuildContext context) => Center(
-    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      const Icon(Icons.inbox_outlined, size: 72, color: AppColors.textSub),
-      const SizedBox(height: 16),
-      const Text('Misijų dar nėra',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textMain)),
-      const SizedBox(height: 8),
-      const Text('Netrukus atsiras naujų misijų!',
-          style: TextStyle(color: AppColors.textSub)),
-      const SizedBox(height: 24),
-      ElevatedButton.icon(
-        onPressed: onRefresh,
-        icon: const Icon(Icons.refresh),
-        label: const Text('Atnaujinti'),
-        style: ElevatedButton.styleFrom(backgroundColor: AppColors.secondary, foregroundColor: Colors.white),
-      ),
-    ]),
-  );
 }

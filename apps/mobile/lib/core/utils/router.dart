@@ -5,6 +5,7 @@ import 'dart:ui';
 import '../../features/auth/presentation/login_page.dart';
 import '../../features/auth/presentation/register_page.dart';
 import '../../features/home/presentation/home_page.dart';
+import '../../features/more/presentation/more_page.dart';
 import '../../features/search/presentation/search_page.dart';
 import '../../features/map/presentation/map_page.dart';
 import '../../features/basket/presentation/basket_page.dart';
@@ -42,7 +43,7 @@ final appRouter = GoRouter(
       builder: (context, state, child) => MainShell(child: child),
       routes: [
         // Mūsų 4 pagrindiniai tabai aplink centrinį kameros mygtuką:
-        GoRoute(path: '/home',     builder: (_, __) => const HomePage()),     // Fake "More" (Kol kas naudojame Home)
+        GoRoute(path: '/more',     builder: (_, __) => const MorePage()),     // "Daugiau" / Burbulai
         GoRoute(path: '/market',   builder: (_, __) => const SearchPage()),   // Market
         GoRoute(path: '/basket',   builder: (_, __) => const BasketPage()),   // Basket
         GoRoute(path: '/profile',  builder: (_, __) => const ProfilePage()),  // Profile
@@ -51,7 +52,7 @@ final appRouter = GoRouter(
   ],
 );
 
-const _navRoutes = ['/home', '/market', '/basket', '/profile'];
+const _navRoutes = ['/more', '/market', '/basket', '/profile'];
 
 class MainShell extends StatelessWidget {
   final Widget child;
@@ -135,7 +136,7 @@ class MainShell extends StatelessWidget {
                 _NavItem(
                   icon: Icons.more_horiz,
                   isActive: activeIndex == 0,
-                  onTap: () => context.go('/home'),
+                  onTap: () => context.go('/more'),
                 ),
                 _NavItem(
                   icon: Icons.show_chart_outlined,
