@@ -1307,3 +1307,12 @@ button.glass:hover,
   0% { transform: translateY(40px) scale(0.9); opacity: 0; }
   100% { transform: translateY(0) scale(1); opacity: 1; }
 }
+
+/* Autocomplete Scroller išmaniam krepšeliui */
+.autocomplete-scroller::-webkit-scrollbar {
+  display: none;
+}
+.autocomplete-scroller {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
