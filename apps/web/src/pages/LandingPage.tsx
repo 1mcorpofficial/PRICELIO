@@ -11,20 +11,16 @@ export function LandingPage() {
   const lang = useI18n((state) => state.lang);
   const setLang = useI18n((state) => state.setLang);
 
-  // Future integration: fetch these stats from real API. Defaulting to 0 for honesty.
-  const usersCount = 0;
-  const receiptCount = 0;
-  const savingsCount = 0;
-
   useEffect(() => {
     void trackUiEvent('lp_viewed');
   }, []);
 
+  // Real platform info (21 stores, AI OCR, Lithuania market)
   const stats = useMemo(() => ([
-    { value: usersCount.toLocaleString(), label: t('stats_users') },
-    { value: `${receiptCount.toLocaleString()}`, label: t('stats_receipts') },
-    { value: `€${savingsCount.toLocaleString()}`, label: t('stats_saved') }
-  ]), [usersCount, receiptCount, savingsCount, t]);
+    { value: '21', label: t('stats_users') },
+    { value: 'AI', label: t('stats_receipts') },
+    { value: 'LT', label: t('stats_saved') }
+  ]), [t]);
 
   return (
     <main className="landing-page">
@@ -129,8 +125,8 @@ export function LandingPage() {
       <footer className="landing-footer">
         <div className="landing-footer__brand">
           <div className="landing-brand" style={{ marginBottom: '1rem' }}>{t('brand')}</div>
-          <p className="muted" style={{ fontSize: '0.85rem', maxWidth: '300px' }}>
-            {t('problem_text')}
+          <p className="muted" style={{ fontSize: '0.85rem', maxWidth: '340px' }}>
+            {t('footer_about')}
           </p>
         </div>
         <div className="landing-footer__links">
@@ -141,8 +137,8 @@ export function LandingPage() {
           </div>
           <div className="landing-footer__column">
             <strong>{t('footer_company' as any)}</strong>
-            <a href="#" onClick={(e) => e.preventDefault()} className="muted">About</a>
-            <a href="#" onClick={(e) => e.preventDefault()} className="muted">Contact</a>
+            <a href="https://github.com/1mcorpofficial/PRICELIO" target="_blank" rel="noopener noreferrer" className="muted">GitHub</a>
+            <a href="https://pricelio.app" className="muted">pricelio.app</a>
           </div>
           <div className="landing-footer__column">
             <strong>{t('footer_legal' as any)}</strong>

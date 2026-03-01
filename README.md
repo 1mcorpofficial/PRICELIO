@@ -1,12 +1,48 @@
-# PRICELIO / ReceiptRadar
+# PRICELIO
+
+**Išmanus maisto prekių kainų asistentas Lietuvoje.** Skenuok čekius, lygink kainas, rink XP ir sutaupyk kiekvieną savaitę.
+
+---
+
+## Kas yra PRICELIO?
+
+PRICELIO – tai kainų intelekto platforma, skirta Lietuvos vartotojams. Ji atsako į tris praktinius klausimus:
+
+1. **Kiek permokėjau šiame čekyje?** – AI ištraukia prekes iš čekio ir palygina su rinkos kainomis.
+2. **Kur pirkti pigiau kitą kartą?** – Paieška pagal prekę rodo kainas iš artimiausių parduotuvių.
+3. **Kaip sistemingai mažinti išlaidas?** – Biudžeto analitika, misijos, šeimos režimas ir XP gamifikacija.
+
+### Pagrindinės funkcijos (implementuota kode)
+
+| Sritis | Aprašymas |
+|--------|-----------|
+| **Čekių skenavimas** | OCR ekstrakcija, prekių atpažinimas, permokėjimo ataskaita |
+| **Kainų palyginimas** | 21 parduotuvių tinklas, paieška pagal prekę, žemėlapis |
+| **Krepšelio planavimas** | Įvesk sąrašą – gausi optimizuotą planą su parduotuvės pasiūlymais |
+| **XP ir gamifikacija** | Taškai už čekius, lygiai (Rank), lyderių lentelės |
+| **Misijos** | Artimiausios užduotys pagal vietą, bendruomenės verifikacija |
+| **Šeima** | Bendri sąrašai, biudžetas, vaikų režimas |
+| **Garantijų seifas** | Skaitmeniniai čekiai vienoje vietoje (Face ID apsauga) |
+| **Mobilioji programėlė** | Flutter app – iPhone ir Android |
+
+### Techninė bazė
+
+- **Rinka:** Lietuva, EUR
+- **Parduotuvės:** Maxima, Lidl, Iki, Rimi, Norfa, Senukai, Topo Centras ir kt. (21 tinklas)
+- **Stack:** Node.js API, PostgreSQL, Redis, RabbitMQ, React PWA, Flutter mobile
+- **Svetainė:** [pricelio.app](https://pricelio.app)
+
+---
+
+## Status
 
 Status: Active development repository with production-oriented architecture and broad feature coverage.
 
-Last verified against code: 2026-02-20
+Last verified against code: 2026-02-28
 
 Repository: `1mcorpofficial/PRICELIO`
 
-Current snapshot (2026-02-20):
+Current snapshot (2026-02-28):
 - PRICELIO is a multi-service grocery price intelligence platform with a production-deployed web app (`pricelio.app`) and VPS workflow (`push -> pull -> restart`).
 - Core capability is receipt intelligence: OCR extraction, product matching, overpay/savings report, and next-best store comparison.
 - Newer receipt quality controls are present: manual correction editor, bad-scan feedback, review queue/history, and quality summary panels.
@@ -87,7 +123,7 @@ Compared to pure cashback/reward apps:
 
 ### 3.2 Out of scope (currently)
 
-- Native iOS/Android app.
+- Native iOS/Android app (Flutter mobile app exists; App Store/Play Store release in progress).
 - Full enterprise-grade production hardening.
 - Fully validated real-time scale/performance profile.
 - Final legal/compliance package for commercial launch.
