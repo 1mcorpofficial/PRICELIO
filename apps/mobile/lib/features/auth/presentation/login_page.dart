@@ -31,7 +31,7 @@ class _LoginPageState extends State<LoginPage> {
         accessToken: res.data['access_token']?.toString(),
         refreshToken: res.data['refresh_token']?.toString(),
       );
-      if (mounted) context.go('/home');
+      if (mounted) context.go('/more');
     } catch (e) {
       setState(() => _error = 'Neteisingas el. paštas arba slaptažodis.');
     } finally {

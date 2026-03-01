@@ -75,7 +75,7 @@ class MorePage extends StatelessWidget {
                         title: 'Smart Pantry',
                         desc: 'Namų spintelė ir likučiai',
                         color: Colors.orangeAccent,
-                        route: '/home', // Temp route
+                        route: '/basket',
                         delay: 3,
                       ),
                       _buildBubbleItem(
@@ -84,7 +84,7 @@ class MorePage extends StatelessWidget {
                         title: 'AI Profiliavimas',
                         desc: 'Dietų filtrai ir asistento nustatymai',
                         color: AppColors.textSub,
-                        route: '/profile', // Temp route
+                        route: '/profile',
                         delay: 4,
                       ),
                     ],

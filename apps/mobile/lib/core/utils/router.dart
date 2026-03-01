@@ -12,46 +12,54 @@ import '../../features/profile/presentation/profile_page.dart';
 import '../../features/scanner/presentation/scanner_page.dart';
 import '../../features/kids/presentation/kids_page.dart';
 import '../../features/warranty/presentation/warranty_page.dart';
+import '../../features/missions/presentation/missions_page.dart';
+import '../../features/splash/presentation/splash_page.dart';
 import '../api/api_client.dart';
 import '../theme/app_theme.dart';
 
 const _storage = FlutterSecureStorage();
 
 final appRouter = GoRouter(
-  initialLocation: '/home',
+  initialLocation: '/',
   redirect: (context, state) async {
+    // We handle the splash screen at '/' which will do the animation and then navigate.
+    // However, if the user explicitly goes to another route (like /login), we might need to check auth.
+    // For now, let SplashPage handle the initial auth check and routing.
+    final isSplash = state.matchedLocation == '/';
+    if (isSplash) return null; // allow splash screen to show
+
     final token = await _storage.read(key: kTokenKey);
     final isAuth = token != null;
     final isAuthRoute = state.matchedLocation.startsWith('/login') ||
         state.matchedLocation.startsWith('/register');
 
     if (!isAuth && !isAuthRoute) return '/login';
-    if (isAuth && isAuthRoute) return '/home';
+    if (isAuth && isAuthRoute) return '/more';
     return null;
   },
   routes: [
+    GoRoute(path: '/',         builder: (_, __) => const SplashPage()),
     GoRoute(path: '/login',    builder: (_, __) => const LoginPage()),
     GoRoute(path: '/register', builder: (_, __) => const RegisterPage()),
     GoRoute(path: '/kids',     builder: (_, __) => const KidsPage()),
     GoRoute(path: '/map',      builder: (_, __) => const MapPage()),
-    GoRoute(path: '/warranty', builder: (_, __) => const WarrantyPage()),
-    // Scanner dabar bus kaip overlay arba tiesiog langas per visą ekraną
+    GoRoute(path: '/basket',   builder: (_, __) => const BasketPage()),
+    GoRoute(path: '/profile',  builder: (_, __) => const ProfilePage()),
     GoRoute(path: '/scanner',  builder: (_, __) => const ScannerPage()),
     
     ShellRoute(
       builder: (context, state, child) => MainShell(child: child),
       routes: [
-        // Mūsų 4 pagrindiniai tabai aplink centrinį kameros mygtuką:
-        GoRoute(path: '/more',     builder: (_, __) => const MorePage()),     // "Daugiau" / Burbulai
-        GoRoute(path: '/market',   builder: (_, __) => const SearchPage()),   // Market
-        GoRoute(path: '/basket',   builder: (_, __) => const BasketPage()),   // Basket
-        GoRoute(path: '/profile',  builder: (_, __) => const ProfilePage()),  // Profile
+        GoRoute(path: '/more',     builder: (_, __) => const MorePage()),       // Daugiau
+        GoRoute(path: '/warranty', builder: (_, __) => const WarrantyPage()),   // Seifas
+        GoRoute(path: '/missions', builder: (_, __) => const MissionsPage()),   // Misijos
+        GoRoute(path: '/market',   builder: (_, __) => const SearchPage()),     // Kainos Analizė
       ],
     ),
   ],
 );
 
-const _navRoutes = ['/more', '/market', '/basket', '/profile'];
+const _navRoutes = ['/more', '/warranty', '/missions', '/market'];
 
 class MainShell extends StatelessWidget {
   final Widget child;
@@ -64,11 +72,102 @@ class MainShell extends StatelessWidget {
     final activeIndex = idx < 0 ? 0 : idx;
 
     return Scaffold(
-      extendBody: true, // Leidžia fonui palįsti po navigacija (Glassmorphism)
-      body: child,
+      extendBody: true, // Leidžia fonui palįsti po navigacija
+      body: Stack(
+        children: [
+          child,
+          // Top-Right Profile Pill
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 16,
+            right: 20,
+            child: _buildProfilePill(context),
+          ),
+        ],
+      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: _buildCenterCameraBtn(context),
       bottomNavigationBar: _buildGlassBottomNav(context, activeIndex),
+    );
+  }
+
+  Widget _buildProfilePill(BuildContext context) {
+    return GestureDetector(
+      onTap: () => context.push('/profile'),
+      child: Hero(
+        tag: 'profile_hero',
+        child: Material(
+          color: Colors.transparent,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(30),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 10)
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: const BoxDecoration(
+                        color: AppColors.elevated,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'M', // Pavyzdinis inicialas
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          '12,500 XP',
+                          style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w900),
+                        ),
+                        const SizedBox(height: 2),
+                        Container(
+                          width: 50,
+                          height: 2,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                          child: FractionallySizedBox(
+                            alignment: Alignment.centerLeft,
+                            widthFactor: 0.75,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: AppColors.primary,
+                                borderRadius: BorderRadius.circular(2),
+                                boxShadow: const [
+                                  BoxShadow(color: AppColors.primary, blurRadius: 4)
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -76,7 +175,7 @@ class MainShell extends StatelessWidget {
     return Container(
       width: 64,
       height: 64,
-      margin: const EdgeInsets.only(top: 30), // Iškelia šiek tiek
+      margin: const EdgeInsets.only(top: 30),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: const LinearGradient(
@@ -97,7 +196,7 @@ class MainShell extends StatelessWidget {
         onPressed: () => context.push('/scanner'),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        child: const Icon(Icons.camera_alt_outlined, color: Colors.white, size: 28),
+        child: const Text('P', style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900)),
       ),
     );
   }
@@ -133,25 +232,25 @@ class MainShell extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _NavItem(
-                  icon: Icons.more_horiz,
+                  icon: Icons.bubble_chart_outlined,
                   isActive: activeIndex == 0,
                   onTap: () => context.go('/more'),
                 ),
                 _NavItem(
-                  icon: Icons.show_chart_outlined,
+                  icon: Icons.shield_outlined,
                   isActive: activeIndex == 1,
-                  onTap: () => context.go('/market'),
+                  onTap: () => context.go('/warranty'),
                 ),
                 const SizedBox(width: 48), // Vieta centriniam FAB mygtukui
                 _NavItem(
-                  icon: Icons.shopping_basket_outlined,
+                  icon: Icons.my_location_outlined,
                   isActive: activeIndex == 2,
-                  onTap: () => context.go('/basket'),
+                  onTap: () => context.go('/missions'),
                 ),
                 _NavItem(
-                  icon: Icons.person_outline,
+                  icon: Icons.show_chart_outlined,
                   isActive: activeIndex == 3,
-                  onTap: () => context.go('/profile'),
+                  onTap: () => context.go('/market'),
                 ),
               ],
             ),

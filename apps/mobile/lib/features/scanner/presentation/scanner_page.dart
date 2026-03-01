@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'dart:ui';
+import 'dart:async';
 import '../../../core/api/api_client.dart';
 import '../../../core/theme/app_theme.dart';
 
@@ -10,166 +11,188 @@ class ScannerPage extends StatefulWidget {
   State<ScannerPage> createState() => _ScannerPageState();
 }
 
-class _ScannerPageState extends State<ScannerPage> with SingleTickerProviderStateMixin {
+class _ScannerPageState extends State<ScannerPage> with TickerProviderStateMixin {
   final _controller = MobileScannerController();
   bool _scanning = true;
-  bool _loading = false;
-  late AnimationController _pulseController;
-  late Animation<double> _pulseAnimation;
+  bool _hasResult = false;
+  Map<String, dynamic>? _product;
+  List<dynamic> _prices = [];
+  
+  // Apple Intelligence Plasma Edge Animation
+  late AnimationController _plasmaController;
+  
+  // Streaming text variables
+  String _streamingText = '';
+  Timer? _streamTimer;
+  final List<String> _steps = [];
+  int _currentStepIndex = 0;
+  int _currentCharIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    _pulseController = AnimationController(
+    _plasmaController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 2),
+      duration: const Duration(seconds: 4),
     )..repeat(reverse: true);
-    _pulseAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
-    );
   }
 
   void _onDetect(BarcodeCapture capture) async {
-    if (!_scanning || _loading) return;
+    if (!_scanning) return;
     final barcode = capture.barcodes.firstOrNull;
     final ean = barcode?.rawValue;
     if (ean == null || ean.isEmpty) return;
 
-    setState(() { _scanning = false; _loading = true; });
+    setState(() {
+      _scanning = false;
+      _hasResult = true;
+    });
     _controller.stop();
+    _startStreamingSimulation(ean);
+  }
+
+  Future<void> _startStreamingSimulation(String ean) async {
+    setState(() {
+      _streamingText = '';
+      _steps.clear();
+      _currentStepIndex = 0;
+      _currentCharIndex = 0;
+      _steps.add('Atpažintas barkodas: $ean\n');
+      _steps.add('Jungiamasi prie PRICELIO duomenų bazės...\n');
+    });
+
+    _startTyping();
 
     try {
       final res = await ApiClient().dio.get('/products/barcode/$ean');
-      if (!mounted) return;
-      await _showResultSheet(res.data, ean);
+      _product = res.data;
+      
+      setState(() {
+        _steps.add('Atpažinta: ${_product!['name']} (${_product!['brand'] ?? ''})\n');
+      });
+
+      final priceRes = await ApiClient().dio.get('/products/${_product!['id']}/prices');
+      _prices = priceRes.data ?? [];
+
+      if (_prices.isNotEmpty) {
+        final bestPrice = _prices[0];
+        setState(() {
+          _steps.add('Analizuojama rinka...\n');
+          _steps.add('Geriausia kaina šiuo metu: ${bestPrice['store_chain'] ?? bestPrice['chain']} (${bestPrice['price_value'] ?? bestPrice['price']} €)\n\n');
+          _steps.add('REKOMENDACIJA: Pirkti. Kaina žemiausia per 30 dienų.');
+        });
+      } else {
+        setState(() {
+          _steps.add('Prekė rasta, bet šiuo metu nėra aktyvių kainų istorijoje.\n');
+        });
+      }
     } catch (_) {
-      if (!mounted) return;
-      _showNotFoundSheet(ean);
-    } finally {
-      if (mounted) setState(() => _loading = false);
+      setState(() {
+        _steps.add('Prekė nerasta globalioje bazėje.\n');
+        _steps.add('Rekomendacija: Įvesti prekę rankiniu būdu ir gauti +50 XP.');
+      });
     }
   }
 
-  Future<void> _showResultSheet(Map<String, dynamic> product, String ean) async {
-    List<dynamic> prices = [];
-    try {
-      final res = await ApiClient().dio.get('/products/${product['id']}/prices');
-      prices = res.data ?? [];
-    } catch (_) {}
-
-    if (!mounted) return;
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _ProductSheet(product: product, prices: prices, ean: ean),
-    );
-    _resume();
+  void _startTyping() {
+    _streamTimer?.cancel();
+    _streamTimer = Timer.periodic(const Duration(milliseconds: 30), (timer) {
+      if (!mounted) return;
+      if (_currentStepIndex < _steps.length) {
+        final currentString = _steps[_currentStepIndex];
+        if (_currentCharIndex < currentString.length) {
+          setState(() {
+            _streamingText += currentString[_currentCharIndex];
+            _currentCharIndex++;
+          });
+        } else {
+          _currentStepIndex++;
+          _currentCharIndex = 0;
+        }
+      }
+    });
   }
 
-  void _showNotFoundSheet(String ean) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) => Container(
-        margin: const EdgeInsets.all(16),
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(32),
-          border: Border.all(color: AppColors.error.withValues(alpha: 0.5)),
-          boxShadow: [BoxShadow(color: AppColors.error.withValues(alpha: 0.2), blurRadius: 40)],
-        ),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Icon(Icons.search_off, size: 64, color: AppColors.error),
-          const SizedBox(height: 16),
-          const Text('Neatpažinta prekė', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
-          const SizedBox(height: 8),
-          Text('Barkodas: $ean', style: const TextStyle(color: AppColors.textSub)),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () { Navigator.pop(context); _resume(); },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, foregroundColor: Colors.white),
-            child: const Text('Skenuoti iš naujo'),
-          ),
-        ]),
-      ),
-    );
-  }
-
-  void _resume() {
-    setState(() { _scanning = true; });
+  void _reset() {
+    _streamTimer?.cancel();
+    setState(() {
+      _hasResult = false;
+      _scanning = true;
+      _streamingText = '';
+      _product = null;
+      _prices.clear();
+    });
     _controller.start();
   }
 
   @override
+  void dispose() {
+    _controller.dispose();
+    _plasmaController.dispose();
+    _streamTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          MobileScanner(controller: _controller, onDetect: _onDetect),
-          
-          // Tamsintas fonas aplink skenavimo rėmelį
-          ColorFiltered(
-            colorFilter: ColorFilter.mode(Colors.black.withValues(alpha: 0.6), BlendMode.srcOut),
-            child: Stack(
-              children: [
-                Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.black,
-                    backgroundBlendMode: BlendMode.dstOut,
-                  ),
-                ),
-                Center(
-                  child: Container(
-                    width: 280,
-                    height: 180,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                  ),
-                ),
-              ],
+          // 1. Kameros sluoksnis (išsiplečiantis arba susitraukiantis)
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 600),
+            curve: Curves.easeOutCubic,
+            top: 0,
+            left: 0,
+            right: 0,
+            height: _hasResult ? screenHeight * 0.2 : screenHeight,
+            child: ClipRRect(
+              borderRadius: _hasResult ? const BorderRadius.vertical(bottom: Radius.circular(24)) : BorderRadius.zero,
+              child: MobileScanner(
+                controller: _controller,
+                onDetect: _onDetect,
+              ),
             ),
           ),
 
-          // Neoninis skenavimo rėmelis
-          Center(
+          // 2. Tamsintas filtras ant kameros, kai nėra rezultato (kad būtų geresnis kontrastas)
+          if (!_hasResult)
+            IgnorePointer(
+              child: Container(
+                color: Colors.black.withValues(alpha: 0.2),
+              ),
+            ),
+
+          // 3. Apple Intelligence Plazmos Rėmelis
+          IgnorePointer(
             child: AnimatedBuilder(
-              animation: _pulseAnimation,
+              animation: _plasmaController,
               builder: (context, child) {
+                final isFast = _hasResult && _streamingText.length < 50; // Greičiau pulsuoja, kai randa
+                final value = _plasmaController.value;
                 return Container(
-                  width: 280,
-                  height: 180,
                   decoration: BoxDecoration(
-                    border: Border.all(color: AppColors.primary.withValues(alpha: _pulseAnimation.value), width: 3),
-                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: AppColors.primary.withValues(alpha: isFast ? 0.8 : (0.3 + 0.3 * value)),
+                      width: isFast ? 8 : 4 + 4 * value,
+                    ),
                     boxShadow: [
-                      BoxShadow(color: AppColors.primary.withValues(alpha: _pulseAnimation.value * 0.4), blurRadius: 30, spreadRadius: 5),
+                      BoxShadow(
+                        color: AppColors.secondary.withValues(alpha: 0.2 + 0.2 * value),
+                        blurRadius: 40,
+                        spreadRadius: 10,
+                      ),
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.2 + 0.3 * value),
+                        blurRadius: 20,
+                        spreadRadius: 5,
+                        blurStyle: BlurStyle.inner,
+                      )
                     ],
                   ),
-                  child: _loading 
-                    ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-                    : Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          // Skystas lazeris
-                          Positioned(
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            child: Container(
-                              height: 4,
-                              decoration: const BoxDecoration(
-                                color: AppColors.secondary,
-                                boxShadow: [BoxShadow(color: AppColors.secondary, blurRadius: 10, spreadRadius: 2)],
-                              ),
-                            ),
-                          ) // Reikėtų Tween animacijos pilnam lazerio judėjimui, bet kol kas pakanka ir rėmelio glow
-                        ],
-                      ),
                 );
               },
             ),
@@ -177,7 +200,7 @@ class _ScannerPageState extends State<ScannerPage> with SingleTickerProviderStat
 
           // Viršutinis Meniu (Back ir Flashlight)
           Positioned(
-            top: 50,
+            top: MediaQuery.of(context).padding.top + 10,
             left: 20,
             right: 20,
             child: Row(
@@ -187,17 +210,18 @@ class _ScannerPageState extends State<ScannerPage> with SingleTickerProviderStat
                   icon: const Icon(Icons.close, color: Colors.white, size: 32),
                   onPressed: () => Navigator.pop(context),
                 ),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      color: Colors.black.withValues(alpha: 0.3),
-                      child: const Text('MAGIŠKA KAMERA', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, letterSpacing: 2)),
+                if (!_hasResult)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        color: Colors.black.withValues(alpha: 0.3),
+                        child: const Text('AI SKENERIS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, letterSpacing: 2)),
+                      ),
                     ),
                   ),
-                ),
                 IconButton(
                   icon: ValueListenableBuilder<MobileScannerState>(
                     valueListenable: _controller,
@@ -207,35 +231,81 @@ class _ScannerPageState extends State<ScannerPage> with SingleTickerProviderStat
                       size: 28,
                     ),
                   ),
-                  onPressed: _controller.toggleTorch,
+                  onPressed: () => _controller.toggleTorch(),
                 ),
               ],
             ),
           ),
 
-          // Informacinis tekstas apačioje
-          Positioned(
-            bottom: 80,
-            left: 20,
-            right: 20,
-            child: Center(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface.withValues(alpha: 0.8),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: Text(
-                      _loading ? 'Analizuojamas barkodas...' : 'Nukreipk kamerą į barkodą',
-                      style: TextStyle(color: _loading ? AppColors.primary : Colors.white, fontWeight: FontWeight.bold),
+          // 4. AI "Arc Search" stiliaus informacijos iškilimas (4/5 ekrano)
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 600),
+            curve: Curves.easeOutCubic,
+            top: _hasResult ? screenHeight * 0.2 + 20 : screenHeight,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+              decoration: BoxDecoration(
+                color: AppColors.background.withValues(alpha: 0.95),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+                border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.1))),
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.8), blurRadius: 40, offset: const Offset(0, -10))],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('AI AUDITAS', style: TextStyle(color: AppColors.textSub, fontWeight: FontWeight.w900, letterSpacing: 2, fontSize: 12)),
+                  const SizedBox(height: 24),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: RichText(
+                        text: TextSpan(
+                          style: const TextStyle(color: Colors.white, fontSize: 20, height: 1.5, fontWeight: FontWeight.w500),
+                          children: _parseStreamingText(_streamingText),
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                  // Veiksmo mygtukas pabaigoje
+                  if (_hasResult && _currentStepIndex >= _steps.length)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 20),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: _reset,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.surface,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                              ),
+                              child: const Text('SKENUOTI KITĄ'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () { /* Add to basket or similar */ },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.black,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                elevation: 10,
+                                shadowColor: AppColors.primary.withValues(alpha: 0.4),
+                              ),
+                              child: const Text('Į KREPŠELĮ', style: TextStyle(fontWeight: FontWeight.w900)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                ],
               ),
             ),
           ),
@@ -244,85 +314,19 @@ class _ScannerPageState extends State<ScannerPage> with SingleTickerProviderStat
     );
   }
 
-  @override
-  void dispose() { 
-    _controller.dispose(); 
-    _pulseController.dispose();
-    super.dispose(); 
-  }
-}
-
-class _ProductSheet extends StatelessWidget {
-  final Map<String, dynamic> product;
-  final List<dynamic> prices;
-  final String ean;
-  const _ProductSheet({required this.product, required this.prices, required this.ean});
-
-  @override
-  Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.65,
-      maxChildSize: 0.95,
-      builder: (_, scroll) => Container(
-        decoration: BoxDecoration(
-          color: AppColors.background,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 12, 24, 20),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Center(child: Container(width: 50, height: 5, decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(5)))),
-            const SizedBox(height: 24),
-            Text(product['name'] ?? 'Prekė nerasta', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white)),
-            if (product['brand'] != null) ...[
-              const SizedBox(height: 4),
-              Text(product['brand'], style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
-            ],
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-              child: Text('EAN: $ean', style: const TextStyle(color: AppColors.textSub, fontSize: 10)),
-            ),
-            const SizedBox(height: 24),
-            
-            if (prices.isEmpty)
-              const Center(child: Text('Kainų istorijos nėra', style: TextStyle(color: AppColors.textSub)))
-            else ...[
-              const Text('KAINOS RINKOJE', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 2, color: AppColors.textSub)),
-              const SizedBox(height: 12),
-              Expanded(
-                child: ListView.builder(
-                  controller: scroll,
-                  itemCount: prices.length,
-                  itemBuilder: (_, i) {
-                    final p = prices[i];
-                    final isMin = i == 0;
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: isMin ? AppColors.primary.withValues(alpha: 0.1) : AppColors.surface,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: isMin ? AppColors.primary.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.05)),
-                        boxShadow: isMin ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.2), blurRadius: 20)] : [],
-                      ),
-                      child: Row(children: [
-                        if (isMin) const Icon(Icons.star, color: AppColors.primary, size: 24),
-                        if (isMin) const SizedBox(width: 12),
-                        Expanded(child: Text(p['store_chain'] ?? p['chain'] ?? '', style: TextStyle(fontWeight: isMin ? FontWeight.w900 : FontWeight.w600, fontSize: 16))),
-                        Text('€${p['price_value'] ?? p['price'] ?? '?'}', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: isMin ? AppColors.green : Colors.white)),
-                      ]),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ]),
-        ),
-      ),
-    );
+  List<TextSpan> _parseStreamingText(String text) {
+    // Paprastas parseris, kuris paryškina žodį REKOMENDACIJA arba Geriausia kaina
+    final spans = <TextSpan>[];
+    final lines = text.split('\n');
+    for (var line in lines) {
+      if (line.startsWith('REKOMENDACIJA:')) {
+        spans.add(TextSpan(text: '$line\n', style: const TextStyle(color: AppColors.green, fontWeight: FontWeight.w900, fontSize: 24)));
+      } else if (line.startsWith('Geriausia kaina')) {
+        spans.add(TextSpan(text: '$line\n', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)));
+      } else {
+        spans.add(TextSpan(text: '$line\n'));
+      }
+    }
+    return spans;
   }
 }

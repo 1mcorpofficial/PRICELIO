@@ -1,9 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:ui';
+import 'package:local_auth/local_auth.dart';
+import 'package:flutter/services.dart';
 import '../../../core/theme/app_theme.dart';
 
-class WarrantyPage extends StatelessWidget {
+class WarrantyPage extends StatefulWidget {
   const WarrantyPage({super.key});
+
+  @override
+  State<WarrantyPage> createState() => _WarrantyPageState();
+}
+
+class _WarrantyPageState extends State<WarrantyPage> with SingleTickerProviderStateMixin {
+  final LocalAuthentication auth = LocalAuthentication();
+  bool _isUnlocked = false;
+  bool _isAuthenticating = false;
+
+  late AnimationController _rotationController;
 
   final List<Map<String, dynamic>> _warranties = const [
     {
@@ -36,6 +50,46 @@ class WarrantyPage extends StatelessWidget {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _rotationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _rotationController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _authenticate() async {
+    setState(() {
+      _isAuthenticating = true;
+    });
+    bool authenticated = false;
+    try {
+      HapticFeedback.heavyImpact();
+      authenticated = await auth.authenticate(
+        localizedReason: 'Atrakinkite garantijų seifą',
+      );
+    } catch (e) {
+      // ignore
+    }
+    
+    if (mounted) {
+      setState(() {
+        _isAuthenticating = false;
+        _isUnlocked = authenticated;
+      });
+      if (authenticated) {
+        HapticFeedback.heavyImpact(); // The "Heavy Click" of unlocking
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -44,78 +98,139 @@ class WarrantyPage extends StatelessWidget {
         backgroundColor: AppColors.background,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
+      body: Stack(
         children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppColors.surface, AppColors.elevated],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-              boxShadow: [
-                BoxShadow(color: AppColors.primary.withValues(alpha: 0.1), blurRadius: 20),
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.2),
-                    shape: BoxShape.circle,
+          // 1. Tikrasis Seifo turinys (matomas tik atrakinus)
+          ListView(
+            padding: const EdgeInsets.all(20),
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [AppColors.surface, AppColors.elevated],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  child: const Icon(Icons.shield, color: AppColors.primary, size: 32),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                  boxShadow: [
+                    BoxShadow(color: AppColors.primary.withValues(alpha: 0.1), blurRadius: 20),
+                  ],
                 ),
-                const SizedBox(width: 16),
-                const Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.shield, color: AppColors.primary, size: 32),
+                    ),
+                    const SizedBox(width: 16),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Apsaugota suma', style: TextStyle(color: AppColors.textSub, fontSize: 12)),
+                          Text('1,077.99 €', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+              const Text('TAVO DAIKTAI', style: TextStyle(color: AppColors.textSub, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+              const SizedBox(height: 16),
+              ..._warranties.map((w) => _buildWarrantyCard(w)),
+              
+              const SizedBox(height: 24),
+              GestureDetector(
+                onTap: () => context.push('/scanner'),
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.2), style: BorderStyle.solid),
+                  ),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Apsaugota suma', style: TextStyle(color: AppColors.textSub, fontSize: 12)),
-                      Text('1,077.99 €', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900)),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.qr_code_scanner, color: Colors.white),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text('Pridėti naują garantinį čekį', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 32),
-          const Text('TAVO DAIKTAI', style: TextStyle(color: AppColors.textSub, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
-          const SizedBox(height: 16),
-          ..._warranties.map((w) => _buildWarrantyCard(w)),
-          
-          const SizedBox(height: 24),
-          GestureDetector(
-            onTap: () => context.push('/scanner'),
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.2), style: BorderStyle.solid), // Flutter doesn't natively support dashed easily without a package, using solid for now
               ),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
+              const SizedBox(height: 100),
+            ],
+          ),
+
+          // 2. "Užšalęs" biometrinis sluoksnis (Deep Frost Glass)
+          if (!_isUnlocked)
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: _isAuthenticating ? null : _authenticate,
+                child: ClipRRect(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+                    child: Container(
+                      color: AppColors.background.withValues(alpha: 0.6),
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            AnimatedBuilder(
+                              animation: _rotationController,
+                              builder: (_, child) {
+                                return Transform.rotate(
+                                  angle: _rotationController.value * 2 * 3.14159,
+                                  child: child,
+                                );
+                              },
+                              child: Container(
+                                width: 100,
+                                height: 100,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.5), width: 4),
+                                  boxShadow: [
+                                    BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 40)
+                                  ],
+                                ),
+                                child: const Center(
+                                  child: Text('P', style: TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: Colors.white)),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 32),
+                            const Text(
+                              'SEIFAS UŽRAKINTAS',
+                              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 3),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Bakstelėk, kad atrakintum su biometrika',
+                              style: TextStyle(color: AppColors.textSub, fontSize: 14),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    child: const Icon(Icons.qr_code_scanner, color: Colors.white),
                   ),
-                  const SizedBox(height: 12),
-                  const Text('Pridėti naują garantinį čekį', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 100),
         ],
       ),
     );

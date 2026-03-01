@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:ui';
 import '../../../core/api/api_client.dart';
 import '../../../core/theme/app_theme.dart';
 
@@ -57,182 +58,224 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
-
     final rank = _gamification?['rank'];
     final xp   = _gamification?['lifetime_xp'] ?? 12500; // Demo
     final initial = (_user?['email'] ?? 'G')[0].toUpperCase();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Profilis'),
-        actions: [
-          IconButton(icon: const Icon(Icons.settings_outlined), onPressed: () {}),
-          IconButton(icon: const Icon(Icons.logout, color: AppColors.error), onPressed: _logout),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        children: [
-          // 1. Asmeninė Vitrina (Hero Section)
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppColors.surface, AppColors.elevated.withValues(alpha: 0.5)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-              boxShadow: [
-                BoxShadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 20),
-              ],
-            ),
-            child: Column(
-              children: [
-                // Avataras su progresu
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    SizedBox(
-                      width: 90,
-                      height: 90,
-                      child: CircularProgressIndicator(
-                        value: 0.75, // 75% progress
-                        backgroundColor: Colors.white.withValues(alpha: 0.1),
-                        color: AppColors.primary,
-                        strokeWidth: 4,
-                      ),
-                    ),
-                    Container(
-                      width: 76,
-                      height: 76,
-                      decoration: const BoxDecoration(
-                        color: AppColors.elevated,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          initial,
-                          style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
+      backgroundColor: Colors.transparent, // Permatomas, kad Hero galėtų išsiplėsti
+      body: Hero(
+        tag: 'profile_hero',
+        child: Material(
+          color: Colors.transparent,
+          child: ClipRRect(
+            borderRadius: BorderRadius.zero, // Išsiplečia į visą ekraną
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              child: Container(
+                width: double.infinity,
+                height: double.infinity,
+                decoration: BoxDecoration(
+                  color: AppColors.background.withValues(alpha: 0.95),
+                ),
+                child: SafeArea(
+                  child: Column(
+                    children: [
+                      // Top Bar (Close and Settings)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.close, color: Colors.white),
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                            const Text('Tavo Profilis', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                            Row(
+                              children: [
+                                IconButton(icon: const Icon(Icons.settings_outlined, color: Colors.white), onPressed: () {}),
+                                IconButton(icon: const Icon(Icons.logout, color: AppColors.error), onPressed: _logout),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  _user?['email']?.split('@')[0] ?? 'Svečias',
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-                  ),
-                  child: Text(
-                    rank?['rank_name']?.toUpperCase() ?? 'LYGIS 14: RINKOS MEDŽIOTOJAS',
-                    style: const TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const Text('XP Piniginė', style: TextStyle(color: AppColors.textSub, fontSize: 12)),
-                Text(
-                  '$xp',
-                  style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w900),
-                ),
-              ],
-            ),
-          ),
-          
-          const SizedBox(height: 16),
+                      
+                      if (_loading) 
+                        const Expanded(child: Center(child: CircularProgressIndicator()))
+                      else
+                        Expanded(
+                          child: ListView(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                            children: [
+                              // 1. Asmeninė Vitrina (Hero Section)
+                              Container(
+                                padding: const EdgeInsets.all(24),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [AppColors.surface, AppColors.elevated.withValues(alpha: 0.5)],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(24),
+                                  border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                                  boxShadow: [
+                                    BoxShadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 20),
+                                  ],
+                                ),
+                                child: Column(
+                                  children: [
+                                    // Avataras su progresu
+                                    Stack(
+                                      alignment: Alignment.center,
+                                      children: [
+                                        SizedBox(
+                                          width: 90,
+                                          height: 90,
+                                          child: CircularProgressIndicator(
+                                            value: 0.75, // 75% progress
+                                            backgroundColor: Colors.white.withValues(alpha: 0.1),
+                                            color: AppColors.primary,
+                                            strokeWidth: 4,
+                                          ),
+                                        ),
+                                        Container(
+                                          width: 76,
+                                          height: 76,
+                                          decoration: const BoxDecoration(
+                                            color: AppColors.elevated,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Center(
+                                            child: Text(
+                                              initial,
+                                              style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      _user?['email']?.split('@')[0] ?? 'Svečias',
+                                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary.withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                                      ),
+                                      child: Text(
+                                        rank?['rank_name']?.toUpperCase() ?? 'LYGIS 14: RINKOS MEDŽIOTOJAS',
+                                        style: const TextStyle(
+                                          color: AppColors.primary,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 1.5,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 20),
+                                    const Text('XP Piniginė', style: TextStyle(color: AppColors.textSub, fontSize: 12)),
+                                    Text(
+                                      '$xp',
+                                      style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: Colors.white),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              
+                              const SizedBox(height: 16),
 
-          // 2. XP Dilemos Zona
-          Row(
-            children: [
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-                  ),
-                  child: const Column(
-                    children: [
-                      Icon(Icons.arrow_upward_rounded, color: AppColors.primary),
-                      SizedBox(height: 8),
-                      Text('Kilti Lygiais', style: TextStyle(fontWeight: FontWeight.bold)),
-                      SizedBox(height: 2),
-                      Text('Trūksta 2,500 XP', style: TextStyle(fontSize: 10, color: AppColors.textSub)),
+                              // 2. XP Dilemos Zona
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(vertical: 16),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.surface,
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+                                      ),
+                                      child: const Column(
+                                        children: [
+                                          Icon(Icons.arrow_upward_rounded, color: AppColors.primary),
+                                          SizedBox(height: 8),
+                                          Text('Kilti Lygiais', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                                          SizedBox(height: 2),
+                                          Text('Trūksta 2,500 XP', style: TextStyle(fontSize: 10, color: AppColors.textSub)),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(vertical: 16),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.secondary.withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(color: AppColors.secondary.withValues(alpha: 0.3)),
+                                      ),
+                                      child: const Column(
+                                        children: [
+                                          Icon(Icons.shopping_cart_checkout, color: AppColors.secondary),
+                                          SizedBox(height: 8),
+                                          Text('Išleisti XP', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.secondary)),
+                                          SizedBox(height: 2),
+                                          Text('Apmokėti PRO', style: TextStyle(fontSize: 10, color: AppColors.textSub)),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              const SizedBox(height: 24),
+
+                              // 3. Dvigubos Lyderių Lentelės
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: AppColors.surface,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Row(
+                                      children: [
+                                        _buildTabBtn('TOP KAUPIKAI', 0, AppColors.primary),
+                                        _buildTabBtn('🔥 BANGINIAI', 1, AppColors.error),
+                                      ],
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Column(
+                                        children: _activeTabIndex == 0
+                                            ? _topHoarders.map((u) => _buildHoarderTile(u)).toList()
+                                            : _topWhales.map((u) => _buildWhaleTile(u)).toList(),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              
+                              const SizedBox(height: 40),
+                            ],
+                          ),
+                        ),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  decoration: BoxDecoration(
-                    color: AppColors.secondary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.secondary.withValues(alpha: 0.3)),
-                  ),
-                  child: const Column(
-                    children: [
-                      Icon(Icons.shopping_cart_checkout, color: AppColors.secondary),
-                      SizedBox(height: 8),
-                      Text('Išleisti XP', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.secondary)),
-                      SizedBox(height: 2),
-                      Text('Apmokėti PRO', style: TextStyle(fontSize: 10, color: AppColors.textSub)),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 24),
-
-          // 3. Dvigubos Lyderių Lentelės
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    _buildTabBtn('TOP KAUPIKAI', 0, AppColors.primary),
-                    _buildTabBtn('🔥 BANGINIAI', 1, AppColors.error),
-                  ],
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: _activeTabIndex == 0
-                        ? _topHoarders.map((u) => _buildHoarderTile(u)).toList()
-                        : _topWhales.map((u) => _buildWhaleTile(u)).toList(),
-                  ),
-                ),
-              ],
             ),
           ),
-          
-          const SizedBox(height: 100), // Padding for bottom nav
-        ],
+        ),
       ),
     );
   }
@@ -282,7 +325,7 @@ class _ProfilePageState extends State<ProfilePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(user['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(user['name'], style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
                 Text(user['rank'], style: const TextStyle(fontSize: 11, color: AppColors.textSub)),
               ],
             ),
@@ -314,7 +357,7 @@ class _ProfilePageState extends State<ProfilePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(user['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(user['name'], style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
                 Text(user['plan'], style: const TextStyle(fontSize: 11, color: AppColors.textSub)),
               ],
             ),

@@ -35,7 +35,7 @@ class _RegisterPageState extends State<RegisterPage> {
         accessToken: res.data['access_token']?.toString(),
         refreshToken: res.data['refresh_token']?.toString(),
       );
-      if (mounted) context.go('/home');
+      if (mounted) context.go('/more');
     } catch (e) {
       setState(() => _error = 'Registracija nepavyko. Gal el. paštas jau egzistuoja?');
     } finally {
