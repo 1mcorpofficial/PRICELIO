@@ -58,7 +58,7 @@ class _RegisterPageState extends State<RegisterPage> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
-                  colors: [AppColors.secondary.withOpacity(0.15), Colors.transparent],
+                  colors: [AppColors.secondary.withValues(alpha: 0.15), Colors.transparent],
                 ),
               ),
             ),
@@ -75,9 +75,9 @@ class _RegisterPageState extends State<RegisterPage> {
                     height: 80,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: LinearGradient(colors: [AppColors.surface, AppColors.elevated]),
-                      border: Border.all(color: AppColors.secondary.withOpacity(0.5)),
-                      boxShadow: [BoxShadow(color: AppColors.secondary.withOpacity(0.2), blurRadius: 30)],
+                      gradient: const LinearGradient(colors: [AppColors.surface, AppColors.elevated]),
+                      border: Border.all(color: AppColors.secondary.withValues(alpha: 0.5)),
+                      boxShadow: [BoxShadow(color: AppColors.secondary.withValues(alpha: 0.2), blurRadius: 30)],
                     ),
                     child: const Center(
                       child: Icon(Icons.rocket_launch, color: AppColors.secondary, size: 36),
@@ -98,9 +98,9 @@ class _RegisterPageState extends State<RegisterPage> {
                       child: Container(
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
-                          color: AppColors.surface.withOpacity(0.6),
+                          color: AppColors.surface.withValues(alpha: 0.6),
                           borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: Colors.white.withOpacity(0.05)),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
                         ),
                         child: Column(
                           children: [
@@ -136,7 +136,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                 padding: const EdgeInsets.symmetric(vertical: 16),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                                 elevation: 10,
-                                shadowColor: AppColors.secondary.withOpacity(0.5),
+                                shadowColor: AppColors.secondary.withValues(alpha: 0.5),
                               ),
                               child: _loading
                                   ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3))

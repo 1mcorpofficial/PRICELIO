@@ -90,14 +90,14 @@ class _MissionsPageState extends State<MissionsPage> with SingleTickerProviderSt
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withOpacity(0.05)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
             ),
             child: TabBar(
               controller: _tabs,
               indicator: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.2),
+                color: AppColors.primary.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.primary.withOpacity(0.5)),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
               ),
               indicatorSize: TabBarIndicatorSize.tab,
               dividerColor: Colors.transparent,
@@ -144,11 +144,11 @@ class _MissionsPageState extends State<MissionsPage> with SingleTickerProviderSt
             margin: const EdgeInsets.only(bottom: 16),
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: AppColors.surface.withOpacity(0.8),
+              color: AppColors.surface.withValues(alpha: 0.8),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: AppColors.secondary.withOpacity(0.3)),
+              border: Border.all(color: AppColors.secondary.withValues(alpha: 0.3)),
               boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 10, offset: const Offset(0, 5)),
+                BoxShadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 10, offset: const Offset(0, 5)),
               ],
             ),
             child: Row(
@@ -157,10 +157,10 @@ class _MissionsPageState extends State<MissionsPage> with SingleTickerProviderSt
                   width: 56,
                   height: 56,
                   decoration: BoxDecoration(
-                    color: AppColors.secondary.withOpacity(0.1),
+                    color: AppColors.secondary.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.secondary.withOpacity(0.5)),
-                    boxShadow: [BoxShadow(color: AppColors.secondary.withOpacity(0.2), blurRadius: 10)],
+                    border: Border.all(color: AppColors.secondary.withValues(alpha: 0.5)),
+                    boxShadow: [BoxShadow(color: AppColors.secondary.withValues(alpha: 0.2), blurRadius: 10)],
                   ),
                   child: const Center(child: Icon(Icons.star, color: AppColors.secondary, size: 28)),
                 ),
@@ -186,7 +186,7 @@ class _MissionsPageState extends State<MissionsPage> with SingleTickerProviderSt
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(colors: [AppColors.primary, AppColors.secondary]),
                     borderRadius: BorderRadius.circular(12),
-                    boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.4), blurRadius: 8)],
+                    boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.4), blurRadius: 8)],
                   ),
                   child: Text('+$xp XP', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12)),
                 ),
@@ -221,9 +221,9 @@ class _MissionsPageState extends State<MissionsPage> with SingleTickerProviderSt
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             decoration: BoxDecoration(
-              color: isTop3 ? color.withOpacity(0.05) : AppColors.surface,
+              color: isTop3 ? color.withValues(alpha: 0.05) : AppColors.surface,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: isTop3 ? color.withOpacity(0.3) : Colors.white.withOpacity(0.05)),
+              border: Border.all(color: isTop3 ? color.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.05)),
             ),
             child: Row(
               children: [

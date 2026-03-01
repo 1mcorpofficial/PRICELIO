@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:ui';
 import '../../../core/api/api_client.dart';
 import '../../../core/theme/app_theme.dart';
 
@@ -65,7 +64,7 @@ class _SearchPageState extends State<SearchPage> {
               style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               decoration: InputDecoration(
                 hintText: 'Ieškoti produkto (pvz. Sviestas)...',
-                hintStyle: TextStyle(color: AppColors.textSub.withOpacity(0.5)),
+                hintStyle: TextStyle(color: AppColors.textSub.withValues(alpha: 0.5)),
                 prefixIcon: const Icon(Icons.search, color: AppColors.primary),
                 suffixIcon: _controller.text.isNotEmpty 
                   ? IconButton(
@@ -104,12 +103,12 @@ class _SearchPageState extends State<SearchPage> {
 
   Widget _buildSearchResults() {
     if (!_loading && _results.isEmpty) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.search_off, size: 64, color: AppColors.textSub),
-            const SizedBox(height: 16),
+            Icon(Icons.search_off, size: 64, color: AppColors.textSub),
+            SizedBox(height: 16),
             Text('Produktų nerasta', style: TextStyle(color: AppColors.textSub, fontSize: 16)),
           ],
         ),
@@ -126,13 +125,13 @@ class _SearchPageState extends State<SearchPage> {
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withOpacity(0.05)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
           ),
           child: ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             leading: Container(
               width: 40, height: 40,
-              decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+              decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
               child: const Icon(Icons.shopping_bag_outlined, color: AppColors.primary),
             ),
             title: Text(p['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
@@ -168,10 +167,10 @@ class _SearchPageState extends State<SearchPage> {
                 margin: const EdgeInsets.only(right: 16),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(colors: [AppColors.surface, AppColors.elevated]),
+                  gradient: const LinearGradient(colors: [AppColors.surface, AppColors.elevated]),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: isDrop ? AppColors.green.withOpacity(0.3) : AppColors.error.withOpacity(0.3)),
-                  boxShadow: [BoxShadow(color: isDrop ? AppColors.green.withOpacity(0.05) : AppColors.error.withOpacity(0.05), blurRadius: 15)],
+                  border: Border.all(color: isDrop ? AppColors.green.withValues(alpha: 0.3) : AppColors.error.withValues(alpha: 0.3)),
+                  boxShadow: [BoxShadow(color: isDrop ? AppColors.green.withValues(alpha: 0.05) : AppColors.error.withValues(alpha: 0.05), blurRadius: 15)],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -214,13 +213,13 @@ class _SearchPageState extends State<SearchPage> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
             child: Icon(icon, color: AppColors.primary, size: 20),
           ),
           const SizedBox(width: 16),

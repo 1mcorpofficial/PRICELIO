@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../core/api/api_client.dart';
 import '../../../core/theme/app_theme.dart';
 
 class BasketPage extends StatefulWidget {
@@ -86,7 +85,7 @@ class _BasketPageState extends State<BasketPage> {
                       decoration: BoxDecoration(
                         color: AppColors.surface,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.white.withOpacity(0.05)),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
                       ),
                       child: ListTile(
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -94,9 +93,9 @@ class _BasketPageState extends State<BasketPage> {
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.2),
+                            color: Colors.black.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.white.withOpacity(0.05)),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
                           ),
                           child: Center(
                             child: Text(
@@ -128,15 +127,15 @@ class _BasketPageState extends State<BasketPage> {
                 margin: const EdgeInsets.fromLTRB(16, 0, 16, 100),
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
+                  gradient: const LinearGradient(
                     colors: [AppColors.surface, AppColors.elevated],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                   boxShadow: [
-                    BoxShadow(color: AppColors.primary.withOpacity(0.15), blurRadius: 20),
+                    BoxShadow(color: AppColors.primary.withValues(alpha: 0.15), blurRadius: 20),
                   ],
                 ),
                 child: Row(
@@ -187,11 +186,11 @@ class _BasketPageState extends State<BasketPage> {
                       margin: const EdgeInsets.only(right: 12),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: AppColors.elevated.withOpacity(0.95),
+                        color: AppColors.elevated.withValues(alpha: 0.95),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.secondary.withOpacity(0.3)),
+                        border: Border.all(color: AppColors.secondary.withValues(alpha: 0.3)),
                         boxShadow: [
-                          BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 10, offset: const Offset(0, 5)),
+                          BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 10, offset: const Offset(0, 5)),
                         ],
                       ),
                       child: Column(

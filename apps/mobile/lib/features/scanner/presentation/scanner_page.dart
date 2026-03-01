@@ -77,8 +77,8 @@ class _ScannerPageState extends State<ScannerPage> with SingleTickerProviderStat
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(32),
-          border: Border.all(color: AppColors.error.withOpacity(0.5)),
-          boxShadow: [BoxShadow(color: AppColors.error.withOpacity(0.2), blurRadius: 40)],
+          border: Border.all(color: AppColors.error.withValues(alpha: 0.5)),
+          boxShadow: [BoxShadow(color: AppColors.error.withValues(alpha: 0.2), blurRadius: 40)],
         ),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           const Icon(Icons.search_off, size: 64, color: AppColors.error),
@@ -112,7 +112,7 @@ class _ScannerPageState extends State<ScannerPage> with SingleTickerProviderStat
           
           // Tamsintas fonas aplink skenavimo rėmelį
           ColorFiltered(
-            colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.6), BlendMode.srcOut),
+            colorFilter: ColorFilter.mode(Colors.black.withValues(alpha: 0.6), BlendMode.srcOut),
             child: Stack(
               children: [
                 Container(
@@ -144,10 +144,10 @@ class _ScannerPageState extends State<ScannerPage> with SingleTickerProviderStat
                   width: 280,
                   height: 180,
                   decoration: BoxDecoration(
-                    border: Border.all(color: AppColors.primary.withOpacity(_pulseAnimation.value), width: 3),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: _pulseAnimation.value), width: 3),
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: [
-                      BoxShadow(color: AppColors.primary.withOpacity(_pulseAnimation.value * 0.4), blurRadius: 30, spreadRadius: 5),
+                      BoxShadow(color: AppColors.primary.withValues(alpha: _pulseAnimation.value * 0.4), blurRadius: 30, spreadRadius: 5),
                     ],
                   ),
                   child: _loading 
@@ -162,7 +162,7 @@ class _ScannerPageState extends State<ScannerPage> with SingleTickerProviderStat
                             right: 0,
                             child: Container(
                               height: 4,
-                              decoration: BoxDecoration(
+                              decoration: const BoxDecoration(
                                 color: AppColors.secondary,
                                 boxShadow: [BoxShadow(color: AppColors.secondary, blurRadius: 10, spreadRadius: 2)],
                               ),
@@ -193,7 +193,7 @@ class _ScannerPageState extends State<ScannerPage> with SingleTickerProviderStat
                     filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      color: Colors.black.withOpacity(0.3),
+                      color: Colors.black.withValues(alpha: 0.3),
                       child: const Text('MAGIŠKA KAMERA', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, letterSpacing: 2)),
                     ),
                   ),
@@ -226,8 +226,8 @@ class _ScannerPageState extends State<ScannerPage> with SingleTickerProviderStat
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     decoration: BoxDecoration(
-                      color: AppColors.surface.withOpacity(0.8),
-                      border: Border.all(color: Colors.white.withOpacity(0.1)),
+                      color: AppColors.surface.withValues(alpha: 0.8),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                       borderRadius: BorderRadius.circular(24),
                     ),
                     child: Text(
@@ -268,12 +268,12 @@ class _ProductSheet extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.background,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-          border: Border.all(color: Colors.white.withOpacity(0.1)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
         ),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 12, 24, 20),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Center(child: Container(width: 50, height: 5, decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(5)))),
+            Center(child: Container(width: 50, height: 5, decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(5)))),
             const SizedBox(height: 24),
             Text(product['name'] ?? 'Prekė nerasta', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white)),
             if (product['brand'] != null) ...[
@@ -283,7 +283,7 @@ class _ProductSheet extends StatelessWidget {
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
               child: Text('EAN: $ean', style: const TextStyle(color: AppColors.textSub, fontSize: 10)),
             ),
             const SizedBox(height: 24),
@@ -304,10 +304,10 @@ class _ProductSheet extends StatelessWidget {
                       margin: const EdgeInsets.only(bottom: 12),
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: isMin ? AppColors.primary.withOpacity(0.1) : AppColors.surface,
+                        color: isMin ? AppColors.primary.withValues(alpha: 0.1) : AppColors.surface,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: isMin ? AppColors.primary.withOpacity(0.5) : Colors.white.withOpacity(0.05)),
-                        boxShadow: isMin ? [BoxShadow(color: AppColors.primary.withOpacity(0.2), blurRadius: 20)] : [],
+                        border: Border.all(color: isMin ? AppColors.primary.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.05)),
+                        boxShadow: isMin ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.2), blurRadius: 20)] : [],
                       ),
                       child: Row(children: [
                         if (isMin) const Icon(Icons.star, color: AppColors.primary, size: 24),

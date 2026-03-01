@@ -55,7 +55,7 @@ class _LoginPageState extends State<LoginPage> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
-                  colors: [AppColors.secondary.withOpacity(0.15), Colors.transparent],
+                  colors: [AppColors.secondary.withValues(alpha: 0.15), Colors.transparent],
                 ),
               ),
             ),
@@ -69,7 +69,7 @@ class _LoginPageState extends State<LoginPage> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
-                  colors: [AppColors.primary.withOpacity(0.1), Colors.transparent],
+                  colors: [AppColors.primary.withValues(alpha: 0.1), Colors.transparent],
                 ),
               ),
             ),
@@ -87,9 +87,9 @@ class _LoginPageState extends State<LoginPage> {
                     height: 100,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: LinearGradient(colors: [AppColors.surface, AppColors.elevated]),
-                      border: Border.all(color: AppColors.primary.withOpacity(0.5)),
-                      boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.2), blurRadius: 30)],
+                      gradient: const LinearGradient(colors: [AppColors.surface, AppColors.elevated]),
+                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
+                      boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.2), blurRadius: 30)],
                     ),
                     child: const Center(
                       child: Text('P', style: TextStyle(fontSize: 48, fontWeight: FontWeight.w900, color: Colors.white, shadows: [Shadow(color: Colors.white54, blurRadius: 10)])),
@@ -111,9 +111,9 @@ class _LoginPageState extends State<LoginPage> {
                       child: Container(
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
-                          color: AppColors.surface.withOpacity(0.6),
+                          color: AppColors.surface.withValues(alpha: 0.6),
                           borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: Colors.white.withOpacity(0.05)),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
                         ),
                         child: Column(
                           children: [
@@ -149,7 +149,7 @@ class _LoginPageState extends State<LoginPage> {
                                 padding: const EdgeInsets.symmetric(vertical: 16),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                                 elevation: 10,
-                                shadowColor: AppColors.primary.withOpacity(0.5),
+                                shadowColor: AppColors.primary.withValues(alpha: 0.5),
                               ),
                               child: _loading
                                   ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 3))

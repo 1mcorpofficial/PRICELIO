@@ -131,10 +131,10 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
                     child: Container(
                       height: 56,
                       decoration: BoxDecoration(
-                        color: AppColors.surface.withOpacity(0.7),
+                        color: AppColors.surface.withValues(alpha: 0.7),
                         borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: Colors.white.withOpacity(0.1)),
-                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 20)],
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 20)],
                       ),
                       child: Row(
                         children: [
@@ -183,14 +183,14 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
                           decoration: BoxDecoration(
                             color: isSelected 
                                 ? (isHotFilter ? AppColors.error : AppColors.primary) 
-                                : AppColors.surface.withOpacity(0.8),
+                                : AppColors.surface.withValues(alpha: 0.8),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: isSelected ? Colors.transparent : Colors.white.withOpacity(0.1),
+                              color: isSelected ? Colors.transparent : Colors.white.withValues(alpha: 0.1),
                             ),
                             boxShadow: isSelected ? [
                               BoxShadow(
-                                color: (isHotFilter ? AppColors.error : AppColors.primary).withOpacity(0.4),
+                                color: (isHotFilter ? AppColors.error : AppColors.primary).withValues(alpha: 0.4),
                                 blurRadius: 10,
                               )
                             ] : [],
@@ -221,15 +221,15 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
           
           // Radaro krovimo indikatorius
           if (_loading)
-            Center(
+            const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const SizedBox(
+                  SizedBox(
                     width: 60, height: 60,
                     child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   Text('Skenuojamas tinklas...', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, shadows: [Shadow(color: AppColors.primary, blurRadius: 10)])),
                 ],
               ),
@@ -252,7 +252,7 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
               height: 80 * _pulseController.value,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.error.withOpacity(1.0 - _pulseController.value),
+                color: AppColors.error.withValues(alpha: 1.0 - _pulseController.value),
               ),
             ),
             // Pagrindinis burbulas
@@ -264,7 +264,7 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 2),
                 boxShadow: [
-                  BoxShadow(color: AppColors.error.withOpacity(0.6), blurRadius: 15, spreadRadius: 2),
+                  BoxShadow(color: AppColors.error.withValues(alpha: 0.6), blurRadius: 15, spreadRadius: 2),
                 ],
               ),
               child: Center(
@@ -287,7 +287,7 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
       decoration: BoxDecoration(
         color: AppColors.surface,
         shape: BoxShape.circle,
-        border: Border.all(color: AppColors.textSub.withOpacity(0.5), width: 1.5),
+        border: Border.all(color: AppColors.textSub.withValues(alpha: 0.5), width: 1.5),
       ),
       child: Center(
         child: Text(
@@ -310,7 +310,7 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
           child: Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: AppColors.surface.withOpacity(0.85),
+              color: AppColors.surface.withValues(alpha: 0.85),
               border: Border(top: BorderSide(color: isHot ? AppColors.error : AppColors.primary, width: 2)),
             ),
             child: Column(
@@ -333,7 +333,7 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: AppColors.error.withOpacity(0.2),
+                          color: AppColors.error.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: AppColors.error),
                         ),

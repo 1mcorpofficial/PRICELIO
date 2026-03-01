@@ -184,10 +184,10 @@ class _SetupView extends StatelessWidget {
             child: Container(
               width: 120, height: 120,
               decoration: BoxDecoration(
-                color: AppColors.secondary.withOpacity(0.1),
+                color: AppColors.secondary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.secondary.withOpacity(0.5), width: 2),
-                boxShadow: [BoxShadow(color: AppColors.secondary.withOpacity(0.3), blurRadius: 20)],
+                border: Border.all(color: AppColors.secondary.withValues(alpha: 0.5), width: 2),
+                boxShadow: [BoxShadow(color: AppColors.secondary.withValues(alpha: 0.3), blurRadius: 20)],
               ),
               child: const Icon(Icons.rocket_launch, size: 64, color: AppColors.secondary),
             ),
@@ -209,7 +209,7 @@ class _SetupView extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withOpacity(0.05)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -222,7 +222,7 @@ class _SetupView extends StatelessWidget {
                   textCapitalization: TextCapitalization.words,
                   decoration: InputDecoration(
                     hintText: 'Pvz. Lukas',
-                    hintStyle: TextStyle(color: AppColors.textSub.withOpacity(0.5)),
+                    hintStyle: TextStyle(color: AppColors.textSub.withValues(alpha: 0.5)),
                     prefixIcon: const Icon(Icons.face, color: AppColors.primary),
                   ),
                 ),
@@ -257,7 +257,7 @@ class _SetupView extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 20),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               elevation: 10,
-              shadowColor: AppColors.secondary.withOpacity(0.5),
+              shadowColor: AppColors.secondary.withValues(alpha: 0.5),
             ),
             child: loading
                 ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 3, color: Colors.white))
@@ -308,15 +308,15 @@ class _MissionsView extends StatelessWidget {
       body: loading
           ? const Center(child: CircularProgressIndicator(color: AppColors.secondary))
           : missions.isEmpty
-              ? Center(
+              ? const Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.star_border, size: 80, color: AppColors.textSub),
-                      const SizedBox(height: 16),
-                      const Text('Visos misijos įvykdytos!', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
-                      const SizedBox(height: 8),
-                      const Text('Lauk naujų užduočių iš tėvų.', style: TextStyle(color: AppColors.textSub)),
+                      Icon(Icons.star_border, size: 80, color: AppColors.textSub),
+                      SizedBox(height: 16),
+                      Text('Visos misijos įvykdytos!', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                      SizedBox(height: 8),
+                      Text('Lauk naujų užduočių iš tėvų.', style: TextStyle(color: AppColors.textSub)),
                     ],
                   ),
                 )
@@ -348,10 +348,10 @@ class _AgeChip extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary.withOpacity(0.15) : AppColors.background,
+          color: selected ? AppColors.primary.withValues(alpha: 0.15) : AppColors.background,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: selected ? AppColors.primary : Colors.white.withOpacity(0.1), width: selected ? 2 : 1),
-          boxShadow: selected ? [BoxShadow(color: AppColors.primary.withOpacity(0.2), blurRadius: 10)] : [],
+          border: Border.all(color: selected ? AppColors.primary : Colors.white.withValues(alpha: 0.1), width: selected ? 2 : 1),
+          boxShadow: selected ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.2), blurRadius: 10)] : [],
         ),
         child: Column(children: [
           Icon(icon, color: selected ? AppColors.primary : AppColors.textSub, size: 32),
@@ -377,8 +377,8 @@ class _KidsMissionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.secondary.withOpacity(0.3), width: 2),
-        boxShadow: [BoxShadow(color: AppColors.secondary.withOpacity(0.1), blurRadius: 15, offset: const Offset(0, 5))],
+        border: Border.all(color: AppColors.secondary.withValues(alpha: 0.3), width: 2),
+        boxShadow: [BoxShadow(color: AppColors.secondary.withValues(alpha: 0.1), blurRadius: 15, offset: const Offset(0, 5))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -388,7 +388,7 @@ class _KidsMissionCard extends StatelessWidget {
               Container(
                 width: 50, height: 50,
                 decoration: BoxDecoration(
-                  color: AppColors.secondary.withOpacity(0.2),
+                  color: AppColors.secondary.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.star, color: AppColors.secondary, size: 28),
@@ -403,7 +403,7 @@ class _KidsMissionCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.2),
+                  color: AppColors.primary.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: AppColors.primary),
                 ),

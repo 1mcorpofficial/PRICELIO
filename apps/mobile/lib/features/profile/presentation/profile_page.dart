@@ -80,14 +80,14 @@ class _ProfilePageState extends State<ProfilePage> {
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [AppColors.surface, AppColors.elevated.withOpacity(0.5)],
+                colors: [AppColors.surface, AppColors.elevated.withValues(alpha: 0.5)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withOpacity(0.1)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
               boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 20),
+                BoxShadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 20),
               ],
             ),
             child: Column(
@@ -101,7 +101,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       height: 90,
                       child: CircularProgressIndicator(
                         value: 0.75, // 75% progress
-                        backgroundColor: Colors.white.withOpacity(0.1),
+                        backgroundColor: Colors.white.withValues(alpha: 0.1),
                         color: AppColors.primary,
                         strokeWidth: 4,
                       ),
@@ -131,9 +131,9 @@ class _ProfilePageState extends State<ProfilePage> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                   ),
                   child: Text(
                     rank?['rank_name']?.toUpperCase() ?? 'LYGIS 14: RINKOS MEDŽIOTOJAS',
@@ -166,7 +166,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   decoration: BoxDecoration(
                     color: AppColors.surface,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withOpacity(0.05)),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
                   ),
                   child: const Column(
                     children: [
@@ -184,9 +184,9 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   decoration: BoxDecoration(
-                    color: AppColors.secondary.withOpacity(0.1),
+                    color: AppColors.secondary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.secondary.withOpacity(0.3)),
+                    border: Border.all(color: AppColors.secondary.withValues(alpha: 0.3)),
                   ),
                   child: const Column(
                     children: [
@@ -209,7 +209,7 @@ class _ProfilePageState extends State<ProfilePage> {
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white.withOpacity(0.05)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
             ),
             child: Column(
               children: [
@@ -247,7 +247,7 @@ class _ProfilePageState extends State<ProfilePage> {
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
-                color: isActive ? accentColor : Colors.white.withOpacity(0.1),
+                color: isActive ? accentColor : Colors.white.withValues(alpha: 0.1),
                 width: isActive ? 2 : 1,
               ),
             ),
@@ -298,9 +298,9 @@ class _ProfilePageState extends State<ProfilePage> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.error.withOpacity(0.05),
+        color: AppColors.error.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.error.withOpacity(0.15)),
+        border: Border.all(color: AppColors.error.withValues(alpha: 0.15)),
       ),
       child: Row(
         children: [

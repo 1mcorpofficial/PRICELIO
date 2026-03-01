@@ -50,7 +50,7 @@ class WarrantyPage extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
+              gradient: const LinearGradient(
                 colors: [AppColors.surface, AppColors.elevated],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,

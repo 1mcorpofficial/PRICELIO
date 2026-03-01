@@ -27,7 +27,6 @@ class AppTheme {
     colorScheme: const ColorScheme.dark(
       primary: AppColors.primary,
       secondary: AppColors.secondary,
-      background: AppColors.background,
       surface: AppColors.surface,
       error: AppColors.error,
     ),
@@ -53,7 +52,7 @@ class AppTheme {
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: AppColors.surface.withOpacity(0.6),
+      fillColor: AppColors.surface.withValues(alpha: 0.6),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(color: AppColors.border),

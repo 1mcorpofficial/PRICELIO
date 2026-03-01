@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 import '../../../core/theme/app_theme.dart';
@@ -70,7 +69,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
-                  colors: [AppColors.primary.withOpacity(0.15), Colors.transparent],
+                  colors: [AppColors.primary.withValues(alpha: 0.15), Colors.transparent],
                   stops: const [0.0, 1.0],
                 ),
               ),
@@ -85,7 +84,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
-                  colors: [AppColors.secondary.withOpacity(0.1), Colors.transparent],
+                  colors: [AppColors.secondary.withValues(alpha: 0.1), Colors.transparent],
                   stops: const [0.0, 1.0],
                 ),
               ),
@@ -158,7 +157,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: AppColors.surface.withOpacity(0.5),
+              color: AppColors.surface.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: AppColors.border),
             ),
@@ -200,8 +199,8 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    AppColors.surface.withOpacity(0.8),
-                    AppColors.elevated.withOpacity(0.9),
+                    AppColors.surface.withValues(alpha: 0.8),
+                    AppColors.elevated.withValues(alpha: 0.9),
                   ],
                 ),
                 border: Border.all(
@@ -211,15 +210,15 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 boxShadow: [
                   BoxShadow(
                     color: _isListening 
-                        ? AppColors.primary.withOpacity(0.4) 
-                        : Colors.black.withOpacity(0.5),
+                        ? AppColors.primary.withValues(alpha: 0.4) 
+                        : Colors.black.withValues(alpha: 0.5),
                     blurRadius: _isListening ? 40 : 30,
                     spreadRadius: _isListening ? 10 : 0,
                     offset: const Offset(0, 10),
                   ),
                   if (_isListening)
                     BoxShadow(
-                      color: AppColors.secondary.withOpacity(0.2),
+                      color: AppColors.secondary.withValues(alpha: 0.2),
                       blurRadius: 60,
                       spreadRadius: 20,
                     ),
@@ -234,7 +233,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                     color: AppColors.textMain,
                     shadows: [
                       Shadow(
-                        color: Colors.white.withOpacity(0.3),
+                        color: Colors.white.withValues(alpha: 0.3),
                         blurRadius: 20,
                       )
                     ],

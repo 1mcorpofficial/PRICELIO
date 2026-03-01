@@ -4,7 +4,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:ui';
 import '../../features/auth/presentation/login_page.dart';
 import '../../features/auth/presentation/register_page.dart';
-import '../../features/home/presentation/home_page.dart';
 import '../../features/more/presentation/more_page.dart';
 import '../../features/search/presentation/search_page.dart';
 import '../../features/map/presentation/map_page.dart';
@@ -12,13 +11,11 @@ import '../../features/basket/presentation/basket_page.dart';
 import '../../features/profile/presentation/profile_page.dart';
 import '../../features/scanner/presentation/scanner_page.dart';
 import '../../features/kids/presentation/kids_page.dart';
-import '../../features/receipts/presentation/receipt_scan_page.dart';
-import '../../features/missions/presentation/missions_page.dart';
 import '../../features/warranty/presentation/warranty_page.dart';
 import '../api/api_client.dart';
 import '../theme/app_theme.dart';
 
-final _storage = const FlutterSecureStorage();
+const _storage = FlutterSecureStorage();
 
 final appRouter = GoRouter(
   initialLocation: '/home',
@@ -82,19 +79,19 @@ class MainShell extends StatelessWidget {
       margin: const EdgeInsets.only(top: 30), // Iškelia šiek tiek
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           colors: [AppColors.surface, AppColors.elevated],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.4),
+            color: AppColors.primary.withValues(alpha: 0.4),
             blurRadius: 20,
             spreadRadius: 2,
           ),
         ],
-        border: Border.all(color: Colors.white.withOpacity(0.15), width: 1.5),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.15), width: 1.5),
       ),
       child: FloatingActionButton(
         onPressed: () => context.push('/scanner'),
@@ -117,17 +114,17 @@ class MainShell extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  const Color(0xFF271744).withOpacity(0.65),
-                  const Color(0xFF1B0F2E).withOpacity(0.85),
+                  const Color(0xFF271744).withValues(alpha: 0.65),
+                  const Color(0xFF1B0F2E).withValues(alpha: 0.85),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              border: Border.all(color: Colors.white.withOpacity(0.12), width: 1),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 1),
               borderRadius: BorderRadius.circular(32),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.5),
+                  color: Colors.black.withValues(alpha: 0.5),
                   blurRadius: 20,
                 )
               ],
@@ -205,7 +202,7 @@ class _NavItem extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: isActive ? AppColors.primary : Colors.transparent,
                 boxShadow: isActive ? [
-                  BoxShadow(color: AppColors.primary, blurRadius: 8, spreadRadius: 1)
+                  const BoxShadow(color: AppColors.primary, blurRadius: 8, spreadRadius: 1)
                 ] : null,
               ),
             )

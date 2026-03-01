@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'dart:ui';
 import '../../../core/theme/app_theme.dart';
 
 class MorePage extends StatelessWidget {
@@ -22,7 +21,7 @@ class MorePage extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
-                  colors: [AppColors.secondary.withOpacity(0.1), Colors.transparent],
+                  colors: [AppColors.secondary.withValues(alpha: 0.1), Colors.transparent],
                 ),
               ),
             ),
@@ -129,17 +128,17 @@ class MorePage extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                AppColors.surface.withOpacity(0.8),
-                AppColors.elevated.withOpacity(0.6),
+                AppColors.surface.withValues(alpha: 0.8),
+                AppColors.elevated.withValues(alpha: 0.6),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withOpacity(0.08)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.4),
+                color: Colors.black.withValues(alpha: 0.4),
                 blurRadius: 15,
                 offset: const Offset(0, 5),
               ),
@@ -151,11 +150,11 @@ class MorePage extends StatelessWidget {
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.3),
+                  color: Colors.black.withValues(alpha: 0.3),
                   shape: BoxShape.circle,
-                  border: Border.all(color: color.withOpacity(0.5)),
+                  border: Border.all(color: color.withValues(alpha: 0.5)),
                   boxShadow: [
-                    BoxShadow(color: color.withOpacity(0.2), blurRadius: 15),
+                    BoxShadow(color: color.withValues(alpha: 0.2), blurRadius: 15),
                   ],
                 ),
                 child: Icon(icon, color: color, size: 30),

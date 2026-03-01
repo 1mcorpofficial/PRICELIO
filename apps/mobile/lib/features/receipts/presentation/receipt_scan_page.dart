@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
-import 'dart:ui';
 import '../../../core/api/api_client.dart';
 import '../../../core/theme/app_theme.dart';
 
@@ -129,10 +128,10 @@ class _ReceiptScanPageState extends State<ReceiptScanPage> with SingleTickerProv
                       color: AppColors.surface,
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(
-                        color: isWorking ? AppColors.primary.withOpacity(_pulseAnimation.value) : Colors.white.withOpacity(0.1),
+                        color: isWorking ? AppColors.primary.withValues(alpha: _pulseAnimation.value) : Colors.white.withValues(alpha: 0.1),
                         width: isWorking ? 2 : 1,
                       ),
-                      boxShadow: isWorking ? [BoxShadow(color: AppColors.primary.withOpacity(0.2), blurRadius: 20)] : [],
+                      boxShadow: isWorking ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.2), blurRadius: 20)] : [],
                     ),
                     child: _imageFile != null
                         ? ClipRRect(
@@ -160,7 +159,7 @@ class _ReceiptScanPageState extends State<ReceiptScanPage> with SingleTickerProv
                             children: [
                               Container(
                                 padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), shape: BoxShape.circle),
+                                decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), shape: BoxShape.circle),
                                 child: const Icon(Icons.document_scanner, size: 48, color: AppColors.primary),
                               ),
                               const SizedBox(height: 16),
@@ -191,7 +190,7 @@ class _ReceiptScanPageState extends State<ReceiptScanPage> with SingleTickerProv
               Container(
                 padding: const EdgeInsets.all(16),
                 margin: const EdgeInsets.only(top: 16),
-                decoration: BoxDecoration(color: AppColors.error.withOpacity(0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.error)),
+                decoration: BoxDecoration(color: AppColors.error.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.error)),
                 child: Text(_error!, style: const TextStyle(color: AppColors.error)),
               ),
 
@@ -208,8 +207,6 @@ class _ReceiptScanPageState extends State<ReceiptScanPage> with SingleTickerProv
 
   Widget _buildReportView(Map<String, dynamic> report) {
     final items = (report['line_items'] as List?)?.cast<Map>() ?? [];
-    // Demo savings calculation if missing
-    final savingsTotal = 4.25; 
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -218,16 +215,16 @@ class _ReceiptScanPageState extends State<ReceiptScanPage> with SingleTickerProv
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            gradient: LinearGradient(colors: [AppColors.surface, AppColors.elevated]),
+            gradient: const LinearGradient(colors: [AppColors.surface, AppColors.elevated]),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: AppColors.green.withOpacity(0.5)),
-            boxShadow: [BoxShadow(color: AppColors.green.withOpacity(0.1), blurRadius: 20)],
+            border: Border.all(color: AppColors.green.withValues(alpha: 0.5)),
+            boxShadow: [BoxShadow(color: AppColors.green.withValues(alpha: 0.1), blurRadius: 20)],
           ),
           child: Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: AppColors.green.withOpacity(0.2), shape: BoxShape.circle),
+                decoration: BoxDecoration(color: AppColors.green.withValues(alpha: 0.2), shape: BoxShape.circle),
                 child: const Icon(Icons.savings, color: AppColors.green, size: 32),
               ),
               const SizedBox(width: 16),
@@ -256,9 +253,9 @@ class _ReceiptScanPageState extends State<ReceiptScanPage> with SingleTickerProv
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isOverpaid ? AppColors.error.withOpacity(0.05) : AppColors.surface,
+              color: isOverpaid ? AppColors.error.withValues(alpha: 0.05) : AppColors.surface,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: isOverpaid ? AppColors.error.withOpacity(0.3) : Colors.white.withOpacity(0.05)),
+              border: Border.all(color: isOverpaid ? AppColors.error.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.05)),
             ),
             child: Row(
               children: [
