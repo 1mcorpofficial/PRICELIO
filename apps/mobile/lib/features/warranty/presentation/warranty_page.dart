@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:ui';
@@ -16,6 +17,7 @@ class _WarrantyPageState extends State<WarrantyPage> with SingleTickerProviderSt
   final LocalAuthentication auth = LocalAuthentication();
   bool _isUnlocked = false;
   bool _isAuthenticating = false;
+  bool _biometricsAvailable = true; // Assume true until we check
 
   late AnimationController _rotationController;
 
@@ -56,6 +58,20 @@ class _WarrantyPageState extends State<WarrantyPage> with SingleTickerProviderSt
       vsync: this,
       duration: const Duration(seconds: 4),
     )..repeat();
+    _checkBiometrics();
+  }
+
+  Future<void> _checkBiometrics() async {
+    try {
+      final canCheck = await auth.canCheckBiometrics;
+      final biometrics = await auth.getAvailableBiometrics();
+      if (!mounted) return;
+      setState(() {
+        _biometricsAvailable = canCheck && biometrics.isNotEmpty;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _biometricsAvailable = false);
+    }
   }
 
   @override
@@ -219,10 +235,20 @@ class _WarrantyPageState extends State<WarrantyPage> with SingleTickerProviderSt
                               style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 3),
                             ),
                             const SizedBox(height: 8),
-                            const Text(
-                              'Bakstelėk, kad atrakintum su biometrika',
-                              style: TextStyle(color: AppColors.textSub, fontSize: 14),
+                            Text(
+                              _biometricsAvailable
+                                  ? 'Bakstelėk, kad atrakintum su Face ID'
+                                  : 'Simuliatorius nepalaiko Face ID. Testuokite ant tikro iPhone.',
+                              style: const TextStyle(color: AppColors.textSub, fontSize: 14),
+                              textAlign: TextAlign.center,
                             ),
+                            if (!_biometricsAvailable && kDebugMode) ...[
+                              const SizedBox(height: 24),
+                              TextButton(
+                                onPressed: () => setState(() => _isUnlocked = true),
+                                child: const Text('Atidaryti (dev)', style: TextStyle(color: AppColors.primary)),
+                              ),
+                            ],
                           ],
                         ),
                       ),

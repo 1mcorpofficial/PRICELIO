@@ -54,8 +54,10 @@ flutter run -d <iphone_device_id>
 |----------|------------|
 | "Untrusted Developer" | Settings → General → VPN & Device Management → Trust |
 | Kamera neveikia | Patikrink NSCameraUsageDescription Info.plist |
-| Face ID neveikia | Tik tikri įrenginiai (ne simulatorius) |
+| Face ID neveikia | Tik tikri įrenginiai (ne simulatorius). Simuliatoriuje – „Atidaryti (dev)“ |
+| Barkodų skenavimas neveikia | Kai kuriuose iPhone gali reikėti geresnio apšvietimo. Skenuok QR/EAN barkodus. |
 | Build failed | `cd ios && pod install` |
+| API klaidos | Naudok `https://api.pricelio.app` (HTTPS). Vietinis http:// reikalauja ATS išimties. |
 
 ## Shorebird (OTA atnaujinimai)
 
