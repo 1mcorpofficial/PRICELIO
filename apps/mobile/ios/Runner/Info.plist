@@ -34,6 +34,8 @@
 	<string>PRICELIO may save generated images to your photo library.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>PRICELIO uses Face ID to secure your warranty vault.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>PRICELIO uses your location to show nearby stores and missions on the map.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
