@@ -23,3 +23,8 @@ _backup/
 infra_minio_data/
 infra_postgres_data/
 services/api/uploads/
+
+# Local agent/tooling artifacts
+.serena/
+.kombai/
+test-results/
