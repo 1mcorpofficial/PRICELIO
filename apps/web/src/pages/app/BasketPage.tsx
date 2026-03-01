@@ -1,106 +1,365 @@
-import { useState } from 'react';
-import clsx from 'clsx';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Button } from '../../components/ui/Button';
+import { Card } from '../../components/ui/Card';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { Input } from '../../components/ui/Input';
+import { apiRequest, ApiError } from '../../lib/http';
 
-// Demo produktai autocomplete juostai
-const autocompleteSuggestions = [
-  { id: 1, name: 'Dvaro Pienas 3.2%', price: 1.45, oldPrice: 1.69, img: '🥛' },
-  { id: 2, name: 'Dvaro Sviestas', price: 2.45, oldPrice: 2.89, img: '🧈' },
-  { id: 3, name: 'Dvaro Varškė', price: 1.85, oldPrice: 2.15, img: '🥣' },
-];
+type SearchHit = {
+  product_id: string;
+  name: string;
+  best_price: number | null;
+  store_chain: string | null;
+};
 
-// Demo krepšelio elementai
-const initialBasket = [
-  { id: 101, name: 'Lavazza Kava', qty: 1, price: 14.99, store: 'Maxima' },
-  { id: 102, name: 'Bananas', qty: 5, price: 1.25, store: 'Lidl' },
-  { id: 103, name: 'Vištienos krūtinėlė', qty: 1, price: 3.50, store: 'Iki' },
-];
+type BasketItem = {
+  id: string;
+  quantity: number;
+  raw_name: string | null;
+  product_id: string | null;
+  product_name: string;
+};
+
+type BasketCreateResponse = {
+  id: string;
+  guest_proof?: string | null;
+};
+
+type BasketItemsResponse = {
+  id: string;
+  items: BasketItem[];
+};
+
+type BasketPlanItem = {
+  product_id: string | null;
+  product_name: string;
+  price: number;
+  line_total: number;
+  quantity: number;
+};
+
+type BasketOptimization = {
+  total_price: number;
+  savings_eur: number;
+  plan: Array<{
+    store_name: string;
+    items: BasketPlanItem[];
+  }>;
+  missing_items: string[];
+};
+
+type ActiveBasket = {
+  id: string;
+  guestProof: string | null;
+};
+
+const BASKET_STORAGE_KEY = 'pricelio_active_basket';
+
+function readBasketFromStorage(): ActiveBasket | null {
+  try {
+    const raw = window.localStorage.getItem(BASKET_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { id?: unknown; guestProof?: unknown };
+    const id = String(parsed.id || '').trim();
+    if (!id) return null;
+    return {
+      id,
+      guestProof: parsed.guestProof ? String(parsed.guestProof) : null
+    };
+  } catch {
+    return null;
+  }
+}
+
+function persistBasket(activeBasket: ActiveBasket | null): void {
+  if (!activeBasket) {
+    window.localStorage.removeItem(BASKET_STORAGE_KEY);
+    return;
+  }
+  window.localStorage.setItem(BASKET_STORAGE_KEY, JSON.stringify(activeBasket));
+}
+
+function toErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof ApiError) {
+    return error.message || fallback;
+  }
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  return fallback;
+}
+
+function basketHeaders(guestProof: string | null): Record<string, string> {
+  if (!guestProof) return {};
+  return { 'x-guest-session-proof': guestProof };
+}
 
 export function BasketPage() {
+  const [basket, setBasket] = useState<ActiveBasket | null>(null);
+  const [items, setItems] = useState<BasketItem[]>([]);
+  const [optimization, setOptimization] = useState<BasketOptimization | null>(null);
   const [query, setQuery] = useState('');
-  const [basket] = useState(initialBasket);
+  const [suggestions, setSuggestions] = useState<SearchHit[]>([]);
+  const [loadingBasket, setLoadingBasket] = useState(true);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [optimizing, setOptimizing] = useState(false);
+  const [error, setError] = useState('');
 
-  const showSuggestions = query.toLowerCase().startsWith('dva');
+  const createBasket = useCallback(async (): Promise<ActiveBasket | null> => {
+    try {
+      const payload = await apiRequest<BasketCreateResponse>('/baskets', {
+        method: 'POST',
+        body: { name: 'Main basket' }
+      });
+      const next: ActiveBasket = {
+        id: String(payload.id),
+        guestProof: payload.guest_proof ? String(payload.guest_proof) : null
+      };
+      persistBasket(next);
+      setBasket(next);
+      return next;
+    } catch (err) {
+      setError(toErrorMessage(err, 'Nepavyko sukurti krepšelio'));
+      return null;
+    }
+  }, []);
+
+  const optimizeBasket = useCallback(async (activeBasket: ActiveBasket): Promise<void> => {
+    try {
+      setOptimizing(true);
+      const payload = await apiRequest<BasketOptimization>(`/baskets/${activeBasket.id}/optimize`, {
+        method: 'POST',
+        body: {},
+        headers: basketHeaders(activeBasket.guestProof)
+      });
+      setOptimization(payload);
+      setItems((current) => {
+        if (current.length) return current;
+        const planItems = payload.plan?.[0]?.items || [];
+        return planItems.map((item, index) => ({
+          id: `plan-${index}`,
+          quantity: Number(item.quantity || 1),
+          raw_name: item.product_name,
+          product_id: item.product_id,
+          product_name: item.product_name
+        }));
+      });
+    } catch (err) {
+      setError(toErrorMessage(err, 'Nepavyko optimizuoti krepšelio'));
+    } finally {
+      setOptimizing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const boot = async () => {
+      setLoadingBasket(true);
+      setError('');
+      const fromStorage = readBasketFromStorage();
+      if (fromStorage) {
+        if (!mounted) return;
+        setBasket(fromStorage);
+        await optimizeBasket(fromStorage);
+        if (mounted) setLoadingBasket(false);
+        return;
+      }
+
+      const created = await createBasket();
+      if (created) {
+        await optimizeBasket(created);
+      }
+      if (mounted) setLoadingBasket(false);
+    };
+
+    void boot();
+
+    return () => {
+      mounted = false;
+    };
+  }, [createBasket, optimizeBasket]);
+
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (trimmed.length < 2) {
+      setSuggestions([]);
+      setLoadingSuggestions(false);
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingSuggestions(true);
+
+    const timer = window.setTimeout(() => {
+      apiRequest<SearchHit[]>(`/search?q=${encodeURIComponent(trimmed)}&limit=8`)
+        .then((hits) => {
+          if (!cancelled) setSuggestions(hits);
+        })
+        .catch(() => {
+          if (!cancelled) setSuggestions([]);
+        })
+        .finally(() => {
+          if (!cancelled) setLoadingSuggestions(false);
+        });
+    }, 280);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [query]);
+
+  const addItem = useCallback(async (hit?: SearchHit) => {
+    if (!basket) {
+      setError('Krepšelis dar nekrautas');
+      return;
+    }
+
+    const raw = hit?.name || query.trim();
+    if (!raw) return;
+
+    const payloadItem = hit?.product_id
+      ? { product_id: hit.product_id, raw_name: hit.name, quantity: 1 }
+      : { raw_name: raw, quantity: 1 };
+
+    try {
+      setAdding(true);
+      setError('');
+      const response = await apiRequest<BasketItemsResponse>(`/baskets/${basket.id}/items`, {
+        method: 'POST',
+        body: { items: [payloadItem] },
+        headers: basketHeaders(basket.guestProof)
+      });
+      setItems(response.items || []);
+      setQuery('');
+      setSuggestions([]);
+      await optimizeBasket(basket);
+    } catch (err) {
+      setError(toErrorMessage(err, 'Nepavyko pridėti prekės'));
+    } finally {
+      setAdding(false);
+    }
+  }, [basket, optimizeBasket, query]);
+
+  const optimizedLookup = useMemo(() => {
+    const map = new Map<string, BasketPlanItem>();
+    const planItems = optimization?.plan?.[0]?.items || [];
+    for (const item of planItems) {
+      if (item.product_id) map.set(`id:${item.product_id}`, item);
+      if (item.product_name) map.set(`name:${item.product_name.toLowerCase()}`, item);
+    }
+    return map;
+  }, [optimization]);
+
+  const storeName = optimization?.plan?.[0]?.store_name || '-';
+  const totalPrice = optimization?.total_price ?? null;
+  const savings = optimization?.savings_eur ?? null;
 
   return (
-    <div className="basket-container flex flex-col h-full gap-6 pb-[100px] mt-2">
-      
-      <div className="flex justify-between items-end px-2">
-        <div>
-          <h2 className="text-3xl font-bold mb-1">Išmanus Krepšelis</h2>
-          <p className="text-[var(--text-muted)] text-sm">Pradėk rašyti ir rinkis vizualiai</p>
-        </div>
+    <Card>
+      <h2>Išmanus Krepšelis</h2>
+      {error ? <p className="error-line">{error}</p> : null}
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0.5rem', alignItems: 'center' }}>
+        <Input
+          placeholder="Ieškok prekės (pvz. Dvaro pienas)"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              void addItem();
+            }
+          }}
+        />
+        <Button variant="outline" onClick={() => basket && optimizeBasket(basket)} disabled={!basket || optimizing || loadingBasket}>
+          {optimizing ? 'Skaičiuoju…' : 'Optimizuoti'}
+        </Button>
+        <Button onClick={() => void addItem()} disabled={!basket || adding || !query.trim()}>
+          {adding ? 'Dedu…' : 'Pridėti'}
+        </Button>
       </div>
 
-      {/* Paieška / Autocomplete */}
-      <div className="relative z-20">
-        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
-        </div>
-        <input 
-          type="text" 
-          className="w-full glass rounded-2xl py-4 pl-12 pr-4 text-white outline-none focus:border-[var(--accent-pink)] transition-all bg-[rgba(20,10,30,0.6)] shadow-soft font-medium text-lg"
-          placeholder="Ką nori pirkti? (Pvz: Dvaro...)"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-        
-        {/* Vizualios Autocomplete kortelės (Išsiskleidžia kai pradedi rašyti) */}
-        <div className={clsx("autocomplete-scroller flex gap-3 overflow-x-auto py-4 px-1 absolute top-full left-0 w-full transition-all duration-300", showSuggestions ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none")}>
-          {autocompleteSuggestions.map(item => (
-            <div key={item.id} className="min-w-[140px] glass rounded-xl p-3 flex flex-col gap-2 cursor-pointer hover:border-[var(--accent-pink)] hover:bg-[rgba(255,0,122,0.1)] transition-colors shrink-0 backdrop-blur-3xl bg-[rgba(30,15,50,0.85)] border-[rgba(255,255,255,0.15)] shadow-xl">
-              <div className="text-3xl text-center bg-[rgba(0,0,0,0.2)] rounded-lg py-2 border border-[rgba(255,255,255,0.05)]">{item.img}</div>
-              <div>
-                <div className="text-xs font-bold leading-tight mb-1 truncate">{item.name}</div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[var(--accent-green)] font-bold">{item.price} €</span>
-                  <span className="text-[var(--text-muted)] text-[10px] line-through">{item.oldPrice} €</span>
-                </div>
-              </div>
-            </div>
+      {loadingSuggestions ? <p style={{ marginTop: '0.5rem' }}>Ieškoma…</p> : null}
+      {!loadingSuggestions && suggestions.length ? (
+        <div className="list-grid" style={{ marginTop: '0.75rem' }}>
+          {suggestions.map((hit) => (
+            <button
+              key={hit.product_id}
+              type="button"
+              className="list-item"
+              onClick={() => void addItem(hit)}
+              style={{ textAlign: 'left' }}
+            >
+              <strong>{hit.name}</strong>
+              <small>
+                {hit.best_price != null ? `${Number(hit.best_price).toFixed(2)} EUR` : 'Kaina nepasiekiama'} · {hit.store_chain || 'Store'}
+              </small>
+            </button>
           ))}
         </div>
+      ) : null}
+
+      <div style={{ marginTop: '1rem' }}>
+        {loadingBasket ? (
+          <p>Kraunamas krepšelis…</p>
+        ) : !items.length ? (
+          <EmptyState
+            icon="🛒"
+            title="Krepšelis tuščias"
+            description="Pradėk rašyti prekės pavadinimą ir pridėk ją į krepšelį."
+          />
+        ) : (
+          <div className="list-grid">
+            {items.map((item) => {
+              const optimized = item.product_id
+                ? optimizedLookup.get(`id:${item.product_id}`)
+                : optimizedLookup.get(`name:${item.product_name.toLowerCase()}`);
+
+              const lineTotal = optimized?.line_total != null ? Number(optimized.line_total).toFixed(2) : '-';
+              const unitPrice = optimized?.price != null ? Number(optimized.price).toFixed(2) : '-';
+
+              return (
+                <article key={item.id} className="list-item list-item--receipt">
+                  <div>
+                    <strong>{item.product_name || item.raw_name || 'Prekė'}</strong>
+                    <small>{storeName}</small>
+                  </div>
+                  <div>
+                    <small>Kiekis</small>
+                    <strong>{item.quantity}x</strong>
+                  </div>
+                  <div>
+                    <small>{unitPrice !== '-' ? `${unitPrice} EUR / vnt.` : 'Kaina nepasiekiama'}</small>
+                    <strong>{lineTotal !== '-' ? `${lineTotal} EUR` : '-'}</strong>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* Krepšelio Sąrašas */}
-      <div className={clsx("flex flex-col gap-3 transition-transform duration-300", showSuggestions && "translate-y-40")}>
-        {basket.map(item => (
-          <div key={item.id} className="glass rounded-xl p-4 flex items-center justify-between group cursor-grab active:cursor-grabbing hover:bg-[rgba(255,255,255,0.05)] border-[rgba(255,255,255,0.08)] relative overflow-hidden">
-            {/* Swipe indikatorius kairėje (pažymėti nupirktu) */}
-            <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--accent-green)] opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-[rgba(0,0,0,0.2)] border border-[rgba(255,255,255,0.05)] flex items-center justify-center font-bold text-[var(--accent-blue)]">
-                {item.qty}x
-              </div>
-              <div>
-                <div className="font-bold">{item.name}</div>
-                <div className="text-xs text-[var(--text-muted)] flex items-center gap-1">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
-                  Geriausia kaina: {item.store}
-                </div>
-              </div>
-            </div>
-            
-            <div className="font-bold text-lg">{item.price.toFixed(2)} €</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Summary Footer */}
-      <div className="mt-auto">
-        <div className="glass rounded-3xl p-5 flex items-center justify-between border-[rgba(0,240,255,0.2)] shadow-glow">
-          <div>
-            <div className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-1">Viso krepšelis</div>
-            <div className="text-2xl font-black">19.74 €</div>
-          </div>
-          <button className="bg-[linear-gradient(90deg,var(--accent-blue),var(--accent-pink))] px-6 py-3 rounded-xl font-bold text-white shadow-[0_0_20px_rgba(0,240,255,0.4)] hover:scale-105 transition-transform">
-            Pradėti Apsipirkimą
-          </button>
+      <div className="kpi-grid" style={{ marginTop: '1rem' }}>
+        <div>
+          <small>Viso</small>
+          <strong>{totalPrice != null ? `${Number(totalPrice).toFixed(2)} EUR` : '-'}</strong>
+        </div>
+        <div>
+          <small>Sutaupoma</small>
+          <strong>{savings != null ? `${Number(savings).toFixed(2)} EUR` : '-'}</strong>
+        </div>
+        <div>
+          <small>Parduotuvė</small>
+          <strong>{storeName}</strong>
+        </div>
+        <div>
+          <small>Elementai</small>
+          <strong>{items.length}</strong>
         </div>
       </div>
-
-    </div>
+    </Card>
   );
 }

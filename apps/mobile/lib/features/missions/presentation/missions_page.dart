@@ -14,6 +14,8 @@ class _MissionsPageState extends State<MissionsPage> with SingleTickerProviderSt
   List<dynamic> _globalBoard = [];
   bool _loadingMissions = true;
   bool _loadingBoard    = false;
+  String? _missionsError;
+  String? _leaderboardError;
 
   @override
   void initState() {
@@ -34,21 +36,20 @@ class _MissionsPageState extends State<MissionsPage> with SingleTickerProviderSt
   }
 
   Future<void> _loadMissions() async {
-    setState(() => _loadingMissions = true);
+    setState(() {
+      _loadingMissions = true;
+      _missionsError = null;
+    });
     try {
       final res = await ApiClient().dio.get(
         '/missions/nearby',
         queryParameters: {'lat': 54.6872, 'lon': 25.2797, 'radius_km': 5},
       );
       setState(() => _missions = res.data is List ? res.data : []);
-    } catch (_) {
-      // Mock missions for demo visualization if API fails
+    } catch (error) {
       setState(() {
-        _missions = [
-          { 'title': 'Skenuoti kvitą MAXIMA', 'store_chain': 'Maxima', 'xp_reward': 500, 'type': 'photo_proof' },
-          { 'title': 'Rasti pigiausią sviestą', 'store_chain': 'Lidl', 'xp_reward': 300, 'type': 'price_check' },
-          { 'title': 'Patvirtinti akciją IKI', 'store_chain': 'Iki', 'xp_reward': 200, 'type': 'verify' },
-        ];
+        _missions = [];
+        _missionsError = 'Nepavyko gauti misijų. ${error.toString()}';
       });
     } finally {
       setState(() => _loadingMissions = false);
@@ -56,18 +57,17 @@ class _MissionsPageState extends State<MissionsPage> with SingleTickerProviderSt
   }
 
   Future<void> _loadLeaderboard() async {
-    setState(() => _loadingBoard = true);
+    setState(() {
+      _loadingBoard = true;
+      _leaderboardError = null;
+    });
     try {
       final res = await ApiClient().dio.get('/leaderboard/global');
       setState(() => _globalBoard = res.data is List ? res.data : []);
-    } catch (_) {
-      // Mock leaderboard for demo
+    } catch (error) {
       setState(() {
-        _globalBoard = [
-          {'username': 'Kainų Medžiotojas', 'lifetime_xp': 45200, 'rank': 1},
-          {'username': 'Taupymo Guru', 'lifetime_xp': 38100, 'rank': 2},
-          {'username': 'Akcijų Karalius', 'lifetime_xp': 32500, 'rank': 3},
-        ];
+        _globalBoard = [];
+        _leaderboardError = 'Nepavyko gauti lyderių lentelės. ${error.toString()}';
       });
     } finally {
       setState(() => _loadingBoard = false);
@@ -126,6 +126,31 @@ class _MissionsPageState extends State<MissionsPage> with SingleTickerProviderSt
 
   Widget _buildMissionsTab() {
     if (_loadingMissions) return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+    if (_missionsError != null && _missions.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, color: AppColors.error, size: 36),
+              const SizedBox(height: 10),
+              Text(
+                _missionsError!,
+                style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loadMissions,
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.black),
+                child: const Text('Bandyti dar kartą'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return RefreshIndicator(
       onRefresh: _loadMissions,
@@ -136,7 +161,7 @@ class _MissionsPageState extends State<MissionsPage> with SingleTickerProviderSt
         itemCount: _missions.length,
         itemBuilder: (ctx, i) {
           final m = _missions[i];
-          final xp = m['xp_reward'] ?? m['xp'] ?? 0;
+          final xp = m['reward_points'] ?? m['xp_reward'] ?? m['xp'] ?? 0;
           final title = m['title'] ?? 'Užduotis';
           final store = m['store_chain'] ?? '';
 
@@ -200,6 +225,31 @@ class _MissionsPageState extends State<MissionsPage> with SingleTickerProviderSt
 
   Widget _buildLeaderboardTab() {
     if (_loadingBoard) return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+    if (_leaderboardError != null && _globalBoard.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, color: AppColors.error, size: 36),
+              const SizedBox(height: 10),
+              Text(
+                _leaderboardError!,
+                style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loadLeaderboard,
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.black),
+                child: const Text('Bandyti dar kartą'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return RefreshIndicator(
       onRefresh: _loadLeaderboard,
@@ -210,8 +260,8 @@ class _MissionsPageState extends State<MissionsPage> with SingleTickerProviderSt
         itemCount: _globalBoard.length,
         itemBuilder: (ctx, i) {
           final e = _globalBoard[i];
-          final rank = e['rank'] ?? (i + 1);
-          final name = e['username'] ?? 'Anonimas';
+          final rank = e['position'] ?? e['rank'] ?? (i + 1);
+          final name = e['username'] ?? e['email_masked'] ?? 'Anonimas';
           final xp = e['lifetime_xp'] ?? 0;
           
           final isTop3 = rank <= 3;

@@ -11,7 +11,6 @@ export function connectRealtimeStream(
   }
 
   const url = new URL(`${API_BASE}/events/user/stream`, window.location.origin);
-  url.searchParams.set('access_token', accessToken);
 
   const source = new EventSource(url.toString(), { withCredentials: true });
 

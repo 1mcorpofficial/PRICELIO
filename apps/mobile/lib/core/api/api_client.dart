@@ -95,7 +95,10 @@ class ApiClient {
         receiveTimeout: const Duration(
           milliseconds: ApiEnvironment.receiveTimeoutMs,
         ),
-        headers: const {'Content-Type': 'application/json'},
+        headers: const {
+          'Content-Type': 'application/json',
+          'X-Auth-Transport': 'body'
+        },
       ),
     );
 
@@ -216,7 +219,10 @@ class ApiClient {
           receiveTimeout: const Duration(
             milliseconds: ApiEnvironment.receiveTimeoutMs,
           ),
-          headers: const {'Content-Type': 'application/json'},
+          headers: const {
+            'Content-Type': 'application/json',
+            'X-Auth-Transport': 'body'
+          },
         ),
       );
 

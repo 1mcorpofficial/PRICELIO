@@ -172,6 +172,22 @@ function setCsrfCookie(res, value = crypto.randomUUID()) {
   return value;
 }
 
+function shouldReturnRefreshTokenInBody(req) {
+  const transport = String(req.get('x-auth-transport') || '').trim().toLowerCase();
+  return transport === 'body' || transport === 'token';
+}
+
+function buildAuthResponse(req, { accessToken, refreshToken, user }) {
+  const payload = {
+    access_token: accessToken,
+    user
+  };
+  if (refreshToken && shouldReturnRefreshTokenInBody(req)) {
+    payload.refresh_token = refreshToken;
+  }
+  return payload;
+}
+
 function validateCsrfToken(req) {
   const cookieToken = req.cookies?.[CSRF_COOKIE_NAME];
   const headerToken = req.get('x-csrf-token');
@@ -470,6 +486,41 @@ async function enforceReceiptAccess(receipt, req) {
   return { ok: true, mode: 'guest' };
 }
 
+async function getBasketById(basketId) {
+  const result = await query(
+    `SELECT id, user_id, guest_session_id
+     FROM baskets
+     WHERE id = $1
+     LIMIT 1`,
+    [basketId]
+  );
+  return result.rows[0] || null;
+}
+
+async function enforceBasketAccess(basket, req) {
+  if (basket.user_id) {
+    if (!req.user?.id) {
+      return { ok: false, status: 401, code: 'login_required' };
+    }
+    if (basket.user_id !== req.user.id) {
+      return { ok: false, status: 403, code: 'basket_access_denied' };
+    }
+    return { ok: true, mode: 'user' };
+  }
+
+  const proof = readGuestSessionProof(req);
+  if (!proof) {
+    return { ok: false, status: 401, code: 'guest_proof_required' };
+  }
+
+  const decoded = auth.verifyGuestSessionProof(proof);
+  if (!decoded || decoded.guest_session_id !== basket.guest_session_id) {
+    return { ok: false, status: 403, code: 'guest_basket_access_denied' };
+  }
+
+  return { ok: true, mode: 'guest' };
+}
+
 async function requireAdminAccess(req, res, next) {
   if (ADMIN_API_KEY && req.get('x-admin-key') === ADMIN_API_KEY) {
     req.adminContext = { type: 'api_key', actor: 'admin-key' };
@@ -528,9 +579,9 @@ async function writeAdminAudit(action, actor, targetId = null, payload = null) {
   );
 }
 
-let webV2TablesEnsured = false;
-async function ensureWebV2Tables() {
-  if (webV2TablesEnsured) return;
+let pricelioUiTablesEnsured = false;
+async function ensurePricelioUiTables() {
+  if (pricelioUiTablesEnsured) return;
   await query(
     `CREATE TABLE IF NOT EXISTS demo_sessions (
        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -573,7 +624,7 @@ async function ensureWebV2Tables() {
     `CREATE INDEX IF NOT EXISTS ui_events_log_user_created_idx
      ON ui_events_log (user_id, created_at DESC)`
   );
-  webV2TablesEnsured = true;
+  pricelioUiTablesEnsured = true;
 }
 
 function createDemoToken() {
@@ -627,7 +678,7 @@ async function trackUiEvent(eventName, req, metadata = {}) {
   if (!UI_EVENT_ALLOWLIST.has(eventName)) {
     return false;
   }
-  await ensureWebV2Tables();
+  await ensurePricelioUiTables();
   try {
     await query(
       `INSERT INTO ui_events_log (event_name, user_id, session_id, metadata, created_at)
@@ -676,14 +727,29 @@ app.get('/events/price-drops/stream', auth.requireUser, (req, res) => {
   });
 });
 
-app.get('/events/user/stream', (req, res) => {
+app.get('/events/user/stream', async (req, res) => {
   const authHeader = String(req.get('authorization') || '');
-  const queryToken = String(req.query.access_token || '').trim();
-  const token = authHeader.startsWith('Bearer ')
-    ? authHeader.slice(7).trim()
-    : queryToken;
-  const decoded = auth.verifyToken(token);
-  if (!decoded?.user_id || decoded?.type !== 'access') {
+  let userId = null;
+
+  if (authHeader.startsWith('Bearer ')) {
+    const token = authHeader.slice(7).trim();
+    const decoded = auth.verifyToken(token);
+    if (decoded?.user_id && decoded?.type === 'access') {
+      userId = decoded.user_id;
+    }
+  }
+
+  if (!userId) {
+    const refreshToken = req.cookies?.[REFRESH_COOKIE_NAME];
+    if (refreshToken) {
+      const verified = await auth.verifyRefreshTokenRecord(refreshToken).catch(() => null);
+      if (verified?.user?.id) {
+        userId = verified.user.id;
+      }
+    }
+  }
+
+  if (!userId) {
     return res.status(401).json({ error: 'login_required' });
   }
 
@@ -693,7 +759,7 @@ app.get('/events/user/stream', (req, res) => {
   res.flushHeaders?.();
   res.write(`retry: 5000\n\n`);
 
-  const clientId = sse.registerClient(res, decoded.user_id, req.get('last-event-id'));
+  const clientId = sse.registerClient(res, userId, req.get('last-event-id'));
   req.on('close', () => {
     sse.unregisterClient(clientId);
     res.end();
@@ -718,7 +784,7 @@ app.post('/events/ui', auth.optionalAuthMiddleware, async (req, res) => {
 
 app.post('/demo/session/start', async (req, res) => {
   try {
-    await ensureWebV2Tables();
+    await ensurePricelioUiTables();
     const token = createDemoToken();
     const tokenHash = hashToken(token);
     const expiresAt = new Date(Date.now() + Math.max(60_000, DEMO_SESSION_TTL_MS));
@@ -764,7 +830,7 @@ app.post('/demo/session/claim', auth.requireUser, async (req, res) => {
   const tokenHash = hashToken(demoToken);
   const client = await getClient();
   try {
-    await ensureWebV2Tables();
+    await ensurePricelioUiTables();
     await client.query('BEGIN');
     const found = await client.query(
       `SELECT id, reward_xp, reward_points, expires_at, claimed_at, claimed_by_user_id
@@ -885,14 +951,14 @@ app.post('/auth/register', async (req, res) => {
     setCsrfCookie(res);
     clearAuthFailures(authKey);
     
-    res.json({
-      access_token: accessToken,
-      refresh_token: refreshToken,
+    res.json(buildAuthResponse(req, {
+      accessToken,
+      refreshToken,
       user: {
         id: user.id,
         email: user.email
       }
-    });
+    }));
     await trackUiEvent('auth_register_success', req, { user_id: user.id });
   } catch (error) {
     if (error.message === 'user_exists') {
@@ -922,14 +988,14 @@ app.post('/auth/login', async (req, res) => {
     setCsrfCookie(res);
     clearAuthFailures(authKey);
     
-    res.json({
-      access_token: accessToken,
-      refresh_token: refreshToken,
+    res.json(buildAuthResponse(req, {
+      accessToken,
+      refreshToken,
       user: {
         id: user.id,
         email: user.email
       }
-    });
+    }));
   } catch (error) {
     if (error.message === 'invalid_credentials' || error.message === 'account_disabled') {
       recordAuthFailure(authKey);
@@ -965,11 +1031,11 @@ app.post('/auth/refresh', async (req, res) => {
 
     setRefreshCookie(res, refreshed.refreshToken);
     setCsrfCookie(res);
-    res.json({
-      access_token: refreshed.accessToken,
-      refresh_token: refreshed.refreshToken,
+    res.json(buildAuthResponse(req, {
+      accessToken: refreshed.accessToken,
+      refreshToken: refreshed.refreshToken,
       user: refreshed.user
-    });
+    }));
   } catch (error) {
     res.status(401).json({ error: 'token_refresh_failed' });
   }
@@ -1489,6 +1555,7 @@ app.post('/baskets', auth.optionalAuthMiddleware, async (req, res) => {
   try {
     let userId = null;
     let guestSessionId = null;
+    let guestProof = null;
 
     if (req.user?.id) {
       userId = req.user.id;
@@ -1507,42 +1574,54 @@ app.post('/baskets', auth.optionalAuthMiddleware, async (req, res) => {
     } else {
       const ipHash = crypto.createHash('sha256').update(req.ip || 'unknown').digest('hex');
       guestSessionId = await createGuestSession(ipHash);
+      guestProof = auth.generateGuestSessionProof(guestSessionId);
     }
 
     const basket = await createBasket({ userId, guestSessionId, name: req.body.name });
-    res.json(basket);
+    res.json({
+      ...basket,
+      guest_proof: guestProof
+    });
   } catch (error) {
     res.status(500).json({ error: 'basket_create_failed' });
   }
 });
 
-app.post('/baskets/:id/items', async (req, res) => {
-  const items = Array.isArray(req.body.items) ? req.body.items : [];
-  if (!items.length) {
-    res.status(400).json({ error: 'items_required' });
-    return;
-  }
-
-  const resolveItems = async () => {
-    const resolved = [];
-    for (const item of items) {
-      if (item.product_id) {
-        resolved.push(item);
-        continue;
-      }
-      if (item.raw_name) {
-        const product = await findProductByName(item.raw_name);
-        resolved.push({
-          ...item,
-          product_id: product ? product.id : null,
-          product_name: product ? product.name : item.raw_name
-        });
-      }
-    }
-    return resolved;
-  };
-
+app.post('/baskets/:id/items', auth.optionalAuthMiddleware, async (req, res) => {
   try {
+    const basket = await getBasketById(req.params.id);
+    if (!basket) {
+      return res.status(404).json({ error: 'basket_not_found' });
+    }
+    const access = await enforceBasketAccess(basket, req);
+    if (!access.ok) {
+      return res.status(access.status).json({ error: access.code });
+    }
+
+    const items = Array.isArray(req.body.items) ? req.body.items : [];
+    if (!items.length) {
+      return res.status(400).json({ error: 'items_required' });
+    }
+
+    const resolveItems = async () => {
+      const resolved = [];
+      for (const item of items) {
+        if (item.product_id) {
+          resolved.push(item);
+          continue;
+        }
+        if (item.raw_name) {
+          const product = await findProductByName(item.raw_name);
+          resolved.push({
+            ...item,
+            product_id: product ? product.id : null,
+            product_name: product ? product.name : item.raw_name
+          });
+        }
+      }
+      return resolved;
+    };
+
     const resolved = await resolveItems();
     await insertBasketItems(req.params.id, resolved);
     const basketItems = await getBasketItems(req.params.id);
@@ -1552,8 +1631,17 @@ app.post('/baskets/:id/items', async (req, res) => {
   }
 });
 
-app.post('/baskets/:id/optimize', async (req, res) => {
+app.post('/baskets/:id/optimize', auth.optionalAuthMiddleware, async (req, res) => {
   try {
+    const basket = await getBasketById(req.params.id);
+    if (!basket) {
+      return res.status(404).json({ error: 'basket_not_found' });
+    }
+    const access = await enforceBasketAccess(basket, req);
+    if (!access.ok) {
+      return res.status(access.status).json({ error: access.code });
+    }
+
     const basketItems = await getBasketItems(req.params.id);
     const plan = await optimizeSingleStore(basketItems);
     res.json(plan);
@@ -2487,16 +2575,34 @@ app.get('/products/:id/prices', async (req, res) => {
 });
 
 // SHELFSNAP
-app.post('/shelfsnap/submit', upload.single('image'), async (req, res) => {
+app.post('/shelfsnap/submit', auth.requireUser, upload.single('image'), async (req, res) => {
   try {
-    const { product_name, price, store } = req.body;
-    const imageUrl = `/uploads/shelfsnaps/${req.file.filename}`;
+    if (!req.file) {
+      return res.status(400).json({ error: 'file_required' });
+    }
+
+    const { product_name, price, store } = req.body || {};
+    const parsedPrice = Number.parseFloat(String(price || '').replace(',', '.'));
+    if (!Number.isFinite(parsedPrice)) {
+      return res.status(400).json({ error: 'invalid_price' });
+    }
+
+    const mimeToExt = {
+      'image/jpeg': '.jpg',
+      'image/png': '.png',
+      'image/webp': '.webp'
+    };
+    const ext = mimeToExt[String(req.file.mimetype || '').toLowerCase()] || '.jpg';
+    const objectKey = `shelfsnaps/${crypto.randomUUID()}${ext}`;
+    const targetPath = ensureUploadPath(objectKey);
+    fs.writeFileSync(targetPath, req.file.buffer);
+    const imageUrl = `/uploads/${objectKey}`;
     
     // Store shelf snap for verification
     await query(
       `INSERT INTO shelf_snaps (user_id, image_url, extracted_price, verification_status, metadata, created_at)
        VALUES ($1, $2, $3, 'pending', $4, NOW())`,
-      [req.user?.id || null, imageUrl, parseFloat(price), JSON.stringify({ product_name, store })]
+      [req.user.id, imageUrl, parsedPrice, JSON.stringify({ product_name, store })]
     );
     
     res.json({ success: true, status: 'pending_verification' });

@@ -13,13 +13,17 @@ class _KidsPageState extends State<KidsPage> {
   List<dynamic> _missions = [];
   bool _loading = false;
   bool _activating = false;
+  String? _error;
 
   final _nameCtrl = TextEditingController();
   String _ageGroup = '4-8';
 
   Future<void> _activate() async {
     if (_nameCtrl.text.trim().isEmpty) return;
-    setState(() => _activating = true);
+    setState(() {
+      _activating = true;
+      _error = null;
+    });
     try {
       final res = await ApiClient().dio.post('/kids/activate', data: {
         'display_name': _nameCtrl.text.trim(),
@@ -27,12 +31,10 @@ class _KidsPageState extends State<KidsPage> {
       });
       setState(() => _session = Map<String, dynamic>.from(res.data));
       await _loadMissions();
-    } catch (_) {
-      // Mock session for demo if API fails
+    } catch (error) {
       setState(() {
-        _session = {'id': 'demo_session', 'display_name': _nameCtrl.text.trim()};
+        _error = 'Nepavyko aktyvuoti vaikų erdvės. ${error.toString()}';
       });
-      await _loadMissions();
     } finally {
       if (mounted) setState(() => _activating = false);
     }
@@ -40,18 +42,18 @@ class _KidsPageState extends State<KidsPage> {
 
   Future<void> _loadMissions() async {
     if (_session == null) return;
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final res = await ApiClient().dio.get('/kids/missions',
           queryParameters: {'session_id': _session!['id'].toString()});
       setState(() => _missions = res.data ?? []);
-    } catch (_) {
-      // Mock missions for demo
+    } catch (error) {
       setState(() {
-        _missions = [
-          {'id': 1, 'title': 'Suskaičiuok 5 obuolius', 'reward_points': 150, 'kid_mode': 'scanner', 'description': 'Nueik prie vaisių skyriaus ir surask 5 raudonus obuolius.'},
-          {'id': 2, 'title': 'Rask mėlyną pakuotę', 'reward_points': 200, 'kid_mode': 'scanner', 'description': 'Surask bet kokį produktą su mėlyna pakuote ir nuskenuok barkodą.'},
-        ];
+        _missions = [];
+        _error = 'Nepavyko gauti misijų. ${error.toString()}';
       });
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -82,6 +84,7 @@ class _KidsPageState extends State<KidsPage> {
   Future<void> _submitMission(Map<String, dynamic> mission) async {
     if (_session == null) return;
     try {
+      setState(() => _error = null);
       await ApiClient().dio.post('/kids/missions/${mission['id']}/submit', data: {
         'session_id': _session!['id'].toString(),
         'foreground_app': 'pricelio_mobile',
@@ -90,12 +93,17 @@ class _KidsPageState extends State<KidsPage> {
         _showSuccessDialog(mission['reward_points']);
       }
       await _loadMissions();
-    } catch (_) {
-      // Mock success for demo
-      _showSuccessDialog(mission['reward_points']);
+    } catch (error) {
+      if (!mounted) return;
       setState(() {
-        _missions.removeWhere((m) => m['id'] == mission['id']);
+        _error = 'Nepavyko pateikti misijos. ${error.toString()}';
       });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_error!),
+          backgroundColor: AppColors.error,
+        ),
+      );
     }
   }
 
@@ -134,6 +142,7 @@ class _KidsPageState extends State<KidsPage> {
         onAgeGroupChanged: (v) => setState(() => _ageGroup = v),
         onActivate: _activate,
         loading: _activating,
+        error: _error,
       );
     }
     return _MissionsView(
@@ -143,6 +152,7 @@ class _KidsPageState extends State<KidsPage> {
       onDeactivate: _deactivate,
       onRefresh: _loadMissions,
       onSubmit: _submitMission,
+      error: _error,
     );
   }
 
@@ -158,6 +168,7 @@ class _SetupView extends StatelessWidget {
   final ValueChanged<String> onAgeGroupChanged;
   final VoidCallback onActivate;
   final bool loading;
+  final String? error;
 
   const _SetupView({
     required this.nameCtrl,
@@ -165,6 +176,7 @@ class _SetupView extends StatelessWidget {
     required this.onAgeGroupChanged,
     required this.onActivate,
     required this.loading,
+    required this.error,
   });
 
   @override
@@ -249,6 +261,19 @@ class _SetupView extends StatelessWidget {
           ),
           const SizedBox(height: 32),
 
+          if (error != null) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.error.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
+              ),
+              child: Text(error!, style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.w600)),
+            ),
+            const SizedBox(height: 16),
+          ],
+
           ElevatedButton(
             onPressed: loading ? null : onActivate,
             style: ElevatedButton.styleFrom(
@@ -278,6 +303,7 @@ class _MissionsView extends StatelessWidget {
   final VoidCallback onDeactivate;
   final VoidCallback onRefresh;
   final Future<void> Function(Map<String, dynamic>) onSubmit;
+  final String? error;
 
   const _MissionsView({
     required this.session,
@@ -286,6 +312,7 @@ class _MissionsView extends StatelessWidget {
     required this.onDeactivate,
     required this.onRefresh,
     required this.onSubmit,
+    required this.error,
   });
 
   @override
@@ -307,27 +334,55 @@ class _MissionsView extends StatelessWidget {
       ),
       body: loading
           ? const Center(child: CircularProgressIndicator(color: AppColors.secondary))
-          : missions.isEmpty
-              ? const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.star_border, size: 80, color: AppColors.textSub),
-                      SizedBox(height: 16),
-                      Text('Visos misijos įvykdytos!', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
-                      SizedBox(height: 8),
-                      Text('Lauk naujų užduočių iš tėvų.', style: TextStyle(color: AppColors.textSub)),
-                    ],
+          : Column(
+              children: [
+                if (error != null)
+                  Container(
+                    margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline, color: AppColors.error),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            error!,
+                            style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(20),
-                  itemCount: missions.length,
-                  itemBuilder: (ctx, i) => _KidsMissionCard(
-                    mission: Map<String, dynamic>.from(missions[i]),
-                    onSubmit: () => onSubmit(Map<String, dynamic>.from(missions[i])),
-                  ),
+                Expanded(
+                  child: missions.isEmpty
+                      ? const Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.star_border, size: 80, color: AppColors.textSub),
+                              SizedBox(height: 16),
+                              Text('Visos misijos įvykdytos!', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                              SizedBox(height: 8),
+                              Text('Lauk naujų užduočių iš tėvų.', style: TextStyle(color: AppColors.textSub)),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.all(20),
+                          itemCount: missions.length,
+                          itemBuilder: (ctx, i) => _KidsMissionCard(
+                            mission: Map<String, dynamic>.from(missions[i]),
+                            onSubmit: () => onSubmit(Map<String, dynamic>.from(missions[i])),
+                          ),
+                        ),
                 ),
+              ],
+            ),
     );
   }
 }

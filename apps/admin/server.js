@@ -11,7 +11,28 @@ const { getClient } = require('./db');
 const app = express();
 const port = process.env.PORT || 3003;
 
-app.use(cors({ origin: true, credentials: true }));
+const DEFAULT_ALLOWED_ORIGINS = [
+  'https://admin.pricelio.app',
+  'https://pricelio.app',
+  'https://www.pricelio.app',
+  'http://127.0.0.1:3003',
+  'http://127.0.0.1:5173'
+];
+const ALLOWED_ORIGINS = new Set(
+  String(process.env.ADMIN_CORS_ALLOWLIST || DEFAULT_ALLOWED_ORIGINS.join(','))
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+);
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (ALLOWED_ORIGINS.has(origin)) return callback(null, true);
+    return callback(new Error('cors_not_allowed'));
+  },
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -21,8 +42,11 @@ const API_SERVICE_URL = process.env.API_SERVICE_URL || 'https://api.pricelio.app
 const ADMIN_API_KEY = process.env.ADMIN_API_KEY || '';
 const SESSION_COOKIE = 'admin_session';
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
+const LOGIN_RATE_WINDOW_MS = Number(process.env.ADMIN_LOGIN_RATE_WINDOW_MS || 15 * 60 * 1000);
+const LOGIN_RATE_MAX_ATTEMPTS = Number(process.env.ADMIN_LOGIN_RATE_MAX_ATTEMPTS || 10);
 
 const sessions = new Map();
+const loginRateState = new Map();
 const PLUS_FEATURES = [
   'time_machine',
   'advanced_analytics',
@@ -56,6 +80,38 @@ function createSession(email) {
   const sessionId = crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(32).toString('hex');
   sessions.set(sessionId, { email, expiresAt: Date.now() + SESSION_TTL_MS });
   return sessionId;
+}
+
+function getLoginRateKey(req, email) {
+  const ip = req.ip || req.headers['x-forwarded-for'] || req.connection?.remoteAddress || 'unknown';
+  const normalizedEmail = String(email || '').trim().toLowerCase().slice(0, 120) || 'unknown';
+  return `${ip}:${normalizedEmail}`;
+}
+
+function isLoginRateLimited(key) {
+  const now = Date.now();
+  const entry = loginRateState.get(key);
+  if (!entry) return false;
+  if (entry.resetAt <= now) {
+    loginRateState.delete(key);
+    return false;
+  }
+  return entry.failures >= LOGIN_RATE_MAX_ATTEMPTS;
+}
+
+function recordLoginFailure(key) {
+  const now = Date.now();
+  const existing = loginRateState.get(key);
+  if (!existing || existing.resetAt <= now) {
+    loginRateState.set(key, { failures: 1, resetAt: now + LOGIN_RATE_WINDOW_MS });
+    return;
+  }
+  existing.failures += 1;
+  loginRateState.set(key, existing);
+}
+
+function clearLoginFailures(key) {
+  loginRateState.delete(key);
 }
 
 async function getDbAdminByEmail(email) {
@@ -116,9 +172,13 @@ function requireAuth(req, res, next) {
 
 app.post('/login', async (req, res) => {
   const { email, password } = req.body || {};
+  const loginRateKey = getLoginRateKey(req, email);
 
   if (!email || !password) {
     return res.status(401).json({ error: 'invalid_credentials' });
+  }
+  if (isLoginRateLimited(loginRateKey)) {
+    return res.status(429).json({ error: 'too_many_login_attempts' });
   }
 
   // Primary auth path: DB-backed admin users.
@@ -127,6 +187,7 @@ app.post('/login', async (req, res) => {
   if (dbAdmin && dbAdmin.status === 'active') {
     const ok = await bcrypt.compare(password, dbAdmin.password_hash);
     if (!ok) {
+      recordLoginFailure(loginRateKey);
       return res.status(401).json({ error: 'invalid_credentials' });
     }
     authenticatedEmail = dbAdmin.email;
@@ -136,18 +197,21 @@ app.post('/login', async (req, res) => {
   if (!authenticatedEmail && ADMIN_EMAIL && ADMIN_PASSWORD_HASH && email === ADMIN_EMAIL) {
     const ok = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
     if (!ok) {
+      recordLoginFailure(loginRateKey);
       return res.status(401).json({ error: 'invalid_credentials' });
     }
     authenticatedEmail = email;
   }
 
   if (!authenticatedEmail) {
+    recordLoginFailure(loginRateKey);
     if (!ADMIN_EMAIL && !dbAdmin) {
       return res.status(500).json({ error: 'admin_credentials_not_configured' });
     }
     return res.status(401).json({ error: 'invalid_credentials' });
   }
 
+  clearLoginFailures(loginRateKey);
   const sessionId = createSession(authenticatedEmail);
   res.cookie(SESSION_COOKIE, sessionId, {
     httpOnly: true,
@@ -486,6 +550,13 @@ app.post('/api/admin/users/:id/grant-plus', async (req, res) => {
 // Serve admin UI
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.use((error, req, res, next) => {
+  if (error?.message === 'cors_not_allowed') {
+    return res.status(403).json({ error: 'cors_not_allowed' });
+  }
+  return next(error);
 });
 
 app.listen(port, () => {
