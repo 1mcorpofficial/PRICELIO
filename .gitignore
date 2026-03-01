@@ -20,6 +20,7 @@ coverage/
 # Local data / artifacts
 _audit/
 _backup/
+.legacy-web-backup/
 infra_minio_data/
 infra_postgres_data/
 services/api/uploads/

@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Pricelio</string>
+	<string>PRICELIO</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -32,6 +32,8 @@
 	<string>PRICELIO needs photo library access to upload receipt images.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>PRICELIO may save generated images to your photo library.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>PRICELIO uses Face ID to secure your warranty vault.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
