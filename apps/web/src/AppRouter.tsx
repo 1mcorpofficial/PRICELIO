@@ -17,6 +17,8 @@ import { KidsPage } from './pages/app/KidsPage';
 import { MorePage } from './pages/app/MorePage';
 import { MarketPage } from './pages/app/MarketPage';
 import { WarrantyPage } from './pages/app/WarrantyPage';
+import { PantryPage } from './pages/app/PantryPage';
+import { SettingsPage } from './pages/app/SettingsPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ToastHost } from './components/ui/ToastHost';
@@ -60,7 +62,10 @@ export function AppRouter() {
           <Route path="overview" element={<OverviewPage />} />
           <Route path="more" element={<MorePage />} />
           <Route path="market" element={<MarketPage />} />
+          <Route path="scan" element={<ReceiptsPage />} />
           <Route path="warranty" element={<WarrantyPage />} />
+          <Route path="pantry" element={<PantryPage />} />
+          <Route path="settings" element={<SettingsPage />} />
           <Route path="receipts" element={<ReceiptsPage />} />
           <Route path="budget" element={<BudgetPage />} />
           <Route path="missions" element={<MissionsPage />} />

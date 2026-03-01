@@ -1,10 +1,8 @@
 import { useState, useCallback } from 'react';
 import { useGamificationStore } from '../../stores/gamificationStore';
-import { useI18n } from '../../i18n';
 import clsx from 'clsx';
 
 export function OverviewPage() {
-  const t = useI18n((state) => state.t);
   const profile = useGamificationStore((state) => state.profile);
   const [isListening, setIsListening] = useState(false);
 

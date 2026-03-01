@@ -1,6 +1,3 @@
-import { Card } from '../../components/ui/Card';
-import clsx from 'clsx';
-
 // Demo duomenys garantijoms
 const warrantyItems = [
   { id: 1, name: 'Sony WH-1000XM5 Ausinės', store: 'Topo Centras', purchaseDate: '2025-11-20', warrantyMonths: 24, price: 349.99, icon: '🎧', isExpiringSoon: false },

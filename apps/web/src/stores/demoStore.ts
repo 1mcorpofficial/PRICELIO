@@ -71,7 +71,7 @@ export const useDemoStore = create<DemoStore>((set, get) => ({
         method: 'POST',
         body: {
           session_id: sessionStorage.getItem('pricelio_session_id') || undefined,
-          metadata: { surface: 'web_v2_demo' }
+          metadata: { surface: 'web_demo' }
         }
       });
       const next: DemoSessionState = {

@@ -4,21 +4,41 @@ const { getClient } = require('./db');
 async function trackEvent(event) {
   const client = await getClient();
   const eventDate = new Date().toISOString().split('T')[0];
+  const cityId = event.city_id || null;
+  const metadata = JSON.stringify(event.metadata || {});
   
   try {
-    await client.query(`
-      INSERT INTO events (event_date, event_name, city_id, count, metadata)
-      VALUES ($1, $2, $3, 1, $4)
-      ON CONFLICT (event_date, event_name, COALESCE(city_id, '00000000-0000-0000-0000-000000000000'::uuid))
-      DO UPDATE SET 
+    // Update-first strategy keeps compatibility with databases that don't have a unique
+    // index for (event_date, event_name, city_id) expression-based conflicts.
+    const updateResult = await client.query(`
+      UPDATE events
+      SET
         count = events.count + 1,
-        metadata = EXCLUDED.metadata
+        metadata = $4
+      WHERE event_date = $1
+        AND event_name = $2
+        AND (
+          ($3::uuid IS NULL AND city_id IS NULL)
+          OR city_id = $3::uuid
+        )
     `, [
       eventDate,
       event.event_name,
-      event.city_id,
-      JSON.stringify(event.metadata || {})
+      cityId,
+      metadata
     ]);
+
+    if (updateResult.rowCount === 0) {
+      await client.query(`
+        INSERT INTO events (event_date, event_name, city_id, count, metadata)
+        VALUES ($1, $2, $3, 1, $4)
+      `, [
+        eventDate,
+        event.event_name,
+        cityId,
+        metadata
+      ]);
+    }
     
     return true;
   } catch (error) {

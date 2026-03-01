@@ -1,6 +1,5 @@
 import clsx from 'clsx';
 import { Link, useLocation } from 'react-router-dom';
-import { useI18n } from '../../i18n';
 
 // Profesionalių ikonų SVG komponentai (vietoje emoji)
 const MoreIcon = () => (
@@ -45,13 +44,20 @@ const ProfileIcon = () => (
   </svg>
 );
 
-const tabs = [
+type TabItem = {
+  to: string;
+  key: string;
+  icon: JSX.Element;
+  isCenter?: boolean;
+};
+
+const tabs: TabItem[] = [
   { to: '/app/more', key: 'app_more', icon: <MoreIcon /> },
   { to: '/app/market', key: 'app_market', icon: <MarketIcon /> },
   { to: '/app/scan', key: 'app_scan', icon: <CameraIcon />, isCenter: true },
   { to: '/app/basket', key: 'app_basket', icon: <BasketIcon /> },
   { to: '/app/profile', key: 'app_profile', icon: <ProfileIcon /> }
-] as const;
+];
 
 export function BottomTabBar() {
   const location = useLocation();

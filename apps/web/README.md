@@ -1,6 +1,6 @@
-# PRICELIO Web V2
+# PRICELIO Web
 
-React + Vite + TypeScript rewrite of PRICELIO web frontend.
+React + Vite + TypeScript frontend for PRICELIO.
 
 ## Commands
 
@@ -8,7 +8,7 @@ React + Vite + TypeScript rewrite of PRICELIO web frontend.
 - `npm -w apps/web run build`
 - `npm -w apps/web run test`
 - `npm -w apps/web run e2e`
-- `npm run cutover:web` (builds V2 and replaces legacy root static shell)
+- `npm run cutover:web` (builds web app and replaces legacy root static shell)
 - `npm run rollback:web` (restores latest legacy backup)
 
 ## Core architecture
@@ -28,4 +28,4 @@ If production currently serves root files (`index.html`, `styles.css`, `app.js`)
 2. `npm ci`
 3. `npm run cutover:web`
 
-This creates a backup in `.legacy-web-backup/<timestamp>` and copies `apps/web/dist` output to root so existing static hosting immediately serves Web V2.
+This creates a backup in `.legacy-web-backup/<timestamp>` and copies `apps/web/dist` output to root so existing static hosting immediately serves PRICELIO Web.

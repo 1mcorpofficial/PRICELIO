@@ -4,6 +4,7 @@ import { registerSW } from 'virtual:pwa-register';
 import { onCLS, onINP, onLCP } from 'web-vitals';
 import { AppRouter } from './AppRouter';
 import { trackUiEvent } from './lib/analytics';
+import './styles/tailwind.css';
 import './styles/tokens.css';
 import './styles/base.css';
 

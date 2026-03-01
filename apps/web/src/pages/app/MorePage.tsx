@@ -1,6 +1,4 @@
 import { Link } from 'react-router-dom';
-import clsx from 'clsx';
-import { useI18n } from '../../i18n';
 
 // Ikonos meniu punktams
 const KidsIcon = () => (
@@ -51,8 +49,6 @@ const menuItems = [
 ];
 
 export function MorePage() {
-  const t = useI18n((state) => state.t);
-
   return (
     <div className="more-menu-container">
       <h2 className="text-2xl font-bold mb-6 mt-4 ml-2">Daugiau įrankių</h2>

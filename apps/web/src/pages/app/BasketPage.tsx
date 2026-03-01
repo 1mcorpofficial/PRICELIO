@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Card } from '../../components/ui/Card';
 import clsx from 'clsx';
 
 // Demo produktai autocomplete juostai
@@ -18,7 +17,7 @@ const initialBasket = [
 
 export function BasketPage() {
   const [query, setQuery] = useState('');
-  const [basket, setBasket] = useState(initialBasket);
+  const [basket] = useState(initialBasket);
 
   const showSuggestions = query.toLowerCase().startsWith('dva');
 
