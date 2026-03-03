@@ -36,7 +36,31 @@ const CHAIN_COLORS: Record<string, string> = {
 function chainColor(c: string) { return CHAIN_COLORS[c] ?? '#9b92b3'; }
 function money(v: number) { return `€${v.toFixed(2)}`; }
 
-// ─── Line chart (grows as points are added) ───────────────────────────────────
+// ─── Fallback: fetch via regular compare API (for browsers where SSE fails) ──
+async function fetchViaRest(q: string): Promise<ChainPrice[]> {
+  const url = `${API_BASE}/products/compare?q=${encodeURIComponent(q)}`;
+  const res = await fetch(url);
+  if (!res.ok) return [];
+  const data = await res.json() as Array<{
+    name: string;
+    store_prices?: Array<{ chain: string; price: number; updated_at: string | null }>;
+  }>;
+  if (!Array.isArray(data) || !data.length) return [];
+
+  const chainMap = new Map<string, ChainPrice>();
+  for (const product of data) {
+    for (const sp of (product.store_prices ?? [])) {
+      if (sp.price == null) continue;
+      const existing = chainMap.get(sp.chain);
+      if (!existing || Number(sp.price) < existing.price) {
+        chainMap.set(sp.chain, { chain: sp.chain, price: Number(sp.price), name: product.name, updated_at: sp.updated_at ?? null });
+      }
+    }
+  }
+  return [...chainMap.values()].sort((a, b) => a.price - b.price);
+}
+
+// ─── Line chart ───────────────────────────────────────────────────────────────
 function LiveLineChart({ points, searching }: { points: ChainPrice[]; searching: boolean }) {
   const sorted = [...points].sort((a, b) => a.price - b.price);
   if (!sorted.length) return null;
@@ -54,7 +78,6 @@ function LiveLineChart({ points, searching }: { points: ChainPrice[]; searching:
   const yPos = (p: number) => PT + cH - ((p - minP) / range) * cH;
   const pts = sorted.map((c, i) => ({ x: xPos(i), y: yPos(c.price), ...c }));
   const pathD = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
-  const areaD = `${pathD} L ${pts[pts.length - 1].x} ${PT + cH} L ${pts[0].x} ${PT + cH} Z`;
 
   return (
     <div style={{ position: 'relative', overflowX: 'auto' }}>
@@ -71,36 +94,28 @@ function LiveLineChart({ points, searching }: { points: ChainPrice[]; searching:
             <stop offset="100%" stopColor="rgba(0,240,255,0)" />
           </linearGradient>
         </defs>
-
         {[0, 0.25, 0.5, 0.75, 1].map((f) => {
           const y = PT + cH * (1 - f);
           return (
             <g key={f}>
               <line x1={PL} y1={y} x2={W - PR} y2={y} stroke="rgba(255,255,255,0.06)" strokeWidth={1} />
-              <text x={PL - 5} y={y + 4} textAnchor="end" fontSize={9} fill="rgba(255,255,255,0.3)">
-                {(minP + range * f).toFixed(2)}
-              </text>
+              <text x={PL - 5} y={y + 4} textAnchor="end" fontSize={9} fill="rgba(255,255,255,0.3)">{(minP + range * f).toFixed(2)}</text>
             </g>
           );
         })}
-
         {pts.length > 1 && (
           <>
-            <path d={areaD} fill="url(#lc-area)" />
+            <path d={`${pathD} L ${pts[pts.length - 1].x} ${PT + cH} L ${pts[0].x} ${PT + cH} Z`} fill="url(#lc-area)" />
             <path d={pathD} fill="none" stroke="rgba(0,240,255,0.55)" strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
           </>
         )}
-
         <line x1={PL} y1={PT + cH} x2={W - PR} y2={PT + cH} stroke="rgba(255,255,255,0.1)" strokeWidth={1} />
-
         {pts.map((p, i) => {
           const isBest = p.price === minP;
           const color = chainColor(p.chain);
           return (
-            <g key={`${p.chain}-${i}`} style={{ animation: 'lc-pop 0.35s cubic-bezier(.34,1.56,.64,1) both' }}>
-              <text x={p.x} y={p.y - 14} textAnchor="middle" fontSize={10} fill={isBest ? 'var(--accent-green)' : color} fontWeight="700">
-                {money(p.price)}
-              </text>
+            <g key={`${p.chain}-${i}`}>
+              <text x={p.x} y={p.y - 14} textAnchor="middle" fontSize={10} fill={isBest ? 'var(--accent-green)' : color} fontWeight="700">{money(p.price)}</text>
               {isBest && <circle cx={p.x} cy={p.y} r={10} fill="none" stroke="var(--accent-green)" strokeWidth={1.5} opacity={0.4} />}
               <circle cx={p.x} cy={p.y} r={isBest ? 7 : 5} fill={color} stroke="rgba(8,3,18,0.8)" strokeWidth={2} />
               <text x={p.x} y={PT + cH + 16} textAnchor="middle" fontSize={9} fill="rgba(255,255,255,0.6)" fontWeight="600">
@@ -125,30 +140,49 @@ export function ComparePage() {
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const esRef = useRef<EventSource | null>(null);
+  const pointsRef = useRef<ChainPrice[]>([]);
 
-  // Close SSE on unmount
+  useEffect(() => { pointsRef.current = points; }, [points]);
   useEffect(() => () => { esRef.current?.close(); }, []);
 
-  // URL param ?q= on mount
   useEffect(() => {
     const q = new URLSearchParams(window.location.search).get('q');
     if (q) { setInputValue(q); startSearch(q); }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const stopSearch = useCallback(() => {
+  const startSearch = useCallback((q: string) => {
     esRef.current?.close();
     esRef.current = null;
-  }, []);
-
-  const startSearch = useCallback((q: string) => {
-    stopSearch();
     setPoints([]);
+    pointsRef.current = [];
     setQueryLabel(q);
     setStatus('searching');
 
+    // Check if EventSource is supported
+    if (typeof EventSource === 'undefined') {
+      // Fallback for browsers without SSE support
+      void fetchViaRest(q).then((results) => {
+        if (results.length) { setPoints(results); setStatus('done'); }
+        else setStatus('not_found');
+      }).catch(() => setStatus('not_found'));
+      return;
+    }
+
     const es = new EventSource(`${API_BASE}/products/live-search?q=${encodeURIComponent(q)}`);
     esRef.current = es;
+
+    // Fallback timer: if no data in 8s, try REST
+    const fallbackTimer = setTimeout(async () => {
+      if (pointsRef.current.length === 0) {
+        es.close();
+        try {
+          const results = await fetchViaRest(q);
+          if (results.length) { setPoints(results); setStatus('done'); }
+          else setStatus('not_found');
+        } catch { setStatus('not_found'); }
+      }
+    }, 8000);
 
     es.onmessage = (e) => {
       try {
@@ -156,12 +190,24 @@ export function ComparePage() {
           done?: boolean; not_found?: boolean; error?: boolean;
           chain?: string; price?: number; name?: string; updated_at?: string | null;
         };
-        if (data.not_found) { es.close(); setStatus('not_found'); return; }
-        if (data.error) { es.close(); setStatus('not_found'); return; }
-        if (data.done) { es.close(); setStatus('done'); return; }
+        if (data.not_found || data.error) {
+          clearTimeout(fallbackTimer);
+          es.close();
+          // Try REST fallback before giving up
+          void fetchViaRest(q).then((results) => {
+            if (results.length) { setPoints(results); setStatus('done'); }
+            else setStatus('not_found');
+          }).catch(() => setStatus('not_found'));
+          return;
+        }
+        if (data.done) {
+          clearTimeout(fallbackTimer);
+          es.close();
+          setStatus((prev) => prev === 'searching' ? 'done' : prev);
+          return;
+        }
         if (data.chain && data.price != null) {
           setPoints((prev) => {
-            // Skip duplicate chain (keep lowest)
             const idx = prev.findIndex((p) => p.chain === data.chain!);
             if (idx !== -1) {
               if (data.price! < prev[idx].price) {
@@ -177,8 +223,21 @@ export function ComparePage() {
       } catch { /* ignore parse errors */ }
     };
 
-    es.onerror = () => { es.close(); setStatus(points.length > 0 ? 'done' : 'not_found'); };
-  }, [stopSearch, points.length]);
+    es.onerror = () => {
+      clearTimeout(fallbackTimer);
+      es.close();
+      const currentPoints = pointsRef.current;
+      if (currentPoints.length > 0) {
+        setStatus('done');
+      } else {
+        // SSE failed — try REST fallback
+        void fetchViaRest(q).then((results) => {
+          if (results.length) { setPoints(results); setStatus('done'); }
+          else setStatus('not_found');
+        }).catch(() => setStatus('not_found'));
+      }
+    };
+  }, []);
 
   const fetchSuggestions = useCallback(async (q: string) => {
     if (q.length < 2) { setSuggestions([]); return; }
@@ -268,24 +327,15 @@ export function ComparePage() {
           )}
         </div>
 
-        {/* ── NOT FOUND ── */}
+        {/* NOT FOUND */}
         {status === 'not_found' && (
           <div className="glass cp-notfound">
             <div className="cp-notfound__emoji">🔍</div>
             <div className="cp-notfound__title">Šiuo metu šios prekės duomenų neturime</div>
             <p className="cp-notfound__text">
-              Galime pabandyti surasti kainų informaciją parduotuvių svetainėse.
+              Patikrinome visas parduotuves mūsų duomenų bazėje — kainų neradome.
             </p>
             <div className="cp-notfound__btns">
-              <Button
-                glow
-                onClick={() => {
-                  // Redirect to AI assistant with pre-filled query
-                  window.location.href = `/app/overview?ask=${encodeURIComponent(`Kiek kainuoja ${queryLabel} įvairiose parduotuvėse?`)}`;
-                }}
-              >
-                🤖 Ieškoti su AI
-              </Button>
               <Button
                 variant="ghost"
                 onClick={() => { setStatus('idle'); setInputValue(''); setSuggestions([]); setPoints([]); setQueryLabel(''); }}
@@ -296,11 +346,9 @@ export function ComparePage() {
           </div>
         )}
 
-        {/* ── RESULTS (searching + done) ── */}
+        {/* RESULTS */}
         {(status === 'searching' || status === 'done') && (
           <div className="cp-results">
-
-            {/* Header */}
             {queryLabel && (
               <div className="glass cp-result-hdr">
                 <div className="cp-result-hdr__label">Ieškota</div>
@@ -308,29 +356,21 @@ export function ComparePage() {
                 {status === 'searching' && points.length === 0 && (
                   <div className="cp-result-hdr__searching">Tikrinamos parduotuvės…</div>
                 )}
-                {cheapest && status === 'done' && (
-                  <div className="cp-result-hdr__best">
-                    <span className="cp-result-hdr__dot" />
-                    Pigiausia: <strong>{money(cheapest.price)}</strong> · {cheapest.chain}
-                  </div>
-                )}
-                {cheapest && status === 'searching' && (
-                  <div className="cp-result-hdr__best" style={{ opacity: 0.7 }}>
-                    <span className="cp-result-hdr__dot" style={{ background: 'var(--accent-blue)', boxShadow: '0 0 8px var(--accent-blue)' }} />
-                    Kol kas pigiausia: <strong>{money(cheapest.price)}</strong> · {cheapest.chain}
+                {cheapest && (
+                  <div className="cp-result-hdr__best" style={{ opacity: status === 'searching' ? 0.7 : 1 }}>
+                    <span className="cp-result-hdr__dot" style={status === 'searching' ? { background: 'var(--accent-blue)', boxShadow: '0 0 8px var(--accent-blue)' } : {}} />
+                    {status === 'searching' ? 'Kol kas pigiausia: ' : 'Pigiausia: '}
+                    <strong>{money(cheapest.price)}</strong> · {cheapest.chain}
                   </div>
                 )}
               </div>
             )}
 
-            {/* Chart */}
             <div className="glass cp-chart-card">
               <div className="cp-chart-card__label">
                 Kainos tinkluose
                 {status === 'searching' && points.length > 0 && (
-                  <span style={{ marginLeft: 8, color: 'var(--accent-blue)', fontWeight: 700 }}>
-                    · rasti {points.length} tinkl.
-                  </span>
+                  <span style={{ marginLeft: 8, color: 'var(--accent-blue)', fontWeight: 700 }}>· rasti {points.length}</span>
                 )}
               </div>
               {points.length === 0 ? (
@@ -342,7 +382,6 @@ export function ComparePage() {
               )}
             </div>
 
-            {/* List */}
             {sorted.length > 0 && (
               <div className="glass cp-list">
                 {sorted.map((c, i) => (
@@ -363,7 +402,7 @@ export function ComparePage() {
           </div>
         )}
 
-        {/* ── IDLE empty state ── */}
+        {/* IDLE */}
         {status === 'idle' && (
           <div className="cp-empty-state">
             <div className="cp-empty-state__icon">
@@ -372,9 +411,7 @@ export function ComparePage() {
               </svg>
             </div>
             <div className="cp-empty-state__title">Palygink kainas visuose tinkluose</div>
-            <p className="cp-empty-state__text">
-              Surask pigiausią kur pirkti — Maxima, IKI, Rimi, Norfa, Lidl, Aibė ir kt.
-            </p>
+            <p className="cp-empty-state__text">Surask pigiausią kur pirkti — Maxima, IKI, Rimi, Norfa, Lidl, Aibė ir kt.</p>
             <div className="cp-empty-state__examples">
               {['Sviestas', 'Pienas', 'Duona', 'Kiaušiniai'].map((ex) => (
                 <button key={ex} type="button" className="cp-example-chip" onClick={() => { setInputValue(ex); startSearch(ex); }}>
@@ -393,15 +430,13 @@ export function ComparePage() {
         .cp-back:hover { background: rgba(0,240,255,.12); }
         .cp-nav__title { display: flex; align-items: center; gap: .6rem; font-weight: 700; font-size: 1rem; }
         .cp-shell { width: min(640px, calc(100% - 2rem)); margin: 1.5rem auto; display: grid; gap: 1rem; }
-
         .cp-search-row { display: flex; gap: .5rem; position: relative; align-items: center; }
         .cp-search { flex: 1; position: relative; display: flex; align-items: center; background: var(--bg-elevated); border: 1.5px solid var(--surface-outline); border-radius: var(--radius-md); transition: border-color .2s, box-shadow .2s; }
         .cp-search:focus-within { border-color: rgba(0,240,255,.45); box-shadow: 0 0 0 3px rgba(0,240,255,.1); }
-        .cp-search__icon { position: absolute; left: .9rem; color: var(--text-muted); pointer-events: none; flex-shrink: 0; }
+        .cp-search__icon { position: absolute; left: .9rem; color: var(--text-muted); pointer-events: none; }
         .cp-search__input { width: 100%; background: none; border: none; outline: none; padding: .75rem .9rem .75rem 2.6rem; color: var(--text-main); font-size: .95rem; font-family: inherit; }
         .cp-search__input::placeholder { color: var(--text-muted); }
-        .cp-spinner { position: absolute; right: .9rem; width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(0,240,255,.25); border-top-color: var(--accent-blue); animation: cp-spin .7s linear infinite; flex-shrink: 0; }
-
+        .cp-spinner { position: absolute; right: .9rem; width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(0,240,255,.25); border-top-color: var(--accent-blue); animation: cp-spin .7s linear infinite; }
         .cp-autocomplete { position: absolute; top: calc(100% + 6px); left: 0; right: 72px; z-index: 100; overflow: hidden; border-radius: var(--radius-md); }
         .cp-ac__item { width: 100%; background: none; border: none; border-bottom: 1px solid rgba(255,255,255,.06); padding: .65rem 1rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; color: var(--text-main); text-align: left; font-family: inherit; font-size: .88rem; transition: background .15s; }
         .cp-ac__item:last-child { border-bottom: none; }
@@ -410,13 +445,11 @@ export function ComparePage() {
         .cp-ac__meta { display: flex; align-items: center; gap: .4rem; flex-shrink: 0; }
         .cp-ac__chains { font-size: .75rem; color: var(--text-muted); }
         .cp-ac__price { color: var(--accent-green); font-weight: 700; font-size: .85rem; }
-
         .cp-notfound { padding: 2.5rem 1.5rem; text-align: center; }
         .cp-notfound__emoji { font-size: 2.8rem; margin-bottom: .75rem; }
         .cp-notfound__title { font-weight: 800; font-size: 1.05rem; margin-bottom: .5rem; }
         .cp-notfound__text { font-size: .875rem; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.55; }
         .cp-notfound__btns { display: flex; gap: .75rem; justify-content: center; flex-wrap: wrap; }
-
         .cp-results { display: grid; gap: .875rem; }
         .cp-result-hdr { padding: 1rem 1.25rem; border-top: 2px solid var(--accent-blue) !important; }
         .cp-result-hdr__label { font-size: .7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; }
@@ -424,7 +457,6 @@ export function ComparePage() {
         .cp-result-hdr__searching { margin-top: .4rem; font-size: .82rem; color: var(--accent-blue); }
         .cp-result-hdr__best { margin-top: .4rem; font-size: .84rem; color: var(--accent-green); display: flex; align-items: center; gap: .4rem; }
         .cp-result-hdr__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); flex-shrink: 0; }
-
         .cp-chart-card { padding: 1.25rem 1rem .75rem; }
         .cp-chart-card__label { font-size: .7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: .75rem; }
         .cp-chart-loading { display: flex; align-items: flex-end; gap: 8px; height: 80px; padding: 0 4px; }
@@ -432,7 +464,6 @@ export function ComparePage() {
         .cp-chart-loading__bar:nth-child(1) { height: 60%; animation-delay: 0s; }
         .cp-chart-loading__bar:nth-child(2) { height: 85%; animation-delay: .2s; }
         .cp-chart-loading__bar:nth-child(3) { height: 40%; animation-delay: .4s; }
-
         .cp-list { overflow: hidden; }
         .cp-list__row { display: flex; align-items: center; gap: .75rem; padding: .85rem 1.25rem; border-bottom: 1px solid rgba(255,255,255,.06); }
         .cp-list__row:last-child { border-bottom: none; }
@@ -445,7 +476,6 @@ export function ComparePage() {
         .cp-list__price { font-weight: 700; font-size: 1rem; }
         .cp-list__price--best { color: var(--accent-green); }
         .cp-list__diff { font-size: .72rem; color: var(--accent-pink); }
-
         .cp-empty-state { text-align: center; padding: 3rem 1rem; }
         .cp-empty-state__icon { display: flex; justify-content: center; margin-bottom: 1rem; }
         .cp-empty-state__title { font-weight: 700; font-size: 1.05rem; margin-bottom: .5rem; }
@@ -453,11 +483,9 @@ export function ComparePage() {
         .cp-empty-state__examples { display: flex; gap: .5rem; justify-content: center; flex-wrap: wrap; }
         .cp-example-chip { background: rgba(0,240,255,.07); border: 1px solid rgba(0,240,255,.25); border-radius: 20px; color: var(--accent-blue); font-size: .82rem; font-weight: 600; padding: .35rem .9rem; cursor: pointer; transition: background .15s; font-family: inherit; }
         .cp-example-chip:hover { background: rgba(0,240,255,.14); }
-
         @keyframes cp-spin { to { transform: rotate(360deg); } }
         @keyframes cp-skeleton { 0%,100% { opacity: .4; } 50% { opacity: .8; } }
         @keyframes lc-pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .5; transform: scale(1.3); } }
-        @keyframes lc-pop { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
       `}</style>
     </div>
   );
