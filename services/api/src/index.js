@@ -1538,6 +1538,111 @@ app.get('/products/compare', auth.optionalAuthMiddleware, compareIpLimiter, comp
   }
 });
 
+// Smart autocomplete with name grouping (must be BEFORE /products/:id)
+function normalizeProductName(name) {
+  return name
+    .toLowerCase()
+    .replace(/(\d+)\s*(litr[aų]?|liter[s]?|lt)\b/gi, '$1l')
+    .replace(/(\d+)\s*l\b(?!\w)/gi, '$1l')
+    .replace(/(\d+)\s*ml\b/gi, '$1ml')
+    .replace(/(\d+)\s*(kilogram[aų]?|kilo)\b/gi, '$1kg')
+    .replace(/(\d+)\s*kg\b/gi, '$1kg')
+    .replace(/(\d+)\s*(gram[aų]?|gr)\b(?!am)/gi, '$1g')
+    .replace(/(\d+)\s*g\b(?!\w)/gi, '$1g')
+    .replace(/[.,'"]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+app.get('/products/autocomplete', async (req, res) => {
+  const q = String(req.query.q || '').trim();
+  if (q.length < 2) return res.json([]);
+  try {
+    const result = await query(
+      `SELECT p.id, p.name,
+              MIN(o.price_value) AS best_price,
+              COUNT(DISTINCT s.chain) AS chain_count
+       FROM products p
+       LEFT JOIN offers o ON o.product_id = p.id AND o.status = 'active'
+       LEFT JOIN stores s ON s.id = o.store_id
+       WHERE p.name ILIKE $1 AND p.is_active = true
+       GROUP BY p.id, p.name
+       ORDER BY COUNT(DISTINCT s.chain) DESC, p.name ASC
+       LIMIT 40`,
+      [`%${q}%`]
+    );
+
+    const groups = new Map();
+    for (const row of result.rows) {
+      const key = normalizeProductName(row.name);
+      const chainCount = Number(row.chain_count || 0);
+      if (!groups.has(key)) {
+        groups.set(key, { label: row.name, q: row.name, best_price: row.best_price ? Number(row.best_price) : null, chain_count: chainCount, product_ids: [row.id] });
+      } else {
+        const g = groups.get(key);
+        g.product_ids.push(row.id);
+        if (chainCount > g.chain_count) { g.chain_count = chainCount; g.label = row.name; }
+        if (row.best_price && (!g.best_price || Number(row.best_price) < g.best_price)) g.best_price = Number(row.best_price);
+      }
+    }
+
+    res.json([...groups.values()].sort((a, b) => b.chain_count - a.chain_count || a.label.localeCompare(b.label)).slice(0, 6));
+  } catch {
+    res.status(500).json({ error: 'autocomplete_failed' });
+  }
+});
+
+// Live search SSE — streams prices one-by-one (must be BEFORE /products/:id)
+app.get('/products/live-search', async (req, res) => {
+  const q = String(req.query.q || '').trim();
+  if (!q || q.length < 2) return res.status(400).json({ error: 'query_required' });
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders?.();
+
+  const send = (data) => { if (!res.writableEnded) res.write(`data: ${JSON.stringify(data)}\n\n`); };
+
+  try {
+    const result = await query(
+      `SELECT s.chain, MIN(o.price_value) AS price, p.name, MAX(o.updated_at) AS updated_at
+       FROM products p
+       JOIN offers o ON o.product_id = p.id
+       JOIN stores s ON s.id = o.store_id
+       WHERE p.name ILIKE $1 AND o.status = 'active' AND p.is_active = true AND s.is_active = true
+       GROUP BY s.chain, p.name
+       ORDER BY MIN(o.price_value) ASC`,
+      [`%${q}%`]
+    );
+
+    if (!result.rows.length) { send({ not_found: true }); res.end(); return; }
+
+    // Best price per chain across all matching product variants
+    const chainMap = new Map();
+    for (const row of result.rows) {
+      const price = Number(row.price);
+      if (!chainMap.has(row.chain) || price < chainMap.get(row.chain).price) {
+        chainMap.set(row.chain, { chain: row.chain, price, name: row.name, updated_at: row.updated_at || null });
+      }
+    }
+
+    const chains = [...chainMap.values()];
+    chains.sort(() => Math.random() - 0.5); // shuffle for live feel
+
+    for (const c of chains) {
+      if (res.writableEnded) break;
+      await new Promise((r) => setTimeout(r, 350 + Math.random() * 1100));
+      send({ ...c, done: false });
+    }
+    if (!res.writableEnded) { send({ done: true, total: chains.length }); res.end(); }
+  } catch {
+    send({ error: true });
+    if (!res.writableEnded) res.end();
+  }
+});
+
 app.get('/products/:id', async (req, res) => {
   try {
     const detail = await getProductDetail(req.params.id);
@@ -3035,151 +3140,6 @@ app.post('/admin/scrapers/:id/force-sync', auth.optionalAuthMiddleware, requireA
     });
   } catch (error) {
     return res.status(500).json({ error: 'admin_force_sync_failed' });
-  }
-});
-
-// ─── Smart product name normalizer (groups "Dvaro pienas 1l" == "Dvaro Pienas 1 L") ───
-function normalizeProductName(name) {
-  return name
-    .toLowerCase()
-    .replace(/(\d+)\s*(litr[aų]?|liter[s]?|lt)\b/gi, '$1l')
-    .replace(/(\d+)\s*l\b(?!\w)/gi, '$1l')
-    .replace(/(\d+)\s*ml\b/gi, '$1ml')
-    .replace(/(\d+)\s*(kilogram[aų]?|kilo)\b/gi, '$1kg')
-    .replace(/(\d+)\s*kg\b/gi, '$1kg')
-    .replace(/(\d+)\s*(gram[aų]?|gr)\b(?!am)/gi, '$1g')
-    .replace(/(\d+)\s*g\b(?!\w)/gi, '$1g')
-    .replace(/[.,'"]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-// ─── Autocomplete with smart grouping ─────────────────────────────────────────
-app.get('/products/autocomplete', async (req, res) => {
-  const q = String(req.query.q || '').trim();
-  if (q.length < 2) return res.json([]);
-  try {
-    const result = await query(
-      `SELECT p.id, p.name,
-              MIN(o.price_value) AS best_price,
-              COUNT(DISTINCT s.chain) AS chain_count
-       FROM products p
-       LEFT JOIN offers o ON o.product_id = p.id AND o.status = 'active'
-       LEFT JOIN stores s ON s.id = o.store_id
-       WHERE p.name ILIKE $1 AND p.is_active = true
-       GROUP BY p.id, p.name
-       ORDER BY COUNT(DISTINCT s.chain) DESC, p.name ASC
-       LIMIT 40`,
-      [`%${q}%`]
-    );
-
-    // Group by normalized name
-    const groups = new Map();
-    for (const row of result.rows) {
-      const key = normalizeProductName(row.name);
-      const chainCount = Number(row.chain_count || 0);
-      if (!groups.has(key)) {
-        groups.set(key, {
-          label: row.name,
-          q: row.name,
-          best_price: row.best_price ? Number(row.best_price) : null,
-          chain_count: chainCount,
-          product_ids: [row.id]
-        });
-      } else {
-        const g = groups.get(key);
-        g.product_ids.push(row.id);
-        if (chainCount > g.chain_count) {
-          g.chain_count = chainCount;
-          g.label = row.name;
-        }
-        if (row.best_price && (!g.best_price || Number(row.best_price) < g.best_price)) {
-          g.best_price = Number(row.best_price);
-        }
-      }
-    }
-
-    const grouped = [...groups.values()]
-      .sort((a, b) => b.chain_count - a.chain_count || a.label.localeCompare(b.label))
-      .slice(0, 6);
-
-    res.json(grouped);
-  } catch {
-    res.status(500).json({ error: 'autocomplete_failed' });
-  }
-});
-
-// ─── Live search SSE: streams price results one-by-one ────────────────────────
-app.get('/products/live-search', async (req, res) => {
-  const q = String(req.query.q || '').trim();
-  if (!q || q.length < 2) {
-    return res.status(400).json({ error: 'query_required' });
-  }
-
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache, no-transform');
-  res.setHeader('Connection', 'keep-alive');
-  res.setHeader('X-Accel-Buffering', 'no');
-  res.flushHeaders?.();
-
-  const send = (data) => {
-    if (!res.writableEnded) res.write(`data: ${JSON.stringify(data)}\n\n`);
-  };
-
-  try {
-    // Find all matching products with prices per chain
-    const result = await query(
-      `SELECT s.chain, MIN(o.price_value) AS price, p.name,
-              MAX(o.updated_at) AS updated_at
-       FROM products p
-       JOIN offers o ON o.product_id = p.id
-       JOIN stores s ON s.id = o.store_id
-       WHERE p.name ILIKE $1
-         AND o.status = 'active'
-         AND p.is_active = true
-         AND s.is_active = true
-       GROUP BY s.chain, p.name
-       ORDER BY MIN(o.price_value) ASC`,
-      [`%${q}%`]
-    );
-
-    if (!result.rows.length) {
-      send({ not_found: true });
-      res.end();
-      return;
-    }
-
-    // Deduplicate by chain — best price across all matching products
-    const chainMap = new Map();
-    for (const row of result.rows) {
-      const price = Number(row.price);
-      if (!chainMap.has(row.chain) || price < chainMap.get(row.chain).price) {
-        chainMap.set(row.chain, {
-          chain: row.chain,
-          price,
-          name: row.name,
-          updated_at: row.updated_at || null
-        });
-      }
-    }
-
-    const chains = [...chainMap.values()];
-    // Shuffle order to feel like real parallel search
-    chains.sort(() => Math.random() - 0.5);
-
-    for (const c of chains) {
-      if (res.writableEnded) break;
-      await new Promise((r) => setTimeout(r, 350 + Math.random() * 1100));
-      send({ ...c, done: false });
-    }
-
-    if (!res.writableEnded) {
-      send({ done: true, total: chains.length });
-      res.end();
-    }
-  } catch {
-    send({ error: true });
-    if (!res.writableEnded) res.end();
   }
 });
 
