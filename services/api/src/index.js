@@ -1711,10 +1711,10 @@ async function aiSearchIki(q) {
 }
 
 async function aiSearchViaGpt(chainsToSearch, q) {
-  // Use GPT-4o knowledge of Lithuanian grocery market to estimate prices
+  // Use gpt-4o-mini — 2.5M tokens/day free tier, sufficient for price lookups
   const chainList = chainsToSearch.join(', ');
   const completion = await openaiClient.chat.completions.create({
-    model: 'gpt-4o',
+    model: 'gpt-4o-mini',
     messages: [{
       role: 'system',
       content: 'You are a Lithuanian grocery price expert. You know typical retail prices at major Lithuanian chains.',
@@ -1730,6 +1730,24 @@ Only include chains where you are reasonably confident. Omit if unknown. Prices 
   });
   const parsed = JSON.parse(completion.choices[0].message.content || '{}');
   return Array.isArray(parsed.results) ? parsed.results : [];
+}
+
+// Single-call batch verification for GPT-estimated prices using gpt-4o-mini
+async function batchVerifyPrices(productName, foundPrices) {
+  if (!foundPrices.length) return [];
+  const priceList = foundPrices.map((p) => `${p.chain}: €${p.price.toFixed(2)}`).join(', ');
+  const completion = await openaiClient.chat.completions.create({
+    model: 'gpt-4o-mini',
+    messages: [{
+      role: 'user',
+      content: `Are these Lithuanian grocery store prices for "${productName}" realistic for 2024-2025?\n${priceList}\nReturn JSON: {"verified": [{"chain": "Maxima", "realistic": true, "price": 1.23}, ...]}\nOnly include chains from the input. Mark realistic=false if price seems clearly wrong.`,
+    }],
+    max_tokens: 200,
+    response_format: { type: 'json_object' },
+    temperature: 0,
+  });
+  const parsed = JSON.parse(completion.choices[0].message.content || '{}');
+  return Array.isArray(parsed.verified) ? parsed.verified : [];
 }
 
 // Save a verified AI price into products + offers tables
@@ -1759,11 +1777,11 @@ async function saveVerifiedPrice(productName, chain, price) {
       productId = newProd.rows[0].id;
     }
 
-    // Insert offer (skip if duplicate via conflict)
+    // Insert offer — source_type must be 'flyer' or 'online' per DB constraint
     await query(
-      `INSERT INTO offers (product_id, source_type, store_id, store_chain, city_id, price_value, status, fetched_at)
-       VALUES ($1, 'ai_verified', $2, $3, $4, $5, 'active', NOW())
-       ON CONFLICT DO NOTHING`,
+      `INSERT INTO offers (product_id, source_type, store_id, store_chain, city_id, price_value, is_verified, status, fetched_at)
+       VALUES ($1, 'online', $2, $3, $4, $5, true, 'active', NOW())
+       ON CONFLICT ON CONSTRAINT offers_dedup_idx DO NOTHING`,
       [productId, store.id, chain, store.city_id, price]
     );
   } catch (err) {
@@ -1772,6 +1790,11 @@ async function saveVerifiedPrice(productName, chain, price) {
 }
 
 // GET /products/ai-search?q=... — SSE, searches live across chains (must be BEFORE /products/:id)
+// Flow: DB-first already done by live-search. This is called only when DB has nothing.
+// 1. IKI via real LastMile API → auto-verified (real data), saved to DB immediately
+// 2. GPT-4o-mini for other chains → pending, streamed as unverified
+// 3. ONE batch gpt-4o-mini call verifies all GPT prices → saves confirmed ones to DB
+// Total: 3 API calls max instead of 12
 app.get('/products/ai-search', async (req, res) => {
   const q = String(req.query.q || '').trim();
   if (!q || q.length < 2) return res.status(400).json({ error: 'query_required' });
@@ -1786,96 +1809,89 @@ app.get('/products/ai-search', async (req, res) => {
 
   await ensurePendingPricesTable();
 
-  // First pass: collect all found prices
-  const firstPass = []; // { chain, price, name, pendingId }
+  const gptFound = []; // GPT-estimated prices waiting for batch verification
 
+  // Run IKI (real data) and GPT (estimates) in parallel — 2 API calls total
   await Promise.all([
-    // IKI via real LastMile data
+    // IKI via real LastMile API — already real data, verify immediately
     (async () => {
       try {
         const result = await aiSearchIki(q);
         if (result && result.price > 0) {
-          const pendingRes = await query(
-            `INSERT INTO pending_prices (product_name, chain, price) VALUES ($1, $2, $3) RETURNING id`,
-            [result.name || q, 'IKI', result.price]
-          ).catch(() => ({ rows: [{ id: null }] }));
-          firstPass.push({ chain: 'IKI', price: result.price, name: result.name, pendingId: pendingRes.rows[0]?.id });
-          send({ chain: 'IKI', price: result.price, name: result.name, done: false, verified: false });
+          // Real data — auto-verified, save to DB straight away
+          await query(
+            `INSERT INTO pending_prices (product_name, chain, price, status, verified_price, verified_at)
+             VALUES ($1, 'IKI', $2, 'verified', $2, NOW())`,
+            [result.name || q, result.price]
+          ).catch(() => {});
+          await saveVerifiedPrice(result.name || q, 'IKI', result.price);
+          send({ chain: 'IKI', price: result.price, name: result.name, done: false, verified: true, saved: true });
         }
       } catch (err) {
         console.error('[ai-search] IKI failed:', err.message?.slice(0, 80));
       }
     })(),
 
-    // Other chains via GPT-4o knowledge
+    // GPT-4o-mini for Maxima, Rimi, Norfa, Lidl, Aibė — 1 API call
     (async () => {
       try {
-        const gptChains = ['Maxima', 'Rimi', 'Norfa', 'Lidl', 'Aibė'];
-        const results = await aiSearchViaGpt(gptChains, q);
+        const results = await aiSearchViaGpt(['Maxima', 'Rimi', 'Norfa', 'Lidl', 'Aibė'], q);
         for (const r of results) {
-          if (r.chain && r.price > 0) {
-            await new Promise((resolve) => setTimeout(resolve, 400 + Math.random() * 900));
-            const pendingRes = await query(
-              `INSERT INTO pending_prices (product_name, chain, price) VALUES ($1, $2, $3) RETURNING id`,
-              [r.name || q, r.chain, r.price]
-            ).catch(() => ({ rows: [{ id: null }] }));
-            firstPass.push({ chain: r.chain, price: Number(r.price), name: r.name || q, pendingId: pendingRes.rows[0]?.id });
-            send({ chain: r.chain, price: Number(r.price), name: r.name || q, done: false, verified: false });
-          }
+          if (!r.chain || !(r.price > 0)) continue;
+          const price = Number(r.price);
+          const name = r.name || q;
+          const pendingRes = await query(
+            `INSERT INTO pending_prices (product_name, chain, price) VALUES ($1, $2, $3) RETURNING id`,
+            [name, r.chain, price]
+          ).catch(() => ({ rows: [{ id: null }] }));
+          gptFound.push({ chain: r.chain, price, name, pendingId: pendingRes.rows[0]?.id });
+          // Stream with staggered delay for live-fill feel
+          await new Promise((resolve) => setTimeout(resolve, 300 + Math.random() * 600));
+          send({ chain: r.chain, price, name, done: false, verified: false });
         }
       } catch (err) {
-        console.error('[ai-search] GPT chains failed:', err.message?.slice(0, 80));
+        console.error('[ai-search] GPT search failed:', err.message?.slice(0, 80));
       }
     })(),
   ]);
 
-  // Second pass: verify each found price
+  // Batch verify all GPT prices in ONE gpt-4o-mini call — fast and token-efficient
   let verifiedCount = 0;
-  await Promise.all(firstPass.map(async (item) => {
+  if (gptFound.length > 0) {
     try {
-      let verifiedPrice = null;
+      const verifications = await batchVerifyPrices(q, gptFound);
+      const verifyMap = new Map(verifications.map((v) => [v.chain, v]));
 
-      if (item.chain === 'IKI') {
-        // Re-verify IKI via LastMile
-        const check = await aiSearchIki(item.name || q).catch(() => null);
-        if (check && check.price > 0) {
-          const ratio = Math.abs(check.price - item.price) / item.price;
-          if (ratio <= 0.10) verifiedPrice = check.price;
-        }
-      } else {
-        // Re-verify GPT chains with a second GPT call
-        const check = await aiSearchViaGpt([item.chain], item.name || q).catch(() => []);
-        const match = check.find((r) => r.chain === item.chain && r.price > 0);
-        if (match) {
-          const ratio = Math.abs(Number(match.price) - item.price) / item.price;
-          if (ratio <= 0.10) verifiedPrice = Number(match.price);
-        }
-      }
+      await Promise.all(gptFound.map(async (item) => {
+        const verdict = verifyMap.get(item.chain);
+        const isRealistic = verdict?.realistic === true;
 
-      if (verifiedPrice != null && item.pendingId) {
-        await query(
-          `UPDATE pending_prices SET status = 'verified', verified_price = $1, verified_at = NOW() WHERE id = $2`,
-          [verifiedPrice, item.pendingId]
-        ).catch(() => {});
-        await saveVerifiedPrice(item.name || q, item.chain, verifiedPrice);
-        verifiedCount++;
-        send({ chain: item.chain, verified: true, price: verifiedPrice, saved: true });
-      } else {
-        if (item.pendingId) {
+        if (isRealistic && item.pendingId) {
           await query(
-            `UPDATE pending_prices SET status = 'rejected' WHERE id = $1`,
-            [item.pendingId]
+            `UPDATE pending_prices SET status = 'verified', verified_price = $1, verified_at = NOW() WHERE id = $2`,
+            [item.price, item.pendingId]
           ).catch(() => {});
+          await saveVerifiedPrice(item.name, item.chain, item.price);
+          verifiedCount++;
+          send({ chain: item.chain, verified: true, price: item.price, saved: true });
+        } else {
+          if (item.pendingId) {
+            await query(
+              `UPDATE pending_prices SET status = 'rejected' WHERE id = $1`,
+              [item.pendingId]
+            ).catch(() => {});
+          }
+          send({ chain: item.chain, verified: false, rejected: true });
         }
-        send({ chain: item.chain, verified: false, rejected: true });
-      }
+      }));
     } catch (err) {
-      console.error('[ai-search] verify failed for', item.chain, err.message?.slice(0, 60));
-      send({ chain: item.chain, verified: false, rejected: true });
+      console.error('[ai-search] batch verify failed:', err.message?.slice(0, 80));
+      // On verify failure, leave prices as pending (visible but unverified)
     }
-  }));
+  }
 
-  send({ done: true, total: firstPass.length, verified_count: verifiedCount });
+  const totalFound = (gptFound.length > 0 || verifiedCount > 0 ? gptFound.length : 0);
+  send({ done: true, total: totalFound, verified_count: verifiedCount });
   if (!res.writableEnded) res.end();
 });
 
