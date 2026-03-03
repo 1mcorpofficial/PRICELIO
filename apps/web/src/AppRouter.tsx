@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { LandingPage } from './pages/LandingPage';
 import { DemoPage } from './pages/DemoPage';
 import { AuthPage } from './pages/AuthPage';
+import { ComparePage } from './pages/ComparePage';
 import { AppLayout } from './pages/app/AppLayout';
 import { OverviewPage } from './pages/app/OverviewPage';
 import { ReceiptsPage } from './pages/app/ReceiptsPage';
@@ -49,6 +50,7 @@ export function AppRouter() {
           <Route path="/" element={<LandingPage />} />
         <Route path="/demo" element={<DemoPage />} />
         <Route path="/auth" element={<AuthPage />} />
+        <Route path="/compare" element={<ComparePage />} />
 
         <Route
           path="/app"

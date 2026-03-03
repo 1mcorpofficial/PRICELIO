@@ -9,7 +9,9 @@ type UiEventName =
   | 'auth_register_success'
   | 'demo_claim_success'
   | 'first_receipt_scan_started'
-  | 'first_receipt_scan_done';
+  | 'first_receipt_scan_done'
+  | 'lp_compare_click'
+  | 'lp_compare_banner_click';
 
 export async function trackUiEvent(eventName: UiEventName, metadata: Record<string, unknown> = {}): Promise<void> {
   try {

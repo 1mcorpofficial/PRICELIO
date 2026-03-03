@@ -47,8 +47,10 @@ export function LandingPage() {
             <Link to="/demo" onClick={() => void trackUiEvent('lp_try_demo_click')}>
               <Button glow>{t('hero_cta')}</Button>
             </Link>
-            <Link to="/app/overview">
-              <Button variant="ghost">{t('hero_secondary_cta')}</Button>
+            <Link to="/compare" onClick={() => void trackUiEvent('lp_compare_click')}>
+              <Button variant="outline" style={{ borderColor: 'rgba(0,240,255,0.4)', color: 'var(--accent-blue)' }}>
+                📊 Palygink kainas
+              </Button>
             </Link>
           </div>
         </div>
@@ -82,6 +84,36 @@ export function LandingPage() {
              <h4 style={{ color: 'var(--accent-red)', margin: 0 }}>3. {t('how_step_3' as any)}</h4>
              <p className="muted" style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>{t('onboarding_3')}</p>
            </Card>
+        </div>
+      </section>
+
+      {/* Free price compare CTA */}
+      <section style={{ margin: '2rem auto', width: 'min(780px, calc(100% - 2rem))' }}>
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(0,240,255,0.08) 0%, rgba(255,0,122,0.06) 100%)',
+          border: '1.5px solid rgba(0,240,255,0.25)',
+          borderRadius: '1.25rem',
+          padding: '1.75rem 2rem',
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: '1.25rem',
+        }}>
+          <div style={{ flex: 1, minWidth: 220 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+              <span style={{ fontSize: '1.4rem' }}>📊</span>
+              <strong style={{ fontSize: '1.05rem', color: 'var(--text-main)' }}>Kainų palyginimas — nemokama</strong>
+              <span style={{ fontSize: '0.7rem', background: 'rgba(0,240,255,0.15)', color: 'var(--accent-blue)', padding: '2px 8px', borderRadius: 20, fontWeight: 700, letterSpacing: '0.05em' }}>FREE</span>
+            </div>
+            <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+              Parašyk prekę — parodysime kainas Maxima, IKI, Rimi, Norfa, Lidl ir kitur linijinėje diagramoje.
+            </p>
+          </div>
+          <Link to="/compare" onClick={() => void trackUiEvent('lp_compare_banner_click')}>
+            <Button glow style={{ whiteSpace: 'nowrap' }}>
+              Pradėti palyginimą →
+            </Button>
+          </Link>
         </div>
       </section>
 
@@ -132,6 +164,7 @@ export function LandingPage() {
         <div className="landing-footer__links">
           <div className="landing-footer__column">
             <strong>{t('footer_product' as any)}</strong>
+            <Link to="/compare" className="muted">Kainų palyginimas</Link>
             <Link to="/demo" className="muted">{t('nav_demo')}</Link>
             <Link to="/auth" className="muted">{t('nav_login')}</Link>
           </div>
