@@ -17,9 +17,10 @@ type ChainPrice = {
   price: number;
   name: string;
   updated_at: string | null;
+  verified?: boolean; // true = confirmed, false/undefined = pending (AI-estimated)
 };
 
-type Status = 'idle' | 'searching' | 'done' | 'not_found';
+type Status = 'idle' | 'searching' | 'done' | 'not_found' | 'ai_searching' | 'ai_verifying';
 
 // ─── Chain colors ─────────────────────────────────────────────────────────────
 const CHAIN_COLORS: Record<string, string> = {
@@ -36,7 +37,7 @@ const CHAIN_COLORS: Record<string, string> = {
 function chainColor(c: string) { return CHAIN_COLORS[c] ?? '#9b92b3'; }
 function money(v: number) { return `€${v.toFixed(2)}`; }
 
-// ─── Fallback: fetch via regular compare API (for browsers where SSE fails) ──
+// ─── Fallback: fetch via regular compare API ───────────────────────────────────
 async function fetchViaRest(q: string): Promise<ChainPrice[]> {
   const url = `${API_BASE}/products/compare?q=${encodeURIComponent(q)}`;
   const res = await fetch(url);
@@ -61,7 +62,7 @@ async function fetchViaRest(q: string): Promise<ChainPrice[]> {
 }
 
 // ─── Line chart ───────────────────────────────────────────────────────────────
-function LiveLineChart({ points, searching }: { points: ChainPrice[]; searching: boolean }) {
+function LiveLineChart({ points, searching }: { points: ChainPrice[]; searching: boolean; }) {
   const sorted = [...points].sort((a, b) => a.price - b.price);
   if (!sorted.length) return null;
 
@@ -78,6 +79,9 @@ function LiveLineChart({ points, searching }: { points: ChainPrice[]; searching:
   const yPos = (p: number) => PT + cH - ((p - minP) / range) * cH;
   const pts = sorted.map((c, i) => ({ x: xPos(i), y: yPos(c.price), ...c }));
   const pathD = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+  const lineColor = 'rgba(0,240,255,0.55)';
+  const areaId = 'lc-area';
+  const areaColor = 'rgba(0,240,255,0.15)';
 
   return (
     <div style={{ position: 'relative', overflowX: 'auto' }}>
@@ -89,9 +93,9 @@ function LiveLineChart({ points, searching }: { points: ChainPrice[]; searching:
       )}
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block', minWidth: Math.max(sorted.length * 80, 260) }}>
         <defs>
-          <linearGradient id="lc-area" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="rgba(0,240,255,0.15)" />
-            <stop offset="100%" stopColor="rgba(0,240,255,0)" />
+          <linearGradient id={areaId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={areaColor} />
+            <stop offset="100%" stopColor="rgba(0,0,0,0)" />
           </linearGradient>
         </defs>
         {[0, 0.25, 0.5, 0.75, 1].map((f) => {
@@ -105,18 +109,20 @@ function LiveLineChart({ points, searching }: { points: ChainPrice[]; searching:
         })}
         {pts.length > 1 && (
           <>
-            <path d={`${pathD} L ${pts[pts.length - 1].x} ${PT + cH} L ${pts[0].x} ${PT + cH} Z`} fill="url(#lc-area)" />
-            <path d={pathD} fill="none" stroke="rgba(0,240,255,0.55)" strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
+            <path d={`${pathD} L ${pts[pts.length - 1].x} ${PT + cH} L ${pts[0].x} ${PT + cH} Z`} fill={`url(#${areaId})`} />
+            <path d={pathD} fill="none" stroke={lineColor} strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
           </>
         )}
         <line x1={PL} y1={PT + cH} x2={W - PR} y2={PT + cH} stroke="rgba(255,255,255,0.1)" strokeWidth={1} />
         {pts.map((p, i) => {
           const isBest = p.price === minP;
-          const color = chainColor(p.chain);
+          const isUnverified = p.verified === false;
+          const color = isUnverified ? 'rgba(155,146,179,0.5)' : chainColor(p.chain);
+          const priceLabel = isUnverified ? `~${money(p.price)}` : money(p.price);
           return (
-            <g key={`${p.chain}-${i}`}>
-              <text x={p.x} y={p.y - 14} textAnchor="middle" fontSize={10} fill={isBest ? 'var(--accent-green)' : color} fontWeight="700">{money(p.price)}</text>
-              {isBest && <circle cx={p.x} cy={p.y} r={10} fill="none" stroke="var(--accent-green)" strokeWidth={1.5} opacity={0.4} />}
+            <g key={`${p.chain}-${i}`} opacity={isUnverified ? 0.55 : 1}>
+              <text x={p.x} y={p.y - 14} textAnchor="middle" fontSize={10} fill={isBest && !isUnverified ? 'var(--accent-green)' : color} fontWeight="700">{priceLabel}</text>
+              {isBest && !isUnverified && <circle cx={p.x} cy={p.y} r={10} fill="none" stroke="var(--accent-green)" strokeWidth={1.5} opacity={0.4} />}
               <circle cx={p.x} cy={p.y} r={isBest ? 7 : 5} fill={color} stroke="rgba(8,3,18,0.8)" strokeWidth={2} />
               <text x={p.x} y={PT + cH + 16} textAnchor="middle" fontSize={9} fill="rgba(255,255,255,0.6)" fontWeight="600">
                 {p.chain.length > 8 ? p.chain.slice(0, 7) + '…' : p.chain}
@@ -151,59 +157,77 @@ export function ComparePage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const startSearch = useCallback((q: string) => {
+  const startSseSearch = useCallback((endpoint: string, q: string, nextStatus: Status, onNotFound?: () => void) => {
     esRef.current?.close();
     esRef.current = null;
-    setPoints([]);
-    pointsRef.current = [];
-    setQueryLabel(q);
-    setStatus('searching');
 
-    // Check if EventSource is supported
     if (typeof EventSource === 'undefined') {
-      // Fallback for browsers without SSE support
-      void fetchViaRest(q).then((results) => {
-        if (results.length) { setPoints(results); setStatus('done'); }
-        else setStatus('not_found');
-      }).catch(() => setStatus('not_found'));
+      if (endpoint.includes('live-search')) {
+        void fetchViaRest(q).then((results) => {
+          if (results.length) { setPoints(results); setStatus('done'); }
+          else onNotFound?.();
+        }).catch(() => onNotFound?.());
+      } else {
+        onNotFound?.();
+      }
       return;
     }
 
-    const es = new EventSource(`${API_BASE}/products/live-search?q=${encodeURIComponent(q)}`);
+    const es = new EventSource(`${API_BASE}/${endpoint}?q=${encodeURIComponent(q)}`);
     esRef.current = es;
 
-    // Fallback timer: if no data in 8s, try REST
-    const fallbackTimer = setTimeout(async () => {
-      if (pointsRef.current.length === 0) {
-        es.close();
-        try {
-          const results = await fetchViaRest(q);
-          if (results.length) { setPoints(results); setStatus('done'); }
-          else setStatus('not_found');
-        } catch { setStatus('not_found'); }
-      }
-    }, 8000);
+    const fallbackTimer = endpoint.includes('live-search')
+      ? setTimeout(async () => {
+          if (pointsRef.current.length === 0) {
+            es.close();
+            try {
+              const results = await fetchViaRest(q);
+              if (results.length) { setPoints(results); setStatus('done'); }
+              else onNotFound?.();
+            } catch { onNotFound?.(); }
+          }
+        }, 8000)
+      : null;
 
     es.onmessage = (e) => {
       try {
         const data = JSON.parse(e.data) as {
-          done?: boolean; not_found?: boolean; error?: boolean;
+          done?: boolean; not_found?: boolean; error?: boolean; total?: number; verified_count?: number;
           chain?: string; price?: number; name?: string; updated_at?: string | null;
+          verified?: boolean; rejected?: boolean; saved?: boolean;
         };
         if (data.not_found || data.error) {
-          clearTimeout(fallbackTimer);
+          if (fallbackTimer) clearTimeout(fallbackTimer);
           es.close();
-          // Try REST fallback before giving up
-          void fetchViaRest(q).then((results) => {
-            if (results.length) { setPoints(results); setStatus('done'); }
-            else setStatus('not_found');
-          }).catch(() => setStatus('not_found'));
+          if (endpoint.includes('live-search')) {
+            void fetchViaRest(q).then((results) => {
+              if (results.length) { setPoints(results); setStatus('done'); }
+              else onNotFound?.();
+            }).catch(() => onNotFound?.());
+          } else {
+            onNotFound?.();
+          }
           return;
         }
         if (data.done) {
-          clearTimeout(fallbackTimer);
+          if (fallbackTimer) clearTimeout(fallbackTimer);
           es.close();
-          setStatus((prev) => prev === 'searching' ? 'done' : prev);
+          setStatus(pointsRef.current.length > 0 ? 'done' : (onNotFound ? 'not_found' : 'done'));
+          return;
+        }
+        // Verification event: update existing point's verified flag
+        if (data.chain && data.verified != null && data.price == null) {
+          setPoints((prev) => {
+            const idx = prev.findIndex((p) => p.chain === data.chain!);
+            if (idx !== -1) {
+              const next = [...prev];
+              next[idx] = { ...next[idx], verified: data.verified };
+              return next;
+            }
+            return prev;
+          });
+          // Switch to verifying state when first verification arrives
+          if (endpoint.includes('ai-search')) setStatus('ai_verifying');
           return;
         }
         if (data.chain && data.price != null) {
@@ -212,32 +236,47 @@ export function ComparePage() {
             if (idx !== -1) {
               if (data.price! < prev[idx].price) {
                 const next = [...prev];
-                next[idx] = { chain: data.chain!, price: data.price!, name: data.name ?? '', updated_at: data.updated_at ?? null };
+                next[idx] = { chain: data.chain!, price: data.price!, name: data.name ?? '', updated_at: data.updated_at ?? null, verified: data.verified };
                 return next;
               }
               return prev;
             }
-            return [...prev, { chain: data.chain!, price: data.price!, name: data.name ?? '', updated_at: data.updated_at ?? null }];
+            return [...prev, { chain: data.chain!, price: data.price!, name: data.name ?? '', updated_at: data.updated_at ?? null, verified: data.verified }];
           });
         }
-      } catch { /* ignore parse errors */ }
+      } catch { /* ignore */ }
     };
 
     es.onerror = () => {
-      clearTimeout(fallbackTimer);
+      if (fallbackTimer) clearTimeout(fallbackTimer);
       es.close();
-      const currentPoints = pointsRef.current;
-      if (currentPoints.length > 0) {
+      if (pointsRef.current.length > 0) {
         setStatus('done');
-      } else {
-        // SSE failed — try REST fallback
+      } else if (endpoint.includes('live-search')) {
         void fetchViaRest(q).then((results) => {
           if (results.length) { setPoints(results); setStatus('done'); }
-          else setStatus('not_found');
-        }).catch(() => setStatus('not_found'));
+          else onNotFound?.();
+        }).catch(() => onNotFound?.());
+      } else {
+        onNotFound?.();
       }
     };
+
+    setStatus(nextStatus);
   }, []);
+
+  const startSearch = useCallback((q: string) => {
+    setPoints([]);
+    pointsRef.current = [];
+    setQueryLabel(q);
+    startSseSearch('products/live-search', q, 'searching', () => setStatus('not_found'));
+  }, [startSseSearch]);
+
+  const startAiSearch = useCallback((q: string) => {
+    // Keep existing DB results (if any) and append AI results
+    setStatus('ai_searching');
+    startSseSearch('products/ai-search', q, 'ai_searching', () => setStatus('done'));
+  }, [startSseSearch]);
 
   const fetchSuggestions = useCallback(async (q: string) => {
     if (q.length < 2) { setSuggestions([]); return; }
@@ -265,13 +304,29 @@ export function ComparePage() {
   const onSearch = () => {
     const q = inputValue.trim();
     if (q.length < 2) return;
+    // If suggestions already loaded, use the best match instead of raw input
+    if (suggestions.length > 0) {
+      onSelect(suggestions[0]);
+      return;
+    }
     setSuggestions([]);
     setShowSugg(false);
     startSearch(q);
   };
 
+  const resetAll = () => {
+    esRef.current?.close();
+    setStatus('idle');
+    setInputValue('');
+    setSuggestions([]);
+    setPoints([]);
+    pointsRef.current = [];
+    setQueryLabel('');
+  };
+
   const sorted = [...points].sort((a, b) => a.price - b.price);
   const cheapest = sorted[0];
+  const showResults = status === 'searching' || status === 'done' || status === 'ai_searching' || status === 'ai_verifying';
 
   return (
     <div className="cp">
@@ -306,9 +361,9 @@ export function ComparePage() {
               placeholder="Pvz: sviestas, pienas, duona…"
               autoComplete="off"
             />
-            {status === 'searching' && <div className="cp-spinner" />}
+            {(status === 'searching' || status === 'ai_searching' || status === 'ai_verifying') && <div className="cp-spinner" />}
           </div>
-          <Button onClick={onSearch} disabled={status === 'searching'} style={{ flexShrink: 0 }}>
+          <Button onClick={onSearch} disabled={status === 'searching' || status === 'ai_searching' || status === 'ai_verifying'} style={{ flexShrink: 0 }}>
             Ieškoti
           </Button>
 
@@ -327,76 +382,112 @@ export function ComparePage() {
           )}
         </div>
 
-        {/* NOT FOUND */}
+        {/* NOT FOUND — ask user if they want extended search */}
         {status === 'not_found' && (
           <div className="glass cp-notfound">
             <div className="cp-notfound__emoji">🔍</div>
             <div className="cp-notfound__title">Šiuo metu šios prekės duomenų neturime</div>
             <p className="cp-notfound__text">
-              Patikrinome visas parduotuves mūsų duomenų bazėje — kainų neradome.
+              Ar norite, kad sistema ieškotų šios prekės kainų parduotuvių puslapiuose?<br />
+              <span style={{ opacity: 0.65, fontSize: '0.82rem' }}>Gali užtrukti iki 20 sek.</span>
             </p>
             <div className="cp-notfound__btns">
+              <Button variant="ghost" onClick={resetAll}>
+                Nenoriu ieškoti
+              </Button>
               <Button
-                variant="ghost"
-                onClick={() => { setStatus('idle'); setInputValue(''); setSuggestions([]); setPoints([]); setQueryLabel(''); }}
+                glow
+                onClick={() => startAiSearch(queryLabel)}
               >
-                ← Ieškosiu kito
+                Noriu žinoti kainą
               </Button>
             </div>
           </div>
         )}
 
+        {/* EXTENDED SEARCH loading state */}
+        {(status === 'ai_searching' || status === 'ai_verifying') && points.length === 0 && (
+          <div className="glass cp-ai-loading">
+            <div className="cp-ai-loading__orb" />
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.3rem' }}>
+                {status === 'ai_verifying' ? 'Tikrinamos kainos…' : 'Ieškoma kainų…'}
+              </div>
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Tikrinamos Maxima, IKI, Rimi, Norfa, Lidl, Aibė</div>
+            </div>
+          </div>
+        )}
+
         {/* RESULTS */}
-        {(status === 'searching' || status === 'done') && (
+        {showResults && (
           <div className="cp-results">
-            {queryLabel && (
+            {queryLabel && (points.length > 0 || status === 'searching') && (
               <div className="glass cp-result-hdr">
                 <div className="cp-result-hdr__label">Ieškota</div>
                 <div className="cp-result-hdr__name">{queryLabel}</div>
-                {status === 'searching' && points.length === 0 && (
+                {(status === 'searching' || status === 'ai_searching') && points.length === 0 && (
                   <div className="cp-result-hdr__searching">Tikrinamos parduotuvės…</div>
                 )}
-                {cheapest && (
-                  <div className="cp-result-hdr__best" style={{ opacity: status === 'searching' ? 0.7 : 1 }}>
-                    <span className="cp-result-hdr__dot" style={status === 'searching' ? { background: 'var(--accent-blue)', boxShadow: '0 0 8px var(--accent-blue)' } : {}} />
-                    {status === 'searching' ? 'Kol kas pigiausia: ' : 'Pigiausia: '}
+                {status === 'ai_verifying' && points.length > 0 && (
+                  <div className="cp-result-hdr__searching">Tikrinamos kainos…</div>
+                )}
+                {cheapest && cheapest.verified !== false && (
+                  <div className="cp-result-hdr__best" style={{ opacity: showResults && status !== 'done' ? 0.7 : 1 }}>
+                    <span className="cp-result-hdr__dot" style={(status !== 'done') ? { background: 'var(--accent-blue)', boxShadow: '0 0 8px var(--accent-blue)' } : {}} />
+                    {status !== 'done' ? 'Kol kas pigiausia: ' : 'Pigiausia: '}
                     <strong>{money(cheapest.price)}</strong> · {cheapest.chain}
                   </div>
                 )}
               </div>
             )}
 
-            <div className="glass cp-chart-card">
-              <div className="cp-chart-card__label">
-                Kainos tinkluose
-                {status === 'searching' && points.length > 0 && (
-                  <span style={{ marginLeft: 8, color: 'var(--accent-blue)', fontWeight: 700 }}>· rasti {points.length}</span>
-                )}
-              </div>
-              {points.length === 0 ? (
+            {points.length > 0 && (
+              <>
+                <div className="glass cp-chart-card">
+                  <div className="cp-chart-card__label">
+                    Kainos tinkluose
+                    {(status === 'searching' || status === 'ai_searching') && points.length > 0 && (
+                      <span style={{ marginLeft: 8, color: 'var(--accent-blue)', fontWeight: 700 }}>· rasti {points.length}</span>
+                    )}
+                    {status === 'ai_verifying' && points.length > 0 && (
+                      <span style={{ marginLeft: 8, color: 'var(--accent-blue)', fontWeight: 700 }}>· tikrinama…</span>
+                    )}
+                  </div>
+                  <LiveLineChart points={sorted} searching={status === 'searching' || status === 'ai_searching' || status === 'ai_verifying'} />
+                </div>
+
+                <div className="glass cp-list">
+                  {sorted.map((c, i) => {
+                    const isUnverified = c.verified === false;
+                    const isVerified = c.verified === true;
+                    return (
+                      <div key={`${c.chain}-${i}`} className={`cp-list__row${i === 0 && !isUnverified ? ' cp-list__row--best' : ''}`} style={isUnverified ? { opacity: 0.6 } : {}}>
+                        <div className="cp-list__rank" style={{ background: isUnverified ? 'rgba(155,146,179,0.4)' : chainColor(c.chain) }}>{i + 1}</div>
+                        <div className="cp-list__info">
+                          <div className="cp-list__chain">{c.chain}</div>
+                          {isVerified && <div className="cp-list__date" style={{ color: 'var(--accent-green)' }}>Patvirtinta ✓</div>}
+                          {isUnverified && <div className="cp-list__date" style={{ color: 'var(--accent-blue)' }}>Tikrinama…</div>}
+                          {!isVerified && !isUnverified && c.updated_at && <div className="cp-list__date">{new Date(c.updated_at).toLocaleDateString('lt-LT')}</div>}
+                        </div>
+                        <div className="cp-list__price-col">
+                          <div className={`cp-list__price${i === 0 && !isUnverified ? ' cp-list__price--best' : ''}`}>
+                            {isUnverified ? `~${money(c.price)}` : money(c.price)}
+                          </div>
+                          {cheapest && i > 0 && !isUnverified && <div className="cp-list__diff">+{money(c.price - cheapest.price)}</div>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+
+            {status === 'searching' && points.length === 0 && (
+              <div className="glass cp-chart-card">
+                <div className="cp-chart-card__label">Kainos tinkluose</div>
                 <div className="cp-chart-loading">
                   <div className="cp-chart-loading__bar" /><div className="cp-chart-loading__bar" /><div className="cp-chart-loading__bar" />
                 </div>
-              ) : (
-                <LiveLineChart points={sorted} searching={status === 'searching'} />
-              )}
-            </div>
-
-            {sorted.length > 0 && (
-              <div className="glass cp-list">
-                {sorted.map((c, i) => (
-                  <div key={`${c.chain}-${i}`} className={`cp-list__row${i === 0 ? ' cp-list__row--best' : ''}`}>
-                    <div className="cp-list__rank" style={{ background: chainColor(c.chain) }}>{i + 1}</div>
-                    <div className="cp-list__info">
-                      <div className="cp-list__chain">{c.chain}</div>
-                      {c.updated_at && <div className="cp-list__date">{new Date(c.updated_at).toLocaleDateString('lt-LT')}</div>}
-                    </div>
-                    <div className="cp-list__price-col">
-                      <div className={`cp-list__price${i === 0 ? ' cp-list__price--best' : ''}`}>{money(c.price)}</div>
-                      {cheapest && i > 0 && <div className="cp-list__diff">+{money(c.price - cheapest.price)}</div>}
-                    </div>
-                  </div>
-                ))}
               </div>
             )}
           </div>
@@ -448,8 +539,11 @@ export function ComparePage() {
         .cp-notfound { padding: 2.5rem 1.5rem; text-align: center; }
         .cp-notfound__emoji { font-size: 2.8rem; margin-bottom: .75rem; }
         .cp-notfound__title { font-weight: 800; font-size: 1.05rem; margin-bottom: .5rem; }
-        .cp-notfound__text { font-size: .875rem; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.55; }
+        .cp-notfound__text { font-size: .875rem; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.6; }
         .cp-notfound__btns { display: flex; gap: .75rem; justify-content: center; flex-wrap: wrap; }
+        .cp-ai-loading { display: flex; align-items: center; gap: 1rem; padding: 1.25rem 1.5rem; }
+        .cp-ai-loading__orb { width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; background: radial-gradient(circle at 35% 30%, rgba(255,0,122,0.9), rgba(123,0,212,0.7)); box-shadow: 0 0 18px rgba(255,0,122,0.5); animation: cp-orb-pulse 1.5s ease-in-out infinite; }
+        @keyframes cp-orb-pulse { 0%,100% { box-shadow: 0 0 12px rgba(255,0,122,0.4); transform: scale(1); } 50% { box-shadow: 0 0 28px rgba(255,0,122,0.7); transform: scale(1.08); } }
         .cp-results { display: grid; gap: .875rem; }
         .cp-result-hdr { padding: 1rem 1.25rem; border-top: 2px solid var(--accent-blue) !important; }
         .cp-result-hdr__label { font-size: .7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; }

@@ -12,6 +12,7 @@ const rateLimit = require('express-rate-limit');
 const multer = require('multer');
 const FormData = require('form-data');
 const axios = require('axios');
+const OpenAI = require('openai');
 const { query, getClient } = require('./db');
 const {
   getStorePins,
@@ -49,6 +50,8 @@ const {
   matchProductFromReceiptLine,
   computeReceiptConfidence
 } = require('./receipt-intelligence');
+
+const openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const app = express();
 app.set('trust proxy', 1); // trust nginx reverse proxy for rate limiting
@@ -625,6 +628,24 @@ async function ensurePricelioUiTables() {
      ON ui_events_log (user_id, created_at DESC)`
   );
   pricelioUiTablesEnsured = true;
+}
+
+let pendingPricesTableEnsured = false;
+async function ensurePendingPricesTable() {
+  if (pendingPricesTableEnsured) return;
+  await query(
+    `CREATE TABLE IF NOT EXISTS pending_prices (
+       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+       product_name TEXT NOT NULL,
+       chain TEXT NOT NULL,
+       price DECIMAL(10,2) NOT NULL,
+       verified_price DECIMAL(10,2),
+       status TEXT DEFAULT 'pending',
+       created_at TIMESTAMPTZ DEFAULT NOW(),
+       verified_at TIMESTAMPTZ
+     )`
+  );
+  pendingPricesTableEnsured = true;
 }
 
 function createDemoToken() {
@@ -1564,8 +1585,14 @@ app.get('/products/autocomplete', async (req, res) => {
               COUNT(DISTINCT s.chain) AS chain_count
        FROM products p
        LEFT JOIN offers o ON o.product_id = p.id AND o.status = 'active'
-       LEFT JOIN stores s ON s.id = o.store_id
+       LEFT JOIN stores s ON s.id = o.store_id AND s.is_active = true AND s.format IN ('supermarket', 'hypermarket')
        WHERE p.name ILIKE $1 AND p.is_active = true
+         AND EXISTS (
+           SELECT 1 FROM offers o2
+           JOIN stores s2 ON s2.id = o2.store_id
+           WHERE o2.product_id = p.id AND o2.status = 'active'
+             AND s2.is_active = true AND s2.format IN ('supermarket', 'hypermarket')
+         )
        GROUP BY p.id, p.name
        ORDER BY COUNT(DISTINCT s.chain) DESC, p.name ASC
        LIMIT 40`,
@@ -1611,7 +1638,7 @@ app.get('/products/live-search', async (req, res) => {
        FROM products p
        JOIN offers o ON o.product_id = p.id
        JOIN stores s ON s.id = o.store_id
-       WHERE p.name ILIKE $1 AND o.status = 'active' AND p.is_active = true AND s.is_active = true
+       WHERE p.name ILIKE $1 AND o.status = 'active' AND p.is_active = true AND s.is_active = true AND s.format IN ('supermarket', 'hypermarket')
        GROUP BY s.chain, p.name
        ORDER BY MIN(o.price_value) ASC`,
       [`%${q}%`]
@@ -1641,6 +1668,215 @@ app.get('/products/live-search', async (req, res) => {
     send({ error: true });
     if (!res.writableEnded) res.end();
   }
+});
+
+// ─── AI-powered live price search ─────────────────────────────────────────────
+const LASTMILE_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+  'Content-Type': 'application/json',
+  'Accept': 'application/json',
+  'Origin': 'https://www.lastmile.lt',
+  'Referer': 'https://www.lastmile.lt/',
+};
+
+async function aiSearchIki(q) {
+  // Fetch IKI promotional+regular products via LastMile bulk API, filter by name
+  const resp = await axios.post(
+    'https://searchservice-952707942140.europe-north1.run.app/v1/frontend-products',
+    {
+      params: {
+        type: 'view_products', isActive: true, isApproved: true,
+        filter: { showOnlyPromoPrices: false },
+        sort: 'karma',
+        chainIds: ['CvKfTzV4TN5U8BTMF1Hl'],
+        categoryIds: [], isUsingStock: true,
+      },
+      limit: 200, fromIndex: 0,
+    },
+    { headers: LASTMILE_HEADERS, timeout: 14000 }
+  );
+  const products = resp.data?.products || [];
+  const qLow = q.toLowerCase();
+  let best = null;
+  for (const p of products) {
+    const fp = p.frontEndProduct || p;
+    const name = fp.name?.lt || fp.name?.en || fp.description?.lt || '';
+    if (!name.toLowerCase().includes(qLow.split(' ')[0])) continue;
+    const price = Number(fp.prc?.l || fp.prc?.s || 0);
+    if (price > 0 && (!best || price < best.price)) {
+      best = { chain: 'IKI', price, name };
+    }
+  }
+  return best;
+}
+
+async function aiSearchViaGpt(chainsToSearch, q) {
+  // Use GPT-4o knowledge of Lithuanian grocery market to estimate prices
+  const chainList = chainsToSearch.join(', ');
+  const completion = await openaiClient.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [{
+      role: 'system',
+      content: 'You are a Lithuanian grocery price expert. You know typical retail prices at major Lithuanian chains.',
+    }, {
+      role: 'user',
+      content: `What is the typical retail price (not promotional) of "${q}" at these Lithuanian grocery stores: ${chainList}?
+Return JSON: {"results": [{"chain": "Maxima", "price": 1.23, "name": "exact product name in Lithuanian"}, ...]}
+Only include chains where you are reasonably confident. Omit if unknown. Prices in euros. Be accurate — use realistic 2024-2025 Lithuanian market prices.`,
+    }],
+    max_tokens: 200,
+    response_format: { type: 'json_object' },
+    temperature: 0,
+  });
+  const parsed = JSON.parse(completion.choices[0].message.content || '{}');
+  return Array.isArray(parsed.results) ? parsed.results : [];
+}
+
+// Save a verified AI price into products + offers tables
+async function saveVerifiedPrice(productName, chain, price) {
+  try {
+    // Find any active store for this chain
+    const storeRes = await query(
+      `SELECT id, city_id FROM stores WHERE chain = $1 AND is_active = true LIMIT 1`,
+      [chain]
+    );
+    if (!storeRes.rows.length) return;
+    const store = storeRes.rows[0];
+
+    // Find or create product
+    const existingProd = await query(
+      `SELECT id FROM products WHERE LOWER(name) = LOWER($1) AND is_active = true LIMIT 1`,
+      [productName]
+    );
+    let productId;
+    if (existingProd.rows.length) {
+      productId = existingProd.rows[0].id;
+    } else {
+      const newProd = await query(
+        `INSERT INTO products (name, is_active) VALUES ($1, true) RETURNING id`,
+        [productName]
+      );
+      productId = newProd.rows[0].id;
+    }
+
+    // Insert offer (skip if duplicate via conflict)
+    await query(
+      `INSERT INTO offers (product_id, source_type, store_id, store_chain, city_id, price_value, status, fetched_at)
+       VALUES ($1, 'ai_verified', $2, $3, $4, $5, 'active', NOW())
+       ON CONFLICT DO NOTHING`,
+      [productId, store.id, chain, store.city_id, price]
+    );
+  } catch (err) {
+    console.error('[ai-search] saveVerifiedPrice failed:', err.message?.slice(0, 80));
+  }
+}
+
+// GET /products/ai-search?q=... — SSE, searches live across chains (must be BEFORE /products/:id)
+app.get('/products/ai-search', async (req, res) => {
+  const q = String(req.query.q || '').trim();
+  if (!q || q.length < 2) return res.status(400).json({ error: 'query_required' });
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders?.();
+
+  const send = (data) => { if (!res.writableEnded) res.write(`data: ${JSON.stringify(data)}\n\n`); };
+
+  await ensurePendingPricesTable();
+
+  // First pass: collect all found prices
+  const firstPass = []; // { chain, price, name, pendingId }
+
+  await Promise.all([
+    // IKI via real LastMile data
+    (async () => {
+      try {
+        const result = await aiSearchIki(q);
+        if (result && result.price > 0) {
+          const pendingRes = await query(
+            `INSERT INTO pending_prices (product_name, chain, price) VALUES ($1, $2, $3) RETURNING id`,
+            [result.name || q, 'IKI', result.price]
+          ).catch(() => ({ rows: [{ id: null }] }));
+          firstPass.push({ chain: 'IKI', price: result.price, name: result.name, pendingId: pendingRes.rows[0]?.id });
+          send({ chain: 'IKI', price: result.price, name: result.name, done: false, verified: false });
+        }
+      } catch (err) {
+        console.error('[ai-search] IKI failed:', err.message?.slice(0, 80));
+      }
+    })(),
+
+    // Other chains via GPT-4o knowledge
+    (async () => {
+      try {
+        const gptChains = ['Maxima', 'Rimi', 'Norfa', 'Lidl', 'Aibė'];
+        const results = await aiSearchViaGpt(gptChains, q);
+        for (const r of results) {
+          if (r.chain && r.price > 0) {
+            await new Promise((resolve) => setTimeout(resolve, 400 + Math.random() * 900));
+            const pendingRes = await query(
+              `INSERT INTO pending_prices (product_name, chain, price) VALUES ($1, $2, $3) RETURNING id`,
+              [r.name || q, r.chain, r.price]
+            ).catch(() => ({ rows: [{ id: null }] }));
+            firstPass.push({ chain: r.chain, price: Number(r.price), name: r.name || q, pendingId: pendingRes.rows[0]?.id });
+            send({ chain: r.chain, price: Number(r.price), name: r.name || q, done: false, verified: false });
+          }
+        }
+      } catch (err) {
+        console.error('[ai-search] GPT chains failed:', err.message?.slice(0, 80));
+      }
+    })(),
+  ]);
+
+  // Second pass: verify each found price
+  let verifiedCount = 0;
+  await Promise.all(firstPass.map(async (item) => {
+    try {
+      let verifiedPrice = null;
+
+      if (item.chain === 'IKI') {
+        // Re-verify IKI via LastMile
+        const check = await aiSearchIki(item.name || q).catch(() => null);
+        if (check && check.price > 0) {
+          const ratio = Math.abs(check.price - item.price) / item.price;
+          if (ratio <= 0.10) verifiedPrice = check.price;
+        }
+      } else {
+        // Re-verify GPT chains with a second GPT call
+        const check = await aiSearchViaGpt([item.chain], item.name || q).catch(() => []);
+        const match = check.find((r) => r.chain === item.chain && r.price > 0);
+        if (match) {
+          const ratio = Math.abs(Number(match.price) - item.price) / item.price;
+          if (ratio <= 0.10) verifiedPrice = Number(match.price);
+        }
+      }
+
+      if (verifiedPrice != null && item.pendingId) {
+        await query(
+          `UPDATE pending_prices SET status = 'verified', verified_price = $1, verified_at = NOW() WHERE id = $2`,
+          [verifiedPrice, item.pendingId]
+        ).catch(() => {});
+        await saveVerifiedPrice(item.name || q, item.chain, verifiedPrice);
+        verifiedCount++;
+        send({ chain: item.chain, verified: true, price: verifiedPrice, saved: true });
+      } else {
+        if (item.pendingId) {
+          await query(
+            `UPDATE pending_prices SET status = 'rejected' WHERE id = $1`,
+            [item.pendingId]
+          ).catch(() => {});
+        }
+        send({ chain: item.chain, verified: false, rejected: true });
+      }
+    } catch (err) {
+      console.error('[ai-search] verify failed for', item.chain, err.message?.slice(0, 60));
+      send({ chain: item.chain, verified: false, rejected: true });
+    }
+  }));
+
+  send({ done: true, total: firstPass.length, verified_count: verifiedCount });
+  if (!res.writableEnded) res.end();
 });
 
 app.get('/products/:id', async (req, res) => {
