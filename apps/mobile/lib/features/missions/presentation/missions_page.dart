@@ -194,13 +194,13 @@ class _MissionsPageState extends State<MissionsPage> with SingleTickerProviderSt
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                      Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white), maxLines: 2, overflow: TextOverflow.ellipsis),
                       const SizedBox(height: 4),
                       Row(
                         children: [
                           const Icon(Icons.location_on, size: 14, color: AppColors.textSub),
                           const SizedBox(width: 4),
-                          Text(store, style: const TextStyle(fontSize: 13, color: AppColors.textSub)),
+                          Expanded(child: Text(store, style: const TextStyle(fontSize: 13, color: AppColors.textSub), maxLines: 1, overflow: TextOverflow.ellipsis)),
                         ],
                       ),
                     ],
@@ -257,9 +257,10 @@ class _MissionsPageState extends State<MissionsPage> with SingleTickerProviderSt
       backgroundColor: AppColors.surface,
       child: ListView.builder(
         padding: const EdgeInsets.fromLTRB(20, 10, 20, 100),
-        itemCount: _globalBoard.length,
+        itemCount: _globalBoard.where((e) => ((e['lifetime_xp'] ?? 0) as num) > 0).length,
         itemBuilder: (ctx, i) {
-          final e = _globalBoard[i];
+          final filtered = _globalBoard.where((e) => ((e['lifetime_xp'] ?? 0) as num) > 0).toList();
+          final e = filtered[i];
           final rank = e['position'] ?? e['rank'] ?? (i + 1);
           final name = e['username'] ?? e['email_masked'] ?? 'Anonimas';
           final xp = e['lifetime_xp'] ?? 0;

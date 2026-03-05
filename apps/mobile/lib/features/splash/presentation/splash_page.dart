@@ -72,7 +72,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
 
     if (mounted) {
       if (isAuth) {
-        context.go('/more');
+        context.go('/home');
       } else {
         context.go('/login');
       }

@@ -3,7 +3,7 @@ const auth = require('../auth');
 const ecosystem = require('../ecosystem');
 const { query } = require('../db');
 const { createBasket, insertBasketItems, getBasketItems, findProductByName, createGuestSession } = require('../queries');
-const { optimizeSingleStore } = require('../optimizer');
+const { optimizeSingleStore, optimizeTwoStores } = require('../optimizer');
 
 function readGuestSessionProof(req) {
   return req.get('x-guest-session-proof') || req.query.guest_proof || req.body?.guest_proof || null;
@@ -89,7 +89,17 @@ module.exports = (app) => {
       if (!access.ok) return res.status(access.status).json({ error: access.code });
 
       const basketItems = await getBasketItems(req.params.id);
-      const plan = await optimizeSingleStore(basketItems);
+      const { user_location, travel_cost_per_km, max_travel_distance, mode } = req.body || {};
+      let plan;
+      if (mode === 'two_stores' || user_location) {
+        plan = await optimizeTwoStores(basketItems, {
+          user_location,
+          travel_cost_per_km,
+          max_travel_distance,
+        });
+      } else {
+        plan = await optimizeSingleStore(basketItems);
+      }
       res.json(plan);
     } catch (error) {
       res.status(500).json({ error: 'basket_optimize_failed' });

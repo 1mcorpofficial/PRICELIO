@@ -246,12 +246,6 @@ class _ScannerPageState extends State<ScannerPage> with TickerProviderStateMixin
                         blurRadius: 40,
                         spreadRadius: 10,
                       ),
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.2 + 0.3 * value),
-                        blurRadius: 20,
-                        spreadRadius: 5,
-                        blurStyle: BlurStyle.inner,
-                      )
                     ],
                   ),
                 );

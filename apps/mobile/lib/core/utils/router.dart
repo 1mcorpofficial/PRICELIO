@@ -4,6 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:ui';
 import '../../features/auth/presentation/login_page.dart';
 import '../../features/auth/presentation/register_page.dart';
+import '../../features/home/presentation/home_page.dart';
 import '../../features/more/presentation/more_page.dart';
 import '../../features/search/presentation/search_page.dart';
 import '../../features/map/presentation/map_page.dart';
@@ -35,7 +36,7 @@ final appRouter = GoRouter(
         state.matchedLocation.startsWith('/register');
 
     if (!isAuth && !isAuthRoute) return '/login';
-    if (isAuth && isAuthRoute) return '/more';
+    if (isAuth && isAuthRoute) return '/home';
     return null;
   },
   routes: [
@@ -51,20 +52,54 @@ final appRouter = GoRouter(
     ShellRoute(
       builder: (context, state, child) => MainShell(child: child),
       routes: [
-        GoRoute(path: '/more',     builder: (_, __) => const MorePage()),
+        GoRoute(path: '/home',     builder: (_, __) => const HomePage()),
         GoRoute(path: '/basket',   builder: (_, __) => const BasketPage()),
         GoRoute(path: '/missions', builder: (_, __) => const MissionsPage()),
         GoRoute(path: '/market',   builder: (_, __) => const SearchPage()),
+        GoRoute(path: '/more',     builder: (_, __) => const MorePage()),
       ],
     ),
   ],
 );
 
-const _navRoutes = ['/more', '/basket', '/missions', '/market'];
+const _navRoutes = ['/home', '/basket', '/missions', '/market'];
 
-class MainShell extends StatelessWidget {
+class MainShell extends StatefulWidget {
   final Widget child;
   const MainShell({super.key, required this.child});
+
+  @override
+  State<MainShell> createState() => _MainShellState();
+}
+
+class _MainShellState extends State<MainShell> {
+  int _lifetimeXp = 0;
+  String _initial = '?';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    try {
+      final results = await Future.wait([
+        ApiClient().dio.get('/me'),
+        ApiClient().dio.get('/me/gamification'),
+      ]);
+      final me = results[0].data as Map<String, dynamic>? ?? {};
+      final gamification = results[1].data as Map<String, dynamic>? ?? {};
+      if (!mounted) return;
+      setState(() {
+        final email = me['email']?.toString() ?? '';
+        _initial = email.isNotEmpty ? email[0].toUpperCase() : '?';
+        _lifetimeXp = (gamification['lifetime_xp'] as num?)?.toInt() ?? 0;
+      });
+    } catch (_) {
+      // Non-critical — keep defaults
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,11 +108,10 @@ class MainShell extends StatelessWidget {
     final activeIndex = idx < 0 ? 0 : idx;
 
     return Scaffold(
-      extendBody: true, // Leidžia fonui palįsti po navigacija
+      extendBody: true,
       body: Stack(
         children: [
-          child,
-          // Top-Right Profile Pill
+          widget.child,
           Positioned(
             top: MediaQuery.of(context).padding.top + 16,
             right: 20,
@@ -92,6 +126,10 @@ class MainShell extends StatelessWidget {
   }
 
   Widget _buildProfilePill(BuildContext context) {
+    final xpDisplay = _lifetimeXp >= 1000
+        ? '${(_lifetimeXp / 1000).toStringAsFixed(1)}K XP'
+        : '$_lifetimeXp XP';
+
     return GestureDetector(
       onTap: () => context.push('/profile'),
       child: Hero(
@@ -122,10 +160,10 @@ class MainShell extends StatelessWidget {
                         color: AppColors.elevated,
                         shape: BoxShape.circle,
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Text(
-                          'M', // Pavyzdinis inicialas
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                          _initial,
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
                         ),
                       ),
                     ),
@@ -134,9 +172,9 @@ class MainShell extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Text(
-                          '12,500 XP',
-                          style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w900),
+                        Text(
+                          xpDisplay,
+                          style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w900),
                         ),
                         const SizedBox(height: 2),
                         Container(
@@ -148,7 +186,7 @@ class MainShell extends StatelessWidget {
                           ),
                           child: FractionallySizedBox(
                             alignment: Alignment.centerLeft,
-                            widthFactor: 0.75,
+                            widthFactor: (_lifetimeXp % 500) / 500,
                             child: Container(
                               decoration: BoxDecoration(
                                 color: AppColors.primary,
@@ -277,9 +315,9 @@ class MainShell extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _NavItem(
-                  icon: Icons.bubble_chart_outlined,
+                  icon: Icons.auto_awesome_outlined,
                   isActive: activeIndex == 0,
-                  onTap: () => context.go('/more'),
+                  onTap: () => context.go('/home'),
                 ),
                 _NavItem(
                   icon: Icons.shopping_basket_outlined,

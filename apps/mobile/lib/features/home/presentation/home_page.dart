@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/api/api_client.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -14,6 +15,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   late AnimationController _breatheController;
   late Animation<double> _breatheAnimation;
   Timer? _stopListeningTimer;
+  int _lifetimeXp = 0;
 
   @override
   void initState() {
@@ -26,6 +28,18 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     _breatheAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
       CurvedAnimation(parent: _breatheController, curve: Curves.easeInOut),
     );
+    _loadXp();
+  }
+
+  Future<void> _loadXp() async {
+    try {
+      final res = await ApiClient().dio.get('/me/gamification');
+      final data = res.data as Map<String, dynamic>? ?? {};
+      if (!mounted) return;
+      setState(() {
+        _lifetimeXp = (data['lifetime_xp'] as num?)?.toInt() ?? 0;
+      });
+    } catch (_) {}
   }
 
   @override
@@ -161,13 +175,15 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: AppColors.border),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(Icons.star, color: AppColors.primary, size: 16),
-                SizedBox(width: 6),
+                const Icon(Icons.star, color: AppColors.primary, size: 16),
+                const SizedBox(width: 6),
                 Text(
-                  '12,500 XP',
-                  style: TextStyle(
+                  _lifetimeXp >= 1000
+                      ? '${(_lifetimeXp / 1000).toStringAsFixed(1)}K XP'
+                      : '$_lifetimeXp XP',
+                  style: const TextStyle(
                     color: AppColors.textMain,
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
