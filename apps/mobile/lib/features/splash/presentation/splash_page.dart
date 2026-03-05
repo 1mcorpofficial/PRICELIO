@@ -20,12 +20,13 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
   
   late Animation<double> _gasOpacity;
   
-  bool _isAuth = false;
+  // Auth check runs in parallel with the animation; result is awaited
+  // before navigation to guarantee the token is resolved.
+  late final Future<bool> _authFuture;
 
   @override
   void initState() {
     super.initState();
-    _checkAuth();
 
     _gasController = AnimationController(vsync: this, duration: const Duration(milliseconds: 2000));
     _cameraController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500));
@@ -34,42 +35,43 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
 
     _gasOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(parent: _gasController, curve: Curves.easeInOut));
 
+    // Start auth check immediately so it runs during the animation.
+    _authFuture = _checkAuth();
     _startSequence();
   }
 
-  Future<void> _checkAuth() async {
+  Future<bool> _checkAuth() async {
     const storage = FlutterSecureStorage();
     final token = await storage.read(key: kTokenKey);
-    if (mounted) {
-      setState(() {
-        _isAuth = token != null;
-      });
-    }
+    return token != null && token.isNotEmpty;
   }
 
   Future<void> _startSequence() async {
     // 1s black screen
     await Future.delayed(const Duration(seconds: 1));
-    
+
     // Deep gas from corners
     _gasController.forward();
     await Future.delayed(const Duration(milliseconds: 1000));
-    
+
     // Notch glow appears and drops
     _cameraController.forward();
     await Future.delayed(const Duration(milliseconds: 1500));
-    
+
     // Torus morphs into P
     _morphController.forward();
     await Future.delayed(const Duration(milliseconds: 1000));
-    
+
     // Drop falls
     _dropController.forward();
     await Future.delayed(const Duration(milliseconds: 800));
 
-    // Navigate
+    // Auth result is guaranteed to be resolved by now (5.3s >> storage read).
+    // Await just in case device is extremely slow.
+    final isAuth = await _authFuture;
+
     if (mounted) {
-      if (_isAuth) {
+      if (isAuth) {
         context.go('/more');
       } else {
         context.go('/login');
