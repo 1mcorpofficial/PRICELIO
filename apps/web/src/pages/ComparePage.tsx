@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { API_BASE } from '../lib/env';
+import { PriceHistoryChart } from '../components/PriceHistoryChart';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Suggestion = {
@@ -478,6 +479,15 @@ export function ComparePage() {
                       </div>
                     );
                   })}
+                </div>
+
+                {/* Price history time-series chart */}
+                <div className="glass cp-chart-card" style={{ marginTop: 0 }}>
+                  <div className="cp-chart-card__label" style={{ marginBottom: '.6rem' }}>
+                    Kainų istorija
+                    <span style={{ marginLeft: 6, color: 'var(--text-muted)', fontWeight: 400, fontSize: '.65rem' }}>· kainos per dienas</span>
+                  </div>
+                  <PriceHistoryChart query={queryLabel} />
                 </div>
               </>
             )}
