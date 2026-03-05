@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:dio/dio.dart';
 import 'dart:ui';
 import 'dart:async';
 import '../../../core/api/api_client.dart';
@@ -12,15 +14,21 @@ class ScannerPage extends StatefulWidget {
 }
 
 class _ScannerPageState extends State<ScannerPage> with TickerProviderStateMixin {
+  static const _basketIdKey = 'pricelio_active_basket_id';
+  static const _basketGuestProofKey = 'pricelio_active_basket_guest_proof';
+  final _storage = const FlutterSecureStorage();
+
   final _controller = MobileScannerController();
   bool _scanning = true;
   bool _hasResult = false;
+  bool _addingToBasket = false;
+  String? _basketFeedback;
   Map<String, dynamic>? _product;
   List<dynamic> _prices = [];
-  
+
   // Apple Intelligence Plasma Edge Animation
   late AnimationController _plasmaController;
-  
+
   // Streaming text variables
   String _streamingText = '';
   Timer? _streamTimer;
@@ -113,6 +121,58 @@ class _ScannerPageState extends State<ScannerPage> with TickerProviderStateMixin
     });
   }
 
+  Future<void> _addToBasket() async {
+    if (_product == null) return;
+    setState(() { _addingToBasket = true; _basketFeedback = null; });
+
+    try {
+      String? basketId = await _storage.read(key: _basketIdKey);
+      String? guestProof = await _storage.read(key: _basketGuestProofKey);
+
+      if (basketId == null || basketId.isEmpty) {
+        final res = await ApiClient().dio.post('/baskets', data: {'name': 'Main basket'});
+        final data = res.data as Map<String, dynamic>? ?? {};
+        basketId = data['id']?.toString();
+        guestProof = data['guest_proof']?.toString();
+        if (basketId != null) {
+          await _storage.write(key: _basketIdKey, value: basketId);
+          if (guestProof != null && guestProof.isNotEmpty) {
+            await _storage.write(key: _basketGuestProofKey, value: guestProof);
+          }
+        }
+      }
+
+      if (basketId == null) throw Exception('basket_unavailable');
+
+      final payload = {
+        'items': [
+          {
+            'raw_name': _product!['name']?.toString() ?? 'Prekė',
+            'quantity': 1,
+            if ((_product!['id']?.toString() ?? '').isNotEmpty)
+              'product_id': _product!['id'].toString(),
+          }
+        ]
+      };
+
+      final options = (guestProof != null && guestProof.isNotEmpty)
+          ? Options(headers: {'x-guest-session-proof': guestProof})
+          : Options();
+
+      await ApiClient().dio.post(
+        '/baskets/$basketId/items',
+        data: payload,
+        options: options,
+      );
+
+      if (mounted) setState(() => _basketFeedback = '✓ Pridėta į krepšelį');
+    } catch (_) {
+      if (mounted) setState(() => _basketFeedback = 'Nepavyko pridėti');
+    } finally {
+      if (mounted) setState(() => _addingToBasket = false);
+    }
+  }
+
   void _reset() {
     _streamTimer?.cancel();
     setState(() {
@@ -121,6 +181,7 @@ class _ScannerPageState extends State<ScannerPage> with TickerProviderStateMixin
       _streamingText = '';
       _product = null;
       _prices.clear();
+      _basketFeedback = null;
     });
     _controller.start();
   }
@@ -272,35 +333,59 @@ class _ScannerPageState extends State<ScannerPage> with TickerProviderStateMixin
                   if (_hasResult && _currentStepIndex >= _steps.length)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 20),
-                      child: Row(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: _reset,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.surface,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                          if (_basketFeedback != null)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: Text(
+                                _basketFeedback!,
+                                style: TextStyle(
+                                  color: _basketFeedback!.startsWith('✓')
+                                      ? AppColors.green
+                                      : AppColors.error,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                              child: const Text('SKENUOTI KITĄ'),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () { /* Add to basket or similar */ },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                foregroundColor: Colors.black,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                elevation: 10,
-                                shadowColor: AppColors.primary.withValues(alpha: 0.4),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: _reset,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.surface,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                    side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                                  ),
+                                  child: const Text('SKENUOTI KITĄ'),
+                                ),
                               ),
-                              child: const Text('Į KREPŠELĮ', style: TextStyle(fontWeight: FontWeight.w900)),
-                            ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: (_addingToBasket || _product == null) ? null : _addToBasket,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primary,
+                                    foregroundColor: Colors.black,
+                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                    elevation: 10,
+                                    shadowColor: AppColors.primary.withValues(alpha: 0.4),
+                                  ),
+                                  child: _addingToBasket
+                                      ? const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                                        )
+                                      : const Text('Į KREPŠELĮ', style: TextStyle(fontWeight: FontWeight.w900)),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),

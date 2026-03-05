@@ -249,7 +249,7 @@ class _SearchPageState extends State<SearchPage> {
     if (_selectedProduct == null || _chartPoints.isEmpty) return;
     final best = _chartPoints.first.value;
     final target = double.parse((best * 0.95).toStringAsFixed(2));
-    final productId = (_selectedProduct!['product_id'] ?? _selectedProduct!['id'])?.toString();
+    final productId = (_selectedProduct!['id'] ?? _selectedProduct!['product_id'])?.toString();
     if (productId == null) { setState(() => _alertStatus = 'Nėra produkto ID'); return; }
 
     setState(() { _creatingAlert = true; _alertStatus = null; });

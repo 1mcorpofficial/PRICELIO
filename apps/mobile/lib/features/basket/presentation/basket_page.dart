@@ -227,6 +227,27 @@ class _BasketPageState extends State<BasketPage> {
     }
   }
 
+  Future<void> _removeItem(String itemId) async {
+    if (_basketId == null) return;
+    setState(() => _error = null);
+    try {
+      await ApiClient().dio.delete(
+        '/baskets/$_basketId/items/$itemId',
+        options: _basketOptions(),
+      );
+      setState(() {
+        _basketItems.removeWhere((item) {
+          final id = item is Map ? item['id']?.toString() : null;
+          return id == itemId;
+        });
+      });
+      await _optimizeBasket();
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _error = _extractError(error, fallback: 'Nepavyko pašalinti prekės'));
+    }
+  }
+
   Future<void> _optimizeBasket() async {
     if (_basketId == null) return;
 
@@ -506,6 +527,7 @@ class _BasketPageState extends State<BasketPage> {
                               final item = _basketItems[i] is Map<String, dynamic>
                                   ? Map<String, dynamic>.from(_basketItems[i] as Map)
                                   : <String, dynamic>{};
+                              final itemId = item['id']?.toString() ?? 'item-$i';
                               final qty = (item['quantity'] as num?)?.toInt() ?? (item['qty'] as num?)?.toInt() ?? 1;
                               final title =
                                   item['product_name']?.toString() ?? item['raw_name']?.toString() ?? item['name']?.toString() ?? 'Prekė';
@@ -513,43 +535,63 @@ class _BasketPageState extends State<BasketPage> {
                               final lineTotal = (line?['line_total'] as num?)?.toDouble();
                               final unitPrice = (line?['price'] as num?)?.toDouble();
 
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                decoration: BoxDecoration(
-                                  color: AppColors.surface,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+                              return Dismissible(
+                                key: ValueKey(itemId),
+                                direction: DismissDirection.endToStart,
+                                background: Container(
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.error.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
+                                  ),
+                                  alignment: Alignment.centerRight,
+                                  padding: const EdgeInsets.only(right: 20),
+                                  child: const Icon(Icons.delete_outline, color: AppColors.error, size: 28),
                                 ),
-                                child: ListTile(
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                  leading: Container(
-                                    width: 44,
-                                    height: 44,
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withValues(alpha: 0.2),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        '${qty}x',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: AppColors.primary,
+                                confirmDismiss: (_) async {
+                                  if (itemId.startsWith('plan-')) return false;
+                                  await _removeItem(itemId);
+                                  return false; // _removeItem jau atnaujina sąrašą
+                                },
+                                child: Container(
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.surface,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+                                  ),
+                                  child: ListTile(
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    leading: Container(
+                                      width: 44,
+                                      height: 44,
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withValues(alpha: 0.2),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          '${qty}x',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.primary,
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                  title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                                  subtitle: Text(
-                                    unitPrice != null
-                                        ? '${unitPrice.toStringAsFixed(2)} € / vnt. · $storeName'
-                                        : 'Kaina skaičiuojama…',
-                                    style: const TextStyle(fontSize: 12, color: AppColors.textSub),
-                                  ),
-                                  trailing: Text(
-                                    lineTotal != null ? '${lineTotal.toStringAsFixed(2)} €' : '-',
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                    title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                    subtitle: Text(
+                                      unitPrice != null
+                                          ? '${unitPrice.toStringAsFixed(2)} € / vnt. · $storeName'
+                                          : 'Kaina skaičiuojama…',
+                                      style: const TextStyle(fontSize: 12, color: AppColors.textSub),
+                                    ),
+                                    trailing: Text(
+                                      lineTotal != null ? '${lineTotal.toStringAsFixed(2)} €' : '-',
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                    ),
                                   ),
                                 ),
                               );

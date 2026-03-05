@@ -10,6 +10,7 @@ import '../../features/map/presentation/map_page.dart';
 import '../../features/basket/presentation/basket_page.dart';
 import '../../features/profile/presentation/profile_page.dart';
 import '../../features/scanner/presentation/scanner_page.dart';
+import '../../features/receipts/presentation/receipt_scan_page.dart';
 import '../../features/kids/presentation/kids_page.dart';
 import '../../features/warranty/presentation/warranty_page.dart';
 import '../../features/missions/presentation/missions_page.dart';
@@ -43,23 +44,23 @@ final appRouter = GoRouter(
     GoRoute(path: '/register', builder: (_, __) => const RegisterPage()),
     GoRoute(path: '/kids',     builder: (_, __) => const KidsPage()),
     GoRoute(path: '/map',      builder: (_, __) => const MapPage()),
-    GoRoute(path: '/basket',   builder: (_, __) => const BasketPage()),
-    GoRoute(path: '/profile',  builder: (_, __) => const ProfilePage()),
-    GoRoute(path: '/scanner',  builder: (_, __) => const ScannerPage()),
-    
+    GoRoute(path: '/profile',      builder: (_, __) => const ProfilePage()),
+    GoRoute(path: '/scanner',      builder: (_, __) => const ScannerPage()),
+    GoRoute(path: '/receipt-scan', builder: (_, __) => const ReceiptScanPage()),
+
     ShellRoute(
       builder: (context, state, child) => MainShell(child: child),
       routes: [
-        GoRoute(path: '/more',     builder: (_, __) => const MorePage()),       // Daugiau
-        GoRoute(path: '/warranty', builder: (_, __) => const WarrantyPage()),   // Seifas
-        GoRoute(path: '/missions', builder: (_, __) => const MissionsPage()),   // Misijos
-        GoRoute(path: '/market',   builder: (_, __) => const SearchPage()),     // Kainos Analizė
+        GoRoute(path: '/more',     builder: (_, __) => const MorePage()),
+        GoRoute(path: '/basket',   builder: (_, __) => const BasketPage()),
+        GoRoute(path: '/missions', builder: (_, __) => const MissionsPage()),
+        GoRoute(path: '/market',   builder: (_, __) => const SearchPage()),
       ],
     ),
   ],
 );
 
-const _navRoutes = ['/more', '/warranty', '/missions', '/market'];
+const _navRoutes = ['/more', '/basket', '/missions', '/market'];
 
 class MainShell extends StatelessWidget {
   final Widget child;
@@ -193,10 +194,54 @@ class MainShell extends StatelessWidget {
         border: Border.all(color: Colors.white.withValues(alpha: 0.15), width: 1.5),
       ),
       child: FloatingActionButton(
-        onPressed: () => context.push('/scanner'),
+        onPressed: () => _showScanMenu(context),
         backgroundColor: Colors.transparent,
         elevation: 0,
         child: const Text('P', style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900)),
+      ),
+    );
+  }
+
+  void _showScanMenu(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1B0F2E),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40, height: 4,
+              margin: const EdgeInsets.only(bottom: 24),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            _ScanMenuItem(
+              icon: Icons.qr_code_scanner,
+              title: 'Barkodo Skeneris',
+              subtitle: 'Skenuok produktą ir lygink kainas',
+              color: AppColors.primary,
+              onTap: () { Navigator.pop(context); context.push('/scanner'); },
+            ),
+            const SizedBox(height: 12),
+            _ScanMenuItem(
+              icon: Icons.document_scanner,
+              title: 'Čekio Analizatorius',
+              subtitle: 'Įkelk čekį ir rask permokėtas prekes',
+              color: AppColors.secondary,
+              onTap: () { Navigator.pop(context); context.push('/receipt-scan'); },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -237,9 +282,9 @@ class MainShell extends StatelessWidget {
                   onTap: () => context.go('/more'),
                 ),
                 _NavItem(
-                  icon: Icons.shield_outlined,
+                  icon: Icons.shopping_basket_outlined,
                   isActive: activeIndex == 1,
-                  onTap: () => context.go('/warranty'),
+                  onTap: () => context.go('/basket'),
                 ),
                 const SizedBox(width: 48), // Vieta centriniam FAB mygtukui
                 _NavItem(
@@ -255,6 +300,61 @@ class MainShell extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ScanMenuItem extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ScanMenuItem({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+                  const SizedBox(height: 2),
+                  Text(subtitle, style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12)),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right, color: color.withValues(alpha: 0.6)),
+          ],
         ),
       ),
     );
