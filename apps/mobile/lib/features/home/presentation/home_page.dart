@@ -51,20 +51,172 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
 
   void _handlePClick() {
     HapticFeedback.mediumImpact();
-    setState(() {
-      _isListening = !_isListening;
-    });
+    _showInputSheet();
+  }
 
-    if (_isListening) {
-      _stopListeningTimer?.cancel();
-      _stopListeningTimer = Timer(const Duration(seconds: 4), () {
-        if (mounted) {
-          setState(() {
-            _isListening = false;
-          });
-        }
-      });
+  void _showInputSheet() {
+    final controller = TextEditingController();
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+          decoration: const BoxDecoration(
+            color: Color(0xFF1A1A2E),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Klausk P',
+                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: controller,
+                      autofocus: true,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        hintText: 'Klausk P apie kainas...',
+                        hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+                        filled: true,
+                        fillColor: Colors.white.withValues(alpha: 0.07),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      ),
+                      onSubmitted: (text) {
+                        if (text.trim().isEmpty) return;
+                        Navigator.pop(ctx);
+                        _askAssistant(text.trim());
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  GestureDetector(
+                    onTap: () {
+                      final text = controller.text.trim();
+                      if (text.isEmpty) return;
+                      Navigator.pop(ctx);
+                      _askAssistant(text);
+                    },
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF4361EE),
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(color: const Color(0xFF4361EE).withValues(alpha: 0.4), blurRadius: 12),
+                        ],
+                      ),
+                      child: const Icon(Icons.send, color: Colors.white, size: 20),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _askAssistant(String message) async {
+    setState(() => _isListening = true);
+    try {
+      final res = await ApiClient().dio.post(
+        '/ai/assistant',
+        data: {'message': message, 'context': 'price_assistant'},
+      );
+      final body = res.data as Map<String, dynamic>? ?? {};
+      final reply = (body['reply'] ?? body['data']?['reply'] ?? '').toString();
+      if (!mounted) return;
+      _showAiResponse(reply.isNotEmpty ? reply : 'P negavo atsakymo. Bandyk dar kartą.');
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('P šiuo metu nepasiekiamas. Bandyk vėliau.')),
+      );
+    } finally {
+      if (mounted) setState(() => _isListening = false);
     }
+  }
+
+  void _showAiResponse(String reply) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.5,
+        minChildSize: 0.3,
+        maxChildSize: 0.85,
+        expand: false,
+        builder: (_, scrollController) => Container(
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+          decoration: const BoxDecoration(
+            color: Color(0xFF1A1A2E),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Text(
+                    'P',
+                    style: TextStyle(
+                      color: Color(0xFF4361EE),
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Atsakymas',
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 14),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: scrollController,
+                  child: Text(
+                    reply,
+                    style: const TextStyle(color: Colors.white, fontSize: 16, height: 1.6),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  style: TextButton.styleFrom(
+                    backgroundColor: Colors.white.withValues(alpha: 0.07),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  child: const Text('Uždaryti', style: TextStyle(color: Colors.white)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -117,7 +269,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                         _buildPAssistant(),
                         const SizedBox(height: 40),
                         Text(
-                          _isListening ? 'Klausau tavęs...' : 'Bakstelėk, kad kalbėtumeisi',
+                          _isListening ? 'Analizuoju...' : 'Bakstelėk, kad klaustum P',
                           style: TextStyle(
                             color: _isListening ? AppColors.textMain : AppColors.textSub,
                             fontSize: 16,
