@@ -45,6 +45,7 @@ final appRouter = GoRouter(
     GoRoute(path: '/register', builder: (_, __) => const RegisterPage()),
     GoRoute(path: '/kids',     builder: (_, __) => const KidsPage()),
     GoRoute(path: '/map',      builder: (_, __) => const MapPage()),
+    GoRoute(path: '/warranty', builder: (_, __) => const WarrantyPage()),
     GoRoute(path: '/profile',      builder: (_, __) => const ProfilePage()),
     GoRoute(path: '/scanner',      builder: (_, __) => const ScannerPage()),
     GoRoute(path: '/receipt-scan', builder: (_, __) => const ReceiptScanPage()),

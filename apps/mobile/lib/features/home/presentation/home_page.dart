@@ -137,7 +137,12 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     try {
       final res = await ApiClient().dio.post(
         '/ai/assistant',
-        data: {'message': message, 'context': 'price_assistant'},
+        data: {
+          'message': message,
+          'context': 'price_assistant',
+          'city': 'Kaunas',
+          'recent_context': 'grocery_prices',
+        },
       );
       final body = res.data as Map<String, dynamic>? ?? {};
       final reply = (body['reply'] ?? body['data']?['reply'] ?? '').toString();

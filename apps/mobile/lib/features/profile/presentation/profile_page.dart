@@ -15,19 +15,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Map<String, dynamic>? _user;
   bool _loading = true;
   int _activeTabIndex = 0; // 0: Hoarders, 1: Whales
-
-  // Demo data for leaderboards
-  final _topHoarders = [
-    {'name': 'Mantas P.', 'rank': 'Rinkos Medžiotojas', 'xp': 45200, 'avatar': 'M', 'color': AppColors.primary},
-    {'name': 'Aistė G.', 'rank': 'Kainų Architektė', 'xp': 38100, 'avatar': 'A', 'color': AppColors.secondary},
-    {'name': 'Tomas L.', 'rank': 'Taupymo Guru', 'xp': 32500, 'avatar': 'T', 'color': AppColors.green},
-  ];
-
-  final _topWhales = [
-    {'name': 'Dominykas V.', 'plan': 'Family (Metinis)', 'spent': 150000, 'avatar': 'D', 'color': AppColors.error},
-    {'name': 'Laura K.', 'plan': 'Duo', 'spent': 85000, 'avatar': 'L', 'color': Colors.orangeAccent},
-    {'name': 'Studentų Atst.', 'plan': 'Group Admin', 'spent': 60000, 'avatar': 'S', 'color': AppColors.primary},
-  ];
+  List<dynamic> _leaderboard = [];
 
   @override
   void initState() {
@@ -40,10 +28,15 @@ class _ProfilePageState extends State<ProfilePage> {
       final results = await Future.wait([
         ApiClient().dio.get('/me'),
         ApiClient().dio.get('/me/gamification'),
+        ApiClient().dio.get('/leaderboard/global'),
       ]);
       setState(() {
         _user = results[0].data;
         _gamification = results[1].data;
+        final raw = results[2].data;
+        _leaderboard = (raw is List ? raw : [])
+            .where((e) => ((e['lifetime_xp'] ?? 0) as num) > 0)
+            .toList();
         _loading = false;
       });
     } catch (_) {
@@ -59,7 +52,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     final rank = _gamification?['rank'];
-    final xp   = _gamification?['lifetime_xp'] ?? 12500; // Demo
+    final xp   = _gamification?['lifetime_xp'] ?? 0;
     final initial = (_user?['email'] ?? 'G')[0].toUpperCase();
 
     return Scaffold(
@@ -255,11 +248,20 @@ class _ProfilePageState extends State<ProfilePage> {
                                     ),
                                     Padding(
                                       padding: const EdgeInsets.all(16),
-                                      child: Column(
-                                        children: _activeTabIndex == 0
-                                            ? _topHoarders.map((u) => _buildHoarderTile(u)).toList()
-                                            : _topWhales.map((u) => _buildWhaleTile(u)).toList(),
-                                      ),
+                                      child: _leaderboard.isEmpty
+                                          ? const Padding(
+                                              padding: EdgeInsets.symmetric(vertical: 16),
+                                              child: Center(child: Text('Nėra duomenų', style: TextStyle(color: AppColors.textSub))),
+                                            )
+                                          : Column(
+                                              children: _activeTabIndex == 0
+                                                  ? _leaderboard.take(5).toList().asMap().entries
+                                                      .map((e) => _buildHoarderTile(e.value, e.key))
+                                                      .toList()
+                                                  : _leaderboard.take(5).toList().asMap().entries
+                                                      .map((e) => _buildWhaleTile(e.value, e.key))
+                                                      .toList(),
+                                            ),
                                     ),
                                   ],
                                 ),
@@ -310,33 +312,47 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildHoarderTile(Map<String, dynamic> user) {
+  Widget _buildHoarderTile(dynamic e, int index) {
+    final name = e['username']?.toString() ?? e['email_masked']?.toString() ?? 'Anonimas';
+    final xp = (e['lifetime_xp'] as num?)?.toInt() ?? 0;
+    final position = e['position'] ?? e['rank'] ?? (index + 1);
+    final avatar = name.isNotEmpty ? name[0].toUpperCase() : '?';
+    const colors = [AppColors.primary, AppColors.secondary, AppColors.green, AppColors.primary, AppColors.secondary];
+    final color = colors[index % colors.length];
+    final xpDisplay = xp >= 1000 ? '${(xp / 1000).toStringAsFixed(1)}K XP' : '$xp XP';
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: user['color'],
+            backgroundColor: color,
             radius: 18,
-            child: Text(user['avatar'], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: Text(avatar, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(user['name'], style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-                Text(user['rank'], style: const TextStyle(fontSize: 11, color: AppColors.textSub)),
+                Text(name, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white), maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text('#$position', style: const TextStyle(fontSize: 11, color: AppColors.textSub)),
               ],
             ),
           ),
-          Text('${user['xp']} XP', style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.primary)),
+          Text(xpDisplay, style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.primary)),
         ],
       ),
     );
   }
 
-  Widget _buildWhaleTile(Map<String, dynamic> user) {
+  Widget _buildWhaleTile(dynamic e, int index) {
+    final name = e['username']?.toString() ?? e['email_masked']?.toString() ?? 'Anonimas';
+    final xp = (e['lifetime_xp'] as num?)?.toInt() ?? 0;
+    final position = e['position'] ?? (index + 1);
+    final avatar = name.isNotEmpty ? name[0].toUpperCase() : '?';
+    final xpDisplay = xp >= 1000 ? '${(xp / 1000).toStringAsFixed(1)}K XP' : '$xp XP';
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
@@ -348,21 +364,21 @@ class _ProfilePageState extends State<ProfilePage> {
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: user['color'],
+            backgroundColor: AppColors.error,
             radius: 18,
-            child: Text(user['avatar'], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: Text(avatar, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(user['name'], style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-                Text(user['plan'], style: const TextStyle(fontSize: 11, color: AppColors.textSub)),
+                Text(name, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white), maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text('Top #$position skaneriai', style: const TextStyle(fontSize: 11, color: AppColors.textSub)),
               ],
             ),
           ),
-          Text('-${user['spent']}', style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.error)),
+          Text(xpDisplay, style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.error)),
         ],
       ),
     );
